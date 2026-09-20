@@ -119,11 +119,9 @@ public class StatusBar extends SettingsPreferenceFragment implements
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        ContentResolver resolver = getActivity().getContentResolver();
-        CutoutProgressSettingsFragment.ensureCalibratedDefaults(resolver);
         addPreferencesFromResource(R.xml.evolution_settings_status_bar);
 
+        ContentResolver resolver = getActivity().getContentResolver();
         final Context context = getContext();
         final PreferenceScreen prefScreen = getPreferenceScreen();
 
