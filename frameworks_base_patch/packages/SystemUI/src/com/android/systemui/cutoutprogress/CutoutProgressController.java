@@ -30,6 +30,7 @@ import com.android.systemui.CoreStartable;
 import com.android.systemui.dagger.SysUISingleton;
 import com.android.systemui.dagger.qualifiers.Main;
 import com.android.systemui.cutoutprogress.ring.CutoutRingView;
+import com.android.systemui.settings.UserTracker;
 import com.android.systemui.statusbar.notification.collection.NotifPipeline;
 import com.android.systemui.statusbar.notification.collection.NotificationEntry;
 import com.android.systemui.statusbar.notification.collection.notifcollection.NotifCollectionListener;
@@ -42,6 +43,7 @@ public class CutoutProgressController implements CoreStartable {
     private final Context mContext;
     private final NotifPipeline mPipeline;
     private final Handler mMainHandler;
+    private final UserTracker mUserTracker;
 
     private final CutoutProgressSettings mSettings;
     private final DownloadStateTracker mTracker;
@@ -52,6 +54,16 @@ public class CutoutProgressController implements CoreStartable {
     private boolean mOverlayAttached = false;
     private boolean mBatteryReceiverRegistered = false;
     private NotifCollectionListener mNotifListener;
+
+    private final UserTracker.Callback mUserCallback = new UserTracker.Callback() {
+        @Override
+        public void onUserChanged(int newUser, Context userContext) {
+            // Tear down state from the previous user before reading the new user's Secure settings.
+            disableFeature();
+            mSettings.setUserId(newUser);
+            onSettingsChanged();
+        }
+    };
 
     private final BroadcastReceiver mBatteryReceiver = new BroadcastReceiver() {
         @Override
@@ -95,12 +107,14 @@ public class CutoutProgressController implements CoreStartable {
     public CutoutProgressController(
             Context context,
             NotifPipeline notifPipeline,
-            @Main Handler mainHandler) {
+            @Main Handler mainHandler,
+            UserTracker userTracker) {
         mContext = context;
         mPipeline = notifPipeline;
         mMainHandler = mainHandler;
+        mUserTracker = userTracker;
         mSettings = new CutoutProgressSettings(
-                context.getContentResolver(), mainHandler);
+                context.getContentResolver(), mainHandler, userTracker.getUserId());
         mTracker = new DownloadStateTracker();
     }
 
@@ -113,6 +127,13 @@ public class CutoutProgressController implements CoreStartable {
         mMusicController = new MusicRingController(mContext, mMainHandler, mRingView);
         mMusicController.applySettings(mSettings);
 
+        mUserTracker.addCallback(mUserCallback, command -> {
+            if (Looper.myLooper() == mMainHandler.getLooper()) {
+                command.run();
+            } else {
+                mMainHandler.post(command);
+            }
+        });
         mSettings.observe(this::onSettingsChanged);
         onSettingsChanged();
     }
