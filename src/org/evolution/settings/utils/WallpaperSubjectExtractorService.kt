@@ -43,6 +43,7 @@ import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.Executors
 
 import kotlin.math.roundToInt
 
@@ -65,6 +66,9 @@ class WallpaperSubjectExtractorService : Service() {
     }
 
     private val handler = Handler(Looper.getMainLooper())
+    private val extractionExecutor = Executors.newSingleThreadExecutor { runnable ->
+        Thread(runnable, "DepthWallpaperExtractor")
+    }
     @Volatile private var currentGeneration = 0
     private var pendingExtraction: Runnable? = null
     private var lastScreenW = 0
@@ -137,7 +141,9 @@ class WallpaperSubjectExtractorService : Service() {
         contentResolver.unregisterContentObserver(depthEnabledObserver)
         contentResolver.unregisterContentObserver(autoSubjectObserver)
         pendingExtraction?.let { handler.removeCallbacks(it) }
+        pendingExtraction = null
         currentGeneration++
+        extractionExecutor.shutdownNow()
         super.onDestroy()
     }
 
@@ -151,13 +157,15 @@ class WallpaperSubjectExtractorService : Service() {
         pendingExtraction?.let { handler.removeCallbacks(it) }
         val gen = ++currentGeneration
         val runnable = Runnable {
-            Thread {
+            if (extractionExecutor.isShutdown) return@Runnable
+            extractionExecutor.execute {
+                if (gen != currentGeneration) return@execute
                 try {
                     runExtraction(force, gen)
                 } catch (e: Exception) {
                     Log.e(TAG, "Extraction threw unexpected exception", e)
                 }
-            }.start()
+            }
         }
         pendingExtraction = runnable
         handler.postDelayed(runnable, if (force) 0L else DEBOUNCE_DELAY_MS)
