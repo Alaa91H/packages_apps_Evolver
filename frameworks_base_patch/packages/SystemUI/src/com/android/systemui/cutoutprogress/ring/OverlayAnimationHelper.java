@@ -233,10 +233,14 @@ public final class OverlayAnimationHelper {
         cancel(mErrorAnim); mErrorAnim = null;
         isErrorAnimating = false;
         errorAlpha = 0f;
+        mHost.invalidate();
     }
 
     public void startDynamicPreview(String finishStyle, int holdMs,
                                     int exitMs, boolean pulse) {
+        // Preview modes are mutually exclusive. A stale geometry auto-hide runnable must never
+        // clear a dynamic preview that started later.
+        cancelGeometryPreview();
         mHost.removeCallbacks(mPreviewDebounce);
         mPreviewDebounce = () -> runDynamicPreview(finishStyle, holdMs, exitMs, pulse);
         mHost.postDelayed(mPreviewDebounce, PREVIEW_DEBOUNCE_MS);
@@ -244,6 +248,7 @@ public final class OverlayAnimationHelper {
 
     private void runDynamicPreview(String finishStyle, int holdMs,
                                    int exitMs, boolean pulse) {
+        cancelGeometryPreview();
         cancelDynamicPreview();
         previewMode = PreviewMode.DYNAMIC;
         previewProgress = 0;
@@ -284,6 +289,8 @@ public final class OverlayAnimationHelper {
     }
 
     public void showGeometryPreview(boolean autoHide) {
+        // Cancel dynamic animations/debounces before geometry takes ownership of previewMode.
+        cancelDynamicPreview();
         mHost.removeCallbacks(mGeometryHideTask);
         mGeometryHideTask = null;
         previewMode = PreviewMode.GEOMETRY;
@@ -312,6 +319,8 @@ public final class OverlayAnimationHelper {
         cancelError();
         cancelDynamicPreview();
         cancelGeometryPreview();
+        // Ensure reset animation fields are reflected immediately.
+        mHost.invalidate();
     }
 
     private interface FloatConsumer { void accept(float v); }
