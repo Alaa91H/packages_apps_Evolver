@@ -305,6 +305,12 @@ public final class CutoutRingView extends View {
             }
 
             boolean nonInteractive = isDisplayNonInteractive();
+            if (nonInteractive) {
+                // Aurora is intentionally suppressed while the display is non-interactive.
+                // A timer flame does not need an idle 1 Hz animation loop either; keep the
+                // current frame stable and let onDisplayStateChanged() restart it on wake.
+                return;
+            }
             long duration = visualEffectDurationMs();
             long elapsed = Math.max(0L, now - mVisualEffectEpochMs);
             mVisualEffectPhase = (float) ((elapsed % duration)
