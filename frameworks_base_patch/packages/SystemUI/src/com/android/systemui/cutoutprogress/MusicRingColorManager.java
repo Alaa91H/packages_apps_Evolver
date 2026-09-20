@@ -107,6 +107,14 @@ public final class MusicRingColorManager {
         return mCurrentColor;
     }
 
+    public void onThemeChanged() {
+        if (mDestroyed) return;
+        // Album colors are visibility-adjusted against light/dark backgrounds as well, so a
+        // theme change must invalidate more than just MODE_ACCENT.
+        mLastResolvedArt = null;
+        resolve(mLastArt, mCachedTrackId);
+    }
+
     public void destroy() {
         if (mDestroyed) return;
         mDestroyed = true;
