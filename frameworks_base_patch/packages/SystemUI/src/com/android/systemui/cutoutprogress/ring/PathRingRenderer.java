@@ -42,6 +42,7 @@ public final class PathRingRenderer implements RingViewRenderer {
     private int mAppliedGeneration = -1;
     private float mTotalLength;
     private float mStartDistance;
+    private float mOppositeDistance;
     private boolean mPathOrderClockwise = true;
 
     public static boolean canTracePath(Path path) {
@@ -92,6 +93,7 @@ public final class PathRingRenderer implements RingViewRenderer {
         }
 
         mStartDistance = findVisualTopDistance(bounds);
+        mOppositeDistance = findVisualBottomDistance(bounds);
         mPathOrderClockwise = determinePathOrderClockwise();
 
         mLastBounds.set(bounds);
@@ -132,13 +134,11 @@ public final class PathRingRenderer implements RingViewRenderer {
             return;
         }
 
-        // The normal progress start is the visual top. Half a contour away is the visual opposite
-        // point for any simple closed contour; expand equally in both directions from there.
+        // Expand around the actual visual bottom. Half the contour length is not necessarily the
+        // geometric opposite of the top on asymmetric camera/protection paths.
         float length = mTotalLength * fraction;
-        float center = normalizeDistance(mStartDistance
-                + (mPathOrderClockwise ? 1f : -1f) * mTotalLength * 0.5f);
         mWorkPath.reset();
-        appendPhysicalRange(center - length * 0.5f, length, mWorkPath);
+        appendPhysicalRange(mOppositeDistance - length * 0.5f, length, mWorkPath);
         canvas.drawPath(mWorkPath, paint);
     }
 
@@ -233,6 +233,27 @@ public final class PathRingRenderer implements RingViewRenderer {
             double dx = pos[0] - targetX;
             double dy = pos[1] - targetY;
             // Bias strongly toward the top edge, then toward horizontal center.
+            double score = dy * dy * 4.0 + dx * dx;
+            if (score < bestScore) {
+                bestScore = score;
+                bestDistance = d;
+            }
+        }
+        return bestDistance;
+    }
+
+    private float findVisualBottomDistance(RectF bounds) {
+        float bestDistance = 0f;
+        double bestScore = Double.MAX_VALUE;
+        float[] pos = new float[2];
+        float targetX = bounds.centerX();
+        float targetY = bounds.bottom;
+
+        for (int i = 0; i < START_SAMPLES; i++) {
+            float d = mTotalLength * i / START_SAMPLES;
+            if (!mMeasure.getPosTan(d, pos, null)) continue;
+            double dx = pos[0] - targetX;
+            double dy = pos[1] - targetY;
             double score = dy * dy * 4.0 + dx * dx;
             if (score < bestScore) {
                 bestScore = score;
