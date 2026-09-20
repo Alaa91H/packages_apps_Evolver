@@ -834,9 +834,9 @@
     <string name="cutout_progress_music_title">Music ring</string>
     <string name="cutout_progress_music_summary">Show a visualizer ring tracking media playback progress</string>
     <string name="cutout_progress_music_color_mode_title">Color mode</string>
-    <string name="cutout_progress_music_color_mode_album_icon">Album icon color</string>
+    <string name="cutout_progress_music_color_mode_album_icon">Artwork dominant color</string>
     <string name="cutout_progress_music_color_mode_accent">System accent</string>
-    <string name="cutout_progress_music_color_mode_album_art">Album art</string>
+    <string name="cutout_progress_music_color_mode_album_art">Album art palette</string>
     <string name="cutout_progress_music_color_mode_custom">Custom color</string>
     <string name="cutout_progress_music_custom_color_title">Custom color</string>
     <string name="cutout_progress_music_opacity_title">Ring opacity</string>
