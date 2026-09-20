@@ -809,11 +809,15 @@
     <string name="cutout_progress_percent_size_title">Percentage text size</string>
     <string name="cutout_progress_percent_bold_title">Bold percentage</string>
     <string name="cutout_progress_percent_position_title">Percentage position</string>
+    <string name="cutout_progress_percent_offset_x_title">Percentage horizontal offset</string>
+    <string name="cutout_progress_percent_offset_y_title">Percentage vertical offset</string>
     <string name="cutout_progress_filename_enabled_title">Show filename</string>
     <string name="cutout_progress_filename_enabled_summary">Display the name of the file being downloaded</string>
     <string name="cutout_progress_filename_size_title">Filename text size</string>
     <string name="cutout_progress_filename_bold_title">Bold filename</string>
     <string name="cutout_progress_filename_position_title">Filename position</string>
+    <string name="cutout_progress_filename_offset_x_title">Filename horizontal offset</string>
+    <string name="cutout_progress_filename_offset_y_title">Filename vertical offset</string>
     <string name="cutout_progress_filename_max_chars_title">Max filename length</string>
     <string name="cutout_progress_filename_truncate_title">Filename truncation</string>
     <string name="cutout_progress_badge_title">Show download count badge</string>
