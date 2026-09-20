@@ -31,6 +31,12 @@ public interface RingViewRenderer {
     /** Draws progress expanding symmetrically from the point opposite the normal top start. */
     void drawSymmetricProgress(Canvas canvas, float sweepFraction, Paint paint);
 
+    /**
+     * Samples the current rendered outline in visual-clockwise order from the top.
+     * Returns an outward unit normal for effects such as the music waveform.
+     */
+    boolean getPointAndOutwardNormal(float fraction, float[] position, float[] normal);
+
     void drawSegmented(Canvas canvas,
                        int segments, float gapDeg, float arcDeg,
                        int highlight,
