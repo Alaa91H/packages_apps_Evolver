@@ -514,11 +514,11 @@ public final class CutoutProgressSettings {
     }
 
     public float getPercentOffsetXDp() {
-        return getInt(KEY_PERCENT_OFFSET_X, 0) / 10f;
+        return clamp(getInt(KEY_PERCENT_OFFSET_X, 0), -200, 200) / 10f;
     }
 
     public float getPercentOffsetYDp() {
-        return getInt(KEY_PERCENT_OFFSET_Y, 0) / 10f;
+        return clamp(getInt(KEY_PERCENT_OFFSET_Y, 0), -200, 200) / 10f;
     }
 
     public boolean isFilenameEnabled() {
@@ -540,11 +540,11 @@ public final class CutoutProgressSettings {
     }
 
     public float getFilenameOffsetXDp() {
-        return getInt(KEY_FILENAME_OFFSET_X, 0) / 10f;
+        return clamp(getInt(KEY_FILENAME_OFFSET_X, 0), -200, 200) / 10f;
     }
 
     public float getFilenameOffsetYDp() {
-        return getInt(KEY_FILENAME_OFFSET_Y, 0) / 10f;
+        return clamp(getInt(KEY_FILENAME_OFFSET_Y, 0), -200, 200) / 10f;
     }
 
     public int getFilenameMaxChars() {
