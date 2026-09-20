@@ -773,10 +773,20 @@ public final class CutoutRingView extends View {
     }
 
     private void updateRendererForGeometry() {
-        boolean needPath = mAutoGeometryActive ? mResolvedPillLike : sCfgPathMode;
-        if (needPath && !(mRenderer instanceof CapsuleRingRenderer)) {
+        boolean exactPath = mAutoGeometryActive
+                && mGeometrySource != CameraCutoutGeometryResolver.SOURCE_DISPLAY_CUTOUT_BOUNDS
+                && PathRingRenderer.canTracePath(mCutoutPath);
+        if (exactPath) {
+            if (!(mRenderer instanceof PathRingRenderer)) {
+                mRenderer = new PathRingRenderer();
+            }
+            return;
+        }
+
+        boolean needCapsule = mAutoGeometryActive ? mResolvedPillLike : sCfgPathMode;
+        if (needCapsule && !(mRenderer instanceof CapsuleRingRenderer)) {
             mRenderer = new CapsuleRingRenderer();
-        } else if (!needPath && !(mRenderer instanceof CircleRingRenderer)) {
+        } else if (!needCapsule && !(mRenderer instanceof CircleRingRenderer)) {
             mRenderer = new CircleRingRenderer();
         }
     }
@@ -873,6 +883,9 @@ public final class CutoutRingView extends View {
                 mPathBounds.centerX(), mPathBounds.centerY());
         mScaledPath.reset();
         mCutoutPath.transform(mScaleMatrix, mScaledPath);
+        if (mRenderer instanceof PathRingRenderer) {
+            ((PathRingRenderer) mRenderer).setBasePath(mScaledPath);
+        }
     }
 
     private final Runnable mBurnInHide = this::invalidate;
@@ -1145,9 +1158,9 @@ public final class CutoutRingView extends View {
         applyStroke(mChargingPaint, levelColor, sCfgStrokeDp * mDp, baseAlpha);
         if (mChargingPulseEnabled && sCfgChargingPulse && mChargingPulseScheduled) {
             float drawFraction = mChargingPulsePhase * (mChargingDisplayPct / 100f);
-            drawSymmetricArc(canvas, drawFraction, mChargingPaint);
+            mRenderer.drawSymmetricProgress(canvas, drawFraction, mChargingPaint);
         } else {
-            drawSymmetricArc(canvas, mChargingDisplayPct / 100f, mChargingPaint);
+            mRenderer.drawSymmetricProgress(canvas, mChargingDisplayPct / 100f, mChargingPaint);
         }
     }
 
@@ -1164,15 +1177,6 @@ public final class CutoutRingView extends View {
         int levelColor = chargingColor(mBatteryDisplayPct);
         applyStroke(mChargingPaint, levelColor, sCfgStrokeDp * mDp, baseAlpha);
         mRenderer.drawProgress(canvas, mBatteryDisplayPct / 100f, true, mChargingPaint);
-    }
-
-    private void drawSymmetricArc(Canvas canvas, float fraction, Paint paint) {
-        if (fraction <= 0f) return;
-        fraction = Math.min(fraction, 1f);
-        float sweep = fraction * 180f;
-
-        canvas.drawArc(mArcBounds, 90f - sweep, sweep, false, paint);
-        canvas.drawArc(mArcBounds, 90f, sweep, false, paint);
     }
 
     private static int chargingColor(float pct) {
