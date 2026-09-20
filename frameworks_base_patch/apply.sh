@@ -47,25 +47,52 @@ NEW_FILES=(
 
 echo "Checking frameworks/base cutout-progress baseline..."
 for rel in "${!EXPECTED[@]}"; do
+    staged="$SCRIPT_DIR/$rel"
+    if [[ ! -f "$staged" ]]; then
+        echo "Error: missing staged file: $rel" >&2
+        exit 1
+    fi
     if [[ ! -f "$TARGET/$rel" ]]; then
         echo "Error: missing target file: $rel" >&2
         exit 1
     fi
+
     current="$(git -C "$TARGET" hash-object "$rel")"
-    if [[ "$current" != "${EXPECTED[$rel]}" && "$FORCE" -ne 1 ]]; then
-        echo "Error: upstream file changed: $rel" >&2
-        echo "  expected: ${EXPECTED[$rel]}" >&2
+    desired="$(git hash-object "$staged")"
+
+    # Safe re-runs are allowed when the target already equals this staged patch. Any third state
+    # still aborts unless --force was explicitly requested.
+    if [[ "$current" != "${EXPECTED[$rel]}" && "$current" != "$desired" && "$FORCE" -ne 1 ]]; then
+        echo "Error: upstream/local file changed: $rel" >&2
+        echo "  baseline: ${EXPECTED[$rel]}" >&2
+        echo "  staged  : $desired" >&2
         echo "  current : $current" >&2
-        echo "Rebase the staged implementation first, or rerun with --force only after manual review." >&2
+        echo "Rebase/review the staged implementation first, or use --force only after manual review." >&2
         exit 1
     fi
 done
 
 for rel in "${NEW_FILES[@]}"; do
-    if [[ -e "$TARGET/$rel" && "$FORCE" -ne 1 ]]; then
-        echo "Error: new staged file already exists upstream: $rel" >&2
-        echo "Review/rebase the integration, or rerun with --force only after manual review." >&2
+    staged="$SCRIPT_DIR/$rel"
+    if [[ ! -f "$staged" ]]; then
+        echo "Error: missing staged file: $rel" >&2
         exit 1
+    fi
+
+    if [[ -e "$TARGET/$rel" ]]; then
+        if [[ ! -f "$TARGET/$rel" ]]; then
+            echo "Error: target path exists but is not a regular file: $rel" >&2
+            exit 1
+        fi
+        current="$(git -C "$TARGET" hash-object "$rel")"
+        desired="$(git hash-object "$staged")"
+        if [[ "$current" != "$desired" && "$FORCE" -ne 1 ]]; then
+            echo "Error: staged-new target already exists with different content: $rel" >&2
+            echo "  staged  : $desired" >&2
+            echo "  current : $current" >&2
+            echo "Review/rebase the integration, or use --force only after manual review." >&2
+            exit 1
+        fi
     fi
 done
 
@@ -77,8 +104,15 @@ for rel in "${NEW_FILES[@]}"; do
     install -D -m 0644 "$SCRIPT_DIR/$rel" "$TARGET/$rel"
 done
 
+echo "Checking resulting diff for whitespace errors..."
+git -C "$TARGET" diff --check -- \
+    packages/SystemUI/AndroidManifest.xml \
+    packages/SystemUI/src/com/android/systemui/cutoutprogress
+
 echo
 echo "Applied successfully. Review with:"
-echo "  git -C '$TARGET' diff -- packages/SystemUI/src/com/android/systemui/cutoutprogress"
+echo "  git -C '$TARGET' diff -- packages/SystemUI/AndroidManifest.xml packages/SystemUI/src/com/android/systemui/cutoutprogress"
 echo
-git -C "$TARGET" diff --stat -- packages/SystemUI/src/com/android/systemui/cutoutprogress
+git -C "$TARGET" diff --stat -- \
+    packages/SystemUI/AndroidManifest.xml \
+    packages/SystemUI/src/com/android/systemui/cutoutprogress
