@@ -28,7 +28,7 @@ public final class MusicRingController {
     private final Context mContext;
     private final Handler mMainHandler;
     private final CutoutRingView mRingView;
-    private final MediaSessionManagerHelper mHelper;
+    private MediaSessionManagerHelper mHelper;
 
     private MusicProgressTracker mTracker;
     private MusicRingColorManager mColorManager;
@@ -45,7 +45,6 @@ public final class MusicRingController {
         mContext = context;
         mMainHandler = mainHandler;
         mRingView = ringView;
-        mHelper = MediaSessionManagerHelper.Companion.getInstance(context);
     }
 
     public void applySettings(CutoutProgressSettings settings) {
@@ -64,6 +63,12 @@ public final class MusicRingController {
     public void start() {
         if (mRunning) return;
         mRunning = true;
+
+        if (mHelper == null) {
+            // Avoid starting MediaSessionManagerHelper's polling until music-ring functionality
+            // is actually enabled at least once.
+            mHelper = MediaSessionManagerHelper.Companion.getInstance(mContext);
+        }
 
         mColorManager = new MusicRingColorManager(mContext, mMainHandler);
         mColorManager.setCallback(color -> {
@@ -93,11 +98,11 @@ public final class MusicRingController {
             }
 
             @Override
-            public void onTrackChanged(String title, String artist, long durationMs) {
+            public void onTrackChanged(String trackId, String title, String artist, long durationMs) {
                 mFraction = 0f;
                 mRingView.setMusicProgress(0f);
 
-                mTrackId = title + "|" + artist;
+                mTrackId = trackId != null ? trackId : "";
                 mColorManager.onTrackChanged(mTrackId, null);
             }
 
