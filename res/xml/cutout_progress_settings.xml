@@ -311,7 +311,7 @@
             android:key="cutout_progress_path_mode"
             android:title="@string/cutout_progress_path_mode_title"
             android:summary="@string/cutout_progress_path_mode_summary"
-            android:defaultValue="false" />
+            android:defaultValue="true" />
 
         <org.evolution.settings.preferences.SecureSettingSeekBarPreference
             android:key="cutout_progress_ring_scale_x_x1000"
@@ -320,7 +320,7 @@
             settings:min="500"
             settings:interval="50"
             settings:units=" (×0.001)"
-            android:defaultValue="1000" />
+            android:defaultValue="1050" />
 
         <org.evolution.settings.preferences.SecureSettingSeekBarPreference
             android:key="cutout_progress_ring_scale_y_x1000"
@@ -329,7 +329,7 @@
             settings:min="500"
             settings:interval="50"
             settings:units=" (×0.001)"
-            android:defaultValue="1000" />
+            android:defaultValue="600" />
 
         <org.evolution.settings.preferences.SecureSettingSeekBarPreference
             android:key="cutout_progress_ring_offset_x_dp10"
@@ -347,7 +347,7 @@
             settings:min="-200"
             settings:interval="5"
             settings:units=" (×0.1 dp)"
-            android:defaultValue="0" />
+            android:defaultValue="15" />
 
     </PreferenceCategory>
 
