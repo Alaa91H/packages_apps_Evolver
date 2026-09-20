@@ -33,7 +33,12 @@ import android.os.SystemClock;
 import android.telecom.TelecomManager;
 import android.telephony.TelephonyCallback;
 import android.telephony.TelephonyManager;
+import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.Chronometer;
+import android.widget.FrameLayout;
+import android.widget.RemoteViews;
 
 import com.android.systemui.CoreStartable;
 import com.android.systemui.dagger.SysUISingleton;
@@ -45,6 +50,7 @@ import com.android.systemui.statusbar.notification.collection.NotifPipeline;
 import com.android.systemui.statusbar.notification.collection.NotificationEntry;
 import com.android.systemui.statusbar.notification.collection.notifcollection.NotifCollectionListener;
 
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Locale;
 
@@ -77,6 +83,17 @@ public class CutoutProgressController implements CoreStartable {
     private String mTimerKey;
     private long mTimerEndElapsedMs = 0L;
     private long mTimerTotalMs = 0L;
+    private boolean mTimerRunning = false;
+
+    private static final class CountdownInfo {
+        final long endElapsedMs;
+        final boolean running;
+
+        CountdownInfo(long endElapsedMs, boolean running) {
+            this.endElapsedMs = endElapsedMs;
+            this.running = running;
+        }
+    }
 
     private final ConfigurationController.ConfigurationListener mConfigurationListener =
             new ConfigurationController.ConfigurationListener() {
@@ -393,46 +410,113 @@ public class CutoutProgressController implements CoreStartable {
     private void updateTimerFromNotification(NotificationEntry entry) {
         if (!mSettings.isTimerEnabled() || entry == null || entry.getSbn() == null) return;
         Notification notification = entry.getSbn().getNotification();
-        if (notification == null || notification.extras == null) return;
+        if (notification == null || !isLikelyClockNotification(entry, notification)) return;
 
-        boolean showChronometer = notification.extras.getBoolean(
-                Notification.EXTRA_SHOW_CHRONOMETER, false);
-        boolean countDown = notification.extras.getBoolean(
-                Notification.EXTRA_CHRONOMETER_COUNT_DOWN, false);
-        if (!showChronometer || !countDown) return;
-
-        String pkg = entry.getSbn().getPackageName();
-        String normalizedPkg = pkg == null ? "" : pkg.toLowerCase(Locale.ROOT);
-        boolean likelyClock = Notification.CATEGORY_ALARM.equals(notification.category)
-                || normalizedPkg.contains("clock")
-                || normalizedPkg.contains("deskclock")
-                || normalizedPkg.contains("timer");
-        if (!likelyClock) return;
-
-        long nowWall = System.currentTimeMillis();
-        long remaining = notification.when - nowWall;
-        if (remaining <= 0L) return;
+        CountdownInfo countdown = extractCountdownInfo(notification);
+        if (countdown == null) return;
 
         long nowElapsed = SystemClock.elapsedRealtime();
-        long endElapsed = nowElapsed + remaining;
+        long remaining = countdown.endElapsedMs - nowElapsed;
+        if (remaining <= 0L) return;
+
         String key = entry.getSbn().getKey();
 
         // If several timers are active, visualize the one that expires first.
         if (mTimerKey != null && !mTimerKey.equals(key)
-                && mTimerEndElapsedMs > nowElapsed && mTimerEndElapsedMs <= endElapsed) {
+                && mTimerEndElapsedMs > nowElapsed && mTimerEndElapsedMs <= countdown.endElapsedMs) {
             return;
         }
 
         boolean newTimer = mTimerKey == null || !mTimerKey.equals(key);
-        boolean endChanged = !newTimer && Math.abs(endElapsed - mTimerEndElapsedMs) > 1000L;
+        boolean endChanged = !newTimer
+                && Math.abs(countdown.endElapsedMs - mTimerEndElapsedMs) > 1000L;
         mTimerKey = key;
-        mTimerEndElapsedMs = endElapsed;
+        mTimerEndElapsedMs = countdown.endElapsedMs;
+        mTimerRunning = countdown.running;
         if (newTimer || endChanged || mTimerTotalMs <= 0L) {
             mTimerTotalMs = Math.max(1000L, remaining);
         }
 
         removeTimerTick();
         updateTimerTick();
+    }
+
+    private boolean isLikelyClockNotification(NotificationEntry entry,
+                                              Notification notification) {
+        String pkg = entry.getSbn().getPackageName();
+        String normalizedPkg = pkg == null ? "" : pkg.toLowerCase(Locale.ROOT);
+        return Notification.CATEGORY_ALARM.equals(notification.category)
+                || normalizedPkg.contains("clock")
+                || normalizedPkg.contains("deskclock")
+                || normalizedPkg.contains("timer");
+    }
+
+    private CountdownInfo extractCountdownInfo(Notification notification) {
+        // Standard Notification.Builder countdown chronometer.
+        if (notification.extras != null
+                && notification.extras.getBoolean(Notification.EXTRA_SHOW_CHRONOMETER, false)
+                && notification.extras.getBoolean(
+                        Notification.EXTRA_CHRONOMETER_COUNT_DOWN, false)) {
+            long remainingWallMs = notification.when - System.currentTimeMillis();
+            if (remainingWallMs > 0L) {
+                return new CountdownInfo(
+                        SystemClock.elapsedRealtime() + remainingWallMs, true);
+            }
+        }
+
+        // DeskClock and several OEM clock apps use a custom RemoteViews Chronometer instead of
+        // Notification.when. Inflate only clock/alarm notifications and read the actual countdown
+        // base so the ring follows the same elapsed-realtime source as the Clock UI.
+        CountdownInfo info = extractCountdownInfo(notification.contentView);
+        if (info == null) info = extractCountdownInfo(notification.bigContentView);
+        if (info == null) info = extractCountdownInfo(notification.headsUpContentView);
+        return info;
+    }
+
+    private CountdownInfo extractCountdownInfo(RemoteViews remoteViews) {
+        if (remoteViews == null) return null;
+        try {
+            FrameLayout parent = new FrameLayout(mContext);
+            View root = remoteViews.apply(mContext, parent);
+            return findCountdownChronometer(root);
+        } catch (RuntimeException ignored) {
+            return null;
+        }
+    }
+
+    private CountdownInfo findCountdownChronometer(View view) {
+        if (view instanceof Chronometer) {
+            Chronometer chronometer = (Chronometer) view;
+            if (chronometer.isCountDown()) {
+                long base = chronometer.getBase();
+                boolean started = readChronometerStarted(chronometer);
+                chronometer.stop();
+                if (base > SystemClock.elapsedRealtime()) {
+                    return new CountdownInfo(base, started);
+                }
+            }
+        }
+
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int child = 0; child < group.getChildCount(); child++) {
+                CountdownInfo info = findCountdownChronometer(group.getChildAt(child));
+                if (info != null) return info;
+            }
+        }
+        return null;
+    }
+
+    private boolean readChronometerStarted(Chronometer chronometer) {
+        try {
+            Field field = Chronometer.class.getDeclaredField("mStarted");
+            field.setAccessible(true);
+            return field.getBoolean(chronometer);
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+            // If an OEM changes Chronometer internals, prefer showing a live countdown over
+            // silently dropping timer support. A subsequent notification update can correct it.
+            return true;
+        }
     }
 
     private void seedTimerFromPipeline() {
@@ -458,7 +542,9 @@ public class CutoutProgressController implements CoreStartable {
 
         float fraction = Math.max(0f, Math.min(1f, remaining / (float) mTimerTotalMs));
         mRingView.setTimerState(true, fraction);
-        mMainHandler.postDelayed(mTimerTick, 250L);
+        if (mTimerRunning) {
+            mMainHandler.postDelayed(mTimerTick, 250L);
+        }
     }
 
     private void removeTimerTick() {
@@ -470,6 +556,7 @@ public class CutoutProgressController implements CoreStartable {
         mTimerKey = null;
         mTimerEndElapsedMs = 0L;
         mTimerTotalMs = 0L;
+        mTimerRunning = false;
         if (mRingView != null) mRingView.setTimerState(false, 0f);
     }
 
