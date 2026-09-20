@@ -853,8 +853,8 @@
     <string name="cutout_progress_presentation_primary">Primary ring</string>
     <string name="cutout_progress_presentation_independent">Independent outer ring</string>
     <string name="cutout_progress_presentation_disabled">Disabled</string>
-    <string name="cutout_progress_primary_priority_title">Primary ring priority</string>
-    <string name="cutout_progress_primary_priority_summary">When download and music both request the primary ring, choose which one stays visible</string>
+    <string name="cutout_progress_primary_priority_title">Source priority</string>
+    <string name="cutout_progress_primary_priority_summary">Choose which source wins the primary ring and which independent ring stays closer to the camera</string>
     <string name="cutout_progress_primary_priority_download">Downloads first</string>
     <string name="cutout_progress_primary_priority_music">Music first</string>
     <string name="cutout_progress_multi_ring_spacing_title">Independent ring spacing</string>
