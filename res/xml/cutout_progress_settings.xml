@@ -120,6 +120,87 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        android:key="cutout_progress_cat_timer"
+        android:title="@string/cutout_progress_cat_timer"
+        android:dependency="cutout_progress_enabled">
+
+        <org.evolution.settings.preferences.SecureSettingSwitchPreference
+            android:key="cutout_progress_timer_enabled"
+            android:title="@string/cutout_progress_timer_title"
+            android:summary="@string/cutout_progress_timer_summary"
+            android:defaultValue="false" />
+
+        <org.evolution.settings.preferences.SecureSettingListPreference
+            android:key="cutout_progress_timer_presentation"
+            android:title="@string/cutout_progress_timer_presentation_title"
+            android:summary="%s"
+            android:entries="@array/cutout_progress_presentation_entries"
+            android:entryValues="@array/cutout_progress_presentation_values"
+            android:defaultValue="0"
+            android:dependency="cutout_progress_timer_enabled" />
+
+        <org.evolution.settings.preferences.SecureSettingListPreference
+            android:key="cutout_progress_timer_color_mode"
+            android:title="@string/cutout_progress_timer_color_mode_title"
+            android:summary="%s"
+            android:entries="@array/cutout_progress_timer_color_mode_entries"
+            android:entryValues="@array/cutout_progress_timer_color_mode_values"
+            android:defaultValue="0"
+            android:dependency="cutout_progress_timer_enabled" />
+
+        <Preference
+            android:key="cutout_progress_timer_custom_color"
+            android:title="@string/cutout_progress_timer_custom_color_title"
+            android:summary="#FF8A00"
+            android:persistent="false"
+            android:dependency="cutout_progress_timer_enabled" />
+
+        <org.evolution.settings.preferences.SecureSettingSeekBarPreference
+            android:key="cutout_progress_timer_opacity"
+            android:title="@string/cutout_progress_timer_opacity_title"
+            android:max="100"
+            settings:min="0"
+            settings:interval="1"
+            settings:units="%"
+            android:defaultValue="95"
+            android:dependency="cutout_progress_timer_enabled" />
+
+        <org.evolution.settings.preferences.SecureSettingSeekBarPreference
+            android:key="cutout_progress_timer_stroke_dp10"
+            android:title="@string/cutout_progress_timer_stroke_title"
+            android:max="80"
+            settings:min="5"
+            settings:interval="5"
+            settings:units=" (×0.1 dp)"
+            android:defaultValue="20"
+            android:dependency="cutout_progress_timer_enabled" />
+
+        <org.evolution.settings.preferences.SecureSettingSwitchPreference
+            android:key="cutout_progress_timer_clockwise"
+            android:title="@string/cutout_progress_timer_clockwise_title"
+            android:defaultValue="true"
+            android:dependency="cutout_progress_timer_enabled" />
+
+        <org.evolution.settings.preferences.SecureSettingSwitchPreference
+            android:key="cutout_progress_timer_flame_enabled"
+            android:title="@string/cutout_progress_timer_flame_title"
+            android:summary="@string/cutout_progress_timer_flame_summary"
+            android:defaultValue="true"
+            android:dependency="cutout_progress_timer_enabled" />
+
+        <org.evolution.settings.preferences.SecureSettingSeekBarPreference
+            android:key="cutout_progress_timer_flame_size_dp10"
+            android:title="@string/cutout_progress_timer_flame_size_title"
+            android:max="100"
+            settings:min="10"
+            settings:interval="5"
+            settings:units=" (×0.1 dp)"
+            android:defaultValue="35"
+            android:dependency="cutout_progress_timer_flame_enabled" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:key="cutout_progress_cat_battery"
         android:title="@string/cutout_progress_cat_battery"
         android:dependency="cutout_progress_enabled">
@@ -249,6 +330,109 @@
             settings:units="%"
             android:defaultValue="100"
             android:dependency="cutout_progress_music_wave_enabled" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="cutout_progress_cat_aurora"
+        android:title="@string/cutout_progress_cat_aurora"
+        android:dependency="cutout_progress_enabled">
+
+        <org.evolution.settings.preferences.SecureSettingSwitchPreference
+            android:key="cutout_progress_aurora_enabled"
+            android:title="@string/cutout_progress_aurora_title"
+            android:summary="@string/cutout_progress_aurora_summary"
+            android:defaultValue="false" />
+
+        <org.evolution.settings.preferences.SecureSettingSwitchPreference
+            android:key="cutout_progress_aurora_calls"
+            android:title="@string/cutout_progress_aurora_calls_title"
+            android:defaultValue="true"
+            android:dependency="cutout_progress_aurora_enabled" />
+
+        <org.evolution.settings.preferences.SecureSettingSwitchPreference
+            android:key="cutout_progress_aurora_music"
+            android:title="@string/cutout_progress_aurora_music_title"
+            android:summary="@string/cutout_progress_aurora_music_summary"
+            android:defaultValue="true"
+            android:dependency="cutout_progress_aurora_enabled" />
+
+        <org.evolution.settings.preferences.SecureSettingSwitchPreference
+            android:key="cutout_progress_aurora_recording"
+            android:title="@string/cutout_progress_aurora_recording_title"
+            android:defaultValue="true"
+            android:dependency="cutout_progress_aurora_enabled" />
+
+        <org.evolution.settings.preferences.SecureSettingSwitchPreference
+            android:key="cutout_progress_aurora_notifications"
+            android:title="@string/cutout_progress_aurora_notifications_title"
+            android:defaultValue="true"
+            android:dependency="cutout_progress_aurora_enabled" />
+
+        <org.evolution.settings.preferences.SecureSettingListPreference
+            android:key="cutout_progress_aurora_color_mode"
+            android:title="@string/cutout_progress_aurora_color_mode_title"
+            android:summary="%s"
+            android:entries="@array/cutout_progress_aurora_color_mode_entries"
+            android:entryValues="@array/cutout_progress_aurora_color_mode_values"
+            android:defaultValue="0"
+            android:dependency="cutout_progress_aurora_enabled" />
+
+        <Preference
+            android:key="cutout_progress_aurora_custom_color"
+            android:title="@string/cutout_progress_aurora_custom_color_title"
+            android:summary="#7C4DFF"
+            android:persistent="false"
+            android:dependency="cutout_progress_aurora_enabled" />
+
+        <org.evolution.settings.preferences.SecureSettingListPreference
+            android:key="cutout_progress_aurora_notification_color_mode"
+            android:title="@string/cutout_progress_aurora_notification_color_mode_title"
+            android:summary="%s"
+            android:entries="@array/cutout_progress_aurora_notification_color_mode_entries"
+            android:entryValues="@array/cutout_progress_aurora_notification_color_mode_values"
+            android:defaultValue="0"
+            android:dependency="cutout_progress_aurora_notifications" />
+
+        <org.evolution.settings.preferences.SecureSettingSeekBarPreference
+            android:key="cutout_progress_aurora_spread_dp10"
+            android:title="@string/cutout_progress_aurora_spread_title"
+            android:max="200"
+            settings:min="20"
+            settings:interval="5"
+            settings:units=" (×0.1 dp)"
+            android:defaultValue="80"
+            android:dependency="cutout_progress_aurora_enabled" />
+
+        <org.evolution.settings.preferences.SecureSettingSeekBarPreference
+            android:key="cutout_progress_aurora_opacity"
+            android:title="@string/cutout_progress_aurora_opacity_title"
+            android:max="100"
+            settings:min="10"
+            settings:interval="5"
+            settings:units="%"
+            android:defaultValue="85"
+            android:dependency="cutout_progress_aurora_enabled" />
+
+        <org.evolution.settings.preferences.SecureSettingSeekBarPreference
+            android:key="cutout_progress_aurora_speed"
+            android:title="@string/cutout_progress_aurora_speed_title"
+            android:max="250"
+            settings:min="25"
+            settings:interval="25"
+            settings:units="%"
+            android:defaultValue="100"
+            android:dependency="cutout_progress_aurora_enabled" />
+
+        <org.evolution.settings.preferences.SecureSettingSeekBarPreference
+            android:key="cutout_progress_aurora_notification_duration_ms"
+            android:title="@string/cutout_progress_aurora_notification_duration_title"
+            android:max="8000"
+            settings:min="500"
+            settings:interval="250"
+            settings:units="ms"
+            android:defaultValue="2500"
+            android:dependency="cutout_progress_aurora_notifications" />
 
     </PreferenceCategory>
 
