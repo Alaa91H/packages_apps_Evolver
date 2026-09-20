@@ -268,7 +268,9 @@ public class CutoutProgressController implements CoreStartable {
 
         final boolean wantDownloadTracking = mSettings.getDownloadPresentation()
                 != CutoutProgressSettings.PRESENTATION_DISABLED;
-        final boolean wantTimerTracking = mSettings.isTimerEnabled();
+        final boolean wantTimerTracking = mSettings.isTimerEnabled()
+                && mSettings.getTimerPresentation()
+                != CutoutProgressSettings.PRESENTATION_DISABLED;
         final boolean wantNotificationAurora = mSettings.isAuroraEnabled()
                 && mSettings.isAuroraNotificationsEnabled();
         final boolean wantCallNotificationTracking = mSettings.isAuroraEnabled()
