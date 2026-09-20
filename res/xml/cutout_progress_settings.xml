@@ -115,7 +115,7 @@
             settings:min="10"
             settings:interval="5"
             settings:units=" (×0.1 dp)"
-            android:defaultValue="30" />
+            android:defaultValue="50" />
 
     </PreferenceCategory>
 
