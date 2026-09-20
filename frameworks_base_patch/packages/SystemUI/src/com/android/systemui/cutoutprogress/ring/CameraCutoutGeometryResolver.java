@@ -14,6 +14,7 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Matrix;
 import android.graphics.Path;
+import android.graphics.PathMeasure;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.util.PathParser;
@@ -51,6 +52,8 @@ final class CameraCutoutGeometryResolver {
     private static final float SAFE_AREA_MAX_ASPECT = 2.50f;
     private static final float PILL_ASPECT_THRESHOLD = 1.20f;
     private static final float EDGE_TOLERANCE_PX = 2f;
+    private static final float SAFE_AREA_MIN_FILL_RATIO = 0.92f;
+    private static final float SAFE_AREA_MAX_SCREEN_FRACTION = 0.15f;
 
     static final class ResolvedGeometry {
         final Path path;
@@ -114,7 +117,7 @@ final class CameraCutoutGeometryResolver {
         if (isUsable(protection)) {
             RectF bounds = boundsOf(protection);
             boolean normalized = false;
-            if (looksLikeEdgeSafeArea(bounds, logicalWidth, logicalHeight)) {
+            if (looksLikeEdgeSafeArea(protection, bounds, logicalWidth, logicalHeight)) {
                 float diameter = Math.min(bounds.width(), bounds.height());
                 if (diameter > 0f) {
                     RectF compact = new RectF(
@@ -150,7 +153,7 @@ final class CameraCutoutGeometryResolver {
         Path path = candidate.path;
         boolean normalized = false;
 
-        if (looksLikeEdgeSafeArea(bounds, logicalWidth, logicalHeight)) {
+        if (looksLikeEdgeSafeArea(path, bounds, logicalWidth, logicalHeight)) {
             float diameter = Math.min(bounds.width(), bounds.height());
             if (diameter > 0f) {
                 RectF compact = new RectF(
@@ -488,21 +491,62 @@ final class CameraCutoutGeometryResolver {
         return mContext.getResources().getDisplayMetrics().heightPixels;
     }
 
-    private static boolean looksLikeEdgeSafeArea(RectF b, int width, int height) {
-        if (b == null || b.isEmpty()) return false;
+    private static boolean looksLikeEdgeSafeArea(
+            Path path, RectF b, int width, int height) {
+        if (path == null || b == null || b.isEmpty()) return false;
         float min = Math.min(b.width(), b.height());
         float max = Math.max(b.width(), b.height());
         if (min <= 0f) return false;
         float aspect = max / min;
-        // Moderately elongated edge masks are common around punch-hole cameras. Extremely wide
+        // Moderately elongated masks are common around punch-hole cameras. Extremely wide
         // regions are real notches/cutouts and must not be collapsed into a fake circle.
         if (aspect < SAFE_AREA_MIN_ASPECT || aspect > SAFE_AREA_MAX_ASPECT) return false;
+
+        int shortDisplay = Math.min(Math.max(0, width), Math.max(0, height));
+        if (shortDisplay > 0 && max > shortDisplay * SAFE_AREA_MAX_SCREEN_FRACTION) return false;
 
         boolean touchesLeft = b.left <= EDGE_TOLERANCE_PX;
         boolean touchesTop = b.top <= EDGE_TOLERANCE_PX;
         boolean touchesRight = width > 0 && b.right >= width - EDGE_TOLERANCE_PX;
         boolean touchesBottom = height > 0 && b.bottom >= height - EDGE_TOLERANCE_PX;
-        return touchesLeft || touchesTop || touchesRight || touchesBottom;
+        if (!(touchesLeft || touchesTop || touchesRight || touchesBottom)) return false;
+
+        // A safe-area mask is normally almost the full bounding rectangle. A real circle/ellipse
+        // fills ~78.5% of its bounds and a pill also leaves curved-corner area unused.
+        float fillRatio = approximatePathFillRatio(path, b);
+        return fillRatio >= SAFE_AREA_MIN_FILL_RATIO;
+    }
+
+    private static float approximatePathFillRatio(Path path, RectF bounds) {
+        float boxArea = bounds.width() * bounds.height();
+        if (boxArea <= 0f) return 0f;
+
+        PathMeasure measure = new PathMeasure(path, true);
+        float length = measure.getLength();
+        if (length <= 0f) return 0f;
+        // Multiple contours are ambiguous (for example dual holes). Do not normalize them into a
+        // single synthetic camera circle.
+        if (measure.nextContour()) return 0f;
+        measure.setPath(path, true);
+
+        final int samples = 64;
+        float[] first = new float[2];
+        float[] prev = new float[2];
+        float[] cur = new float[2];
+        if (!measure.getPosTan(0f, first, null)) return 0f;
+        prev[0] = first[0];
+        prev[1] = first[1];
+        double twiceArea = 0.0;
+        for (int i = 1; i < samples; i++) {
+            float d = length * i / samples;
+            if (!measure.getPosTan(d, cur, null)) continue;
+            twiceArea += (double) prev[0] * cur[1] - (double) cur[0] * prev[1];
+            prev[0] = cur[0];
+            prev[1] = cur[1];
+        }
+        twiceArea += (double) prev[0] * first[1] - (double) first[0] * prev[1];
+        float area = (float) (Math.abs(twiceArea) * 0.5);
+        return Math.max(0f, Math.min(1f, area / boxArea));
     }
 
     private static void addNonEmpty(List<Rect> out, Rect rect) {
