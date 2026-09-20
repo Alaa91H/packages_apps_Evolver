@@ -465,7 +465,10 @@ public class CutoutProgressController implements CoreStartable {
 
             @Override
             public void onEntryRemoved(NotificationEntry entry, int reason) {
-                if (!mSettings.isEnabled() || !isEntryForCurrentUser(entry)) return;
+                if (!mSettings.isEnabled()) return;
+                // Removal must also clear entries that belonged to a profile which was just
+                // stopped/removed. By this point UserTracker may no longer report that profile,
+                // but the previously tracked StatusBarNotification key is still authoritative.
                 if (mDownloadTrackingEnabled) {
                     mTracker.onNotificationRemoved(entry, reason);
                 }
