@@ -32,6 +32,7 @@ import android.graphics.SweepGradient;
 import android.graphics.Typeface;
 import android.text.TextPaint;
 import android.util.TypedValue;
+import android.view.Display;
 import android.view.DisplayCutout;
 import android.view.Surface;
 import android.view.View;
@@ -171,6 +172,7 @@ public final class CutoutRingView extends View {
     private int sCfgMusicOpacity = 85;
     private float sCfgMusicStrokeDp = 2f;
     private boolean sCfgMusicClockwise = true;
+    private boolean sCfgMusicShowOnAod = false;
     private int sCfgMusicColor = 0xFF9C27B0;
     private int sCfgDownloadPresentation = CutoutProgressSettings.PRESENTATION_PRIMARY;
     private int sCfgMusicPresentation = CutoutProgressSettings.PRESENTATION_PRIMARY;
@@ -246,6 +248,7 @@ public final class CutoutRingView extends View {
         sCfgMusicWaveAmplitudeDp = s.getMusicWaveAmplitudeDp();
         sCfgMusicWaveDensity = s.getMusicWaveDensity();
         sCfgMusicWaveSpeed = s.getMusicWaveSpeed();
+        sCfgMusicShowOnAod = s.isMusicShowOnAod();
 
         boolean needPath = sCfgPathMode;
         if (needPath && !(mRenderer instanceof CapsuleRingRenderer)) {
@@ -692,6 +695,7 @@ public final class CutoutRingView extends View {
         }
 
         boolean musicActive = mMusicPlaying
+                && (sCfgMusicShowOnAod || !isDisplayDozing())
                 && sCfgMusicPresentation != CutoutProgressSettings.PRESENTATION_DISABLED;
 
         boolean downloadPrimary = preview || (downloadActive
@@ -741,6 +745,13 @@ public final class CutoutRingView extends View {
                 drawSource(canvas, SOURCE_MUSIC, effectivePct, lane * sCfgMultiRingSpacingDp);
             }
         }
+    }
+
+    private boolean isDisplayDozing() {
+        Display display = getDisplay();
+        if (display == null) return false;
+        int state = display.getState();
+        return state == Display.STATE_DOZE || state == Display.STATE_DOZE_SUSPEND;
     }
 
     private void drawSource(Canvas canvas, int source, int effectivePct, float laneOffsetDp) {
