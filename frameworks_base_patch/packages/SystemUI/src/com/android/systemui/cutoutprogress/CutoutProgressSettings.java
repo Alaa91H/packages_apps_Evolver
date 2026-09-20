@@ -258,6 +258,8 @@ public final class CutoutProgressSettings {
         mObserver = new ContentObserver(mHandler) {
             @Override
             public void onChange(boolean selfChange, Uri uri) {
+                String key = uri != null ? uri.getLastPathSegment() : null;
+                if (key != null && !key.startsWith("cutout_progress_")) return;
                 if (mCallback != null) mCallback.run();
             }
         };
