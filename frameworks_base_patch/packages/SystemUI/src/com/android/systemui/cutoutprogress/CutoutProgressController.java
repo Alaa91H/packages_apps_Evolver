@@ -96,6 +96,9 @@ public class CutoutProgressController implements CoreStartable {
     private long mTimerPausedRemainingMs = 0L;
     private boolean mTimerRunning = false;
 
+    private static final long TIMER_PAUSED_RESELECT_INTERACTIVE_MS = 5_000L;
+    private static final long TIMER_PAUSED_RESELECT_IDLE_MS = 30_000L;
+
     private static final class CountdownInfo {
         final long endElapsedMs;
         final boolean running;
@@ -166,6 +169,7 @@ public class CutoutProgressController implements CoreStartable {
     };
 
     private final Runnable mTimerTick = this::updateTimerTick;
+    private final Runnable mTimerReseed = this::seedTimerFromPipeline;
 
     private final BroadcastReceiver mBatteryReceiver = new BroadcastReceiver() {
         @Override
@@ -719,7 +723,7 @@ public class CutoutProgressController implements CoreStartable {
     }
 
     private void updateTimerTick() {
-        mMainHandler.removeCallbacks(mTimerTick);
+        removeTimerTick();
         if (!mSettings.isEnabled() || !mSettings.isTimerEnabled()
                 || mTimerKey == null || mTimerTotalMs <= 0L) {
             clearTimerState();
@@ -742,14 +746,24 @@ public class CutoutProgressController implements CoreStartable {
 
         float fraction = Math.max(0f, Math.min(1f, remaining / (float) mTimerTotalMs));
         mRingView.setTimerState(true, fraction);
+        boolean interactive = mPowerManager == null || mPowerManager.isInteractive();
         if (mTimerRunning) {
-            boolean interactive = mPowerManager == null || mPowerManager.isInteractive();
             mMainHandler.postDelayed(mTimerTick, interactive ? 250L : 1000L);
+        } else if (mTimerTrackingEnabled) {
+            // A paused timer has no local countdown tick, but another running timer can become
+            // the shortest remaining timer while this one stays paused. Periodically re-scan the
+            // small clock-notification set so multi-timer priority remains correct.
+            mMainHandler.postDelayed(
+                    mTimerReseed,
+                    interactive
+                            ? TIMER_PAUSED_RESELECT_INTERACTIVE_MS
+                            : TIMER_PAUSED_RESELECT_IDLE_MS);
         }
     }
 
     private void removeTimerTick() {
         mMainHandler.removeCallbacks(mTimerTick);
+        mMainHandler.removeCallbacks(mTimerReseed);
     }
 
     private void clearTimerState() {
