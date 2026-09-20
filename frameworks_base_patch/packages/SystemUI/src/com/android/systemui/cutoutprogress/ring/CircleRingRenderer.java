@@ -83,9 +83,9 @@ public final class CircleRingRenderer implements RingViewRenderer {
             if (i == highlight || i == highlight - 1) {
                 Paint tmp = new Paint(shinePaint);
                 tmp.setAlpha((int)(255 * alpha));
-                canvas.drawArc(mBounds, startAngle, arcDeg, false, tmp);
+                canvas.drawArc(mBounds, startAngle, safeArcDeg, false, tmp);
             } else {
-                canvas.drawArc(mBounds, startAngle, arcDeg, false, basePaint);
+                canvas.drawArc(mBounds, startAngle, safeArcDeg, false, basePaint);
             }
         }
     }
