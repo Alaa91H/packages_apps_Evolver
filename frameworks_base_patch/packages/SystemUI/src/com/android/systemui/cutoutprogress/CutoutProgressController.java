@@ -703,7 +703,13 @@ public class CutoutProgressController implements CoreStartable {
                 ? mTimerEndElapsedMs - SystemClock.elapsedRealtime()
                 : mTimerPausedRemainingMs;
         if (remaining <= 0L) {
+            // The currently selected timer may have completed while another timer notification
+            // is still active. Re-scan the pipeline instead of leaving the ring empty until the
+            // completed notification is eventually removed.
             clearTimerState();
+            if (mTimerTrackingEnabled) {
+                mMainHandler.post(this::seedTimerFromPipeline);
+            }
             return;
         }
 
