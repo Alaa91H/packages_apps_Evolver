@@ -83,7 +83,7 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
         private const val DEFAULT_DOWNLOAD_PRESENTATION = 0
         private const val DEFAULT_MUSIC_PRESENTATION = 0
         private const val DEFAULT_PRIMARY_PRIORITY = 0
-        private const val DEFAULT_MULTI_RING_SPACING = 30
+        private const val DEFAULT_MULTI_RING_SPACING = 50
         private const val DEFAULT_MUSIC_WAVE_ENABLED = 0
         private const val DEFAULT_MUSIC_WAVE_AMPLITUDE = 25
         private const val DEFAULT_MUSIC_WAVE_DENSITY = 48
