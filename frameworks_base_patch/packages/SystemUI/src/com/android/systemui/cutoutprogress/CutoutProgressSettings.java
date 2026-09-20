@@ -222,7 +222,7 @@ public final class CutoutProgressSettings {
     private static final int DEF_DOWNLOAD_PRESENTATION = PRESENTATION_PRIMARY;
     private static final int DEF_MUSIC_PRESENTATION = PRESENTATION_PRIMARY;
     private static final int DEF_PRIMARY_PRIORITY = PRIMARY_PRIORITY_DOWNLOAD;
-    private static final float DEF_MULTI_RING_SPACING_DP = 3.0f;
+    private static final float DEF_MULTI_RING_SPACING_DP = 5.0f;
     private static final boolean DEF_MUSIC_WAVE_ENABLED = false;
     private static final float DEF_MUSIC_WAVE_AMPLITUDE_DP = 2.5f;
     private static final int DEF_MUSIC_WAVE_DENSITY = 48;
