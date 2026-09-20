@@ -343,16 +343,23 @@ public final class MusicRingColorManager {
 
     private static Bitmap drawableToBitmap(Drawable d, int dim) {
         if (d == null || dim <= 0) return null;
-        Bitmap bmp = Bitmap.createBitmap(dim, dim, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bmp);
+        Bitmap bmp = null;
         Rect oldBounds = d.copyBounds();
         try {
+            bmp = Bitmap.createBitmap(dim, dim, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bmp);
             d.setBounds(0, 0, dim, dim);
             d.draw(canvas);
+            return bmp;
+        } catch (RuntimeException | OutOfMemoryError ignored) {
+            if (bmp != null && !bmp.isRecycled()) bmp.recycle();
+            return null;
         } finally {
-            d.setBounds(oldBounds);
+            try {
+                d.setBounds(oldBounds);
+            } catch (RuntimeException ignored) {
+            }
         }
-        return bmp;
     }
 
     private static int ensureVisible(int color, boolean darkBackground) {
