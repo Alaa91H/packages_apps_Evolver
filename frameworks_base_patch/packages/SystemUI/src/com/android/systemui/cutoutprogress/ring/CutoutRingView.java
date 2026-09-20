@@ -79,6 +79,7 @@ public final class CutoutRingView extends View {
     private boolean mAutoGeometryActive = false;
     private boolean mResolvedPillLike = false;
     private int mGeometryRotation = Surface.ROTATION_0;
+    private int mGeometrySource = CameraCutoutGeometryResolver.SOURCE_NONE;
 
     private final OverlayAnimationHelper mAnim;
     private RingViewRenderer mRenderer;
@@ -598,6 +599,7 @@ public final class CutoutRingView extends View {
         mHasCutout = false;
         mAutoGeometryActive = false;
         mResolvedPillLike = false;
+        mGeometrySource = CameraCutoutGeometryResolver.SOURCE_NONE;
 
         DisplayCutout cutout = insets.getDisplayCutout();
         if (cutout != null) {
@@ -612,12 +614,14 @@ public final class CutoutRingView extends View {
                     mAutoGeometryActive = true;
                     mResolvedPillLike = geometry.pillLike;
                     mGeometryRotation = geometry.rotation;
+                    mGeometrySource = geometry.source;
                 }
             }
 
             if (!mHasCutout) {
                 mHasCutout = extractPreferredCutout(cutout);
                 mResolvedPillLike = sCfgPathMode;
+                mGeometrySource = CameraCutoutGeometryResolver.SOURCE_DISPLAY_CUTOUT_PATH;
             }
         }
 
@@ -730,7 +734,33 @@ public final class CutoutRingView extends View {
 
     private void recalcScaledPath() {
         mCutoutPath.computeBounds(mPathBounds, true);
-        mScaleMatrix.setScale(sCfgRingGap, sCfgRingGap,
+        float scaleX = sCfgRingGap;
+        float scaleY = sCfgRingGap;
+
+        if (mAutoGeometryActive) {
+            if (mGeometrySource == CameraCutoutGeometryResolver.SOURCE_CAMERA_PROTECTION) {
+                // Device camera-protection paths already include the OEM/SystemUI safety margin.
+                scaleX = 1f;
+                scaleY = 1f;
+            } else {
+                // Raw DisplayCutout geometry describes the non-functional area itself. Expand by
+                // a small absolute margin instead of a percentage, so tiny and large holes get
+                // visually consistent spacing across densities and display resolutions.
+                float padPx = (Math.max(0.5f, sCfgStrokeDp * 0.5f) + 0.5f) * mDp;
+                if (mPathBounds.width() > 0f) {
+                    scaleX = (mPathBounds.width() + 2f * padPx) / mPathBounds.width();
+                } else {
+                    scaleX = 1f;
+                }
+                if (mPathBounds.height() > 0f) {
+                    scaleY = (mPathBounds.height() + 2f * padPx) / mPathBounds.height();
+                } else {
+                    scaleY = 1f;
+                }
+            }
+        }
+
+        mScaleMatrix.setScale(scaleX, scaleY,
                 mPathBounds.centerX(), mPathBounds.centerY());
         mScaledPath.reset();
         mCutoutPath.transform(mScaleMatrix, mScaledPath);
