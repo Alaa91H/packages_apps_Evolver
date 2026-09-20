@@ -248,16 +248,35 @@ public final class CutoutProgressSettings {
 
     private final ContentResolver mCr;
     private final Handler mHandler;
+    private int mUserId;
     private ContentObserver mObserver;
     private Runnable mCallback;
 
-    public CutoutProgressSettings(ContentResolver cr, Handler handler) {
+    public CutoutProgressSettings(ContentResolver cr, Handler handler, int userId) {
         mCr = cr;
         mHandler = handler;
+        mUserId = userId;
     }
 
     public void observe(Runnable onChange) {
         mCallback = onChange;
+        registerObserverForCurrentUser();
+    }
+
+    public void setUserId(int userId) {
+        if (mUserId == userId) return;
+        mUserId = userId;
+        if (mObserver != null) {
+            mCr.unregisterContentObserver(mObserver);
+            mObserver = null;
+            registerObserverForCurrentUser();
+        }
+    }
+
+    private void registerObserverForCurrentUser() {
+        if (mObserver != null) {
+            mCr.unregisterContentObserver(mObserver);
+        }
         mObserver = new ContentObserver(mHandler) {
             @Override
             public void onChange(boolean selfChange, Uri uri) {
@@ -267,7 +286,7 @@ public final class CutoutProgressSettings {
             }
         };
         mCr.registerContentObserver(
-                Settings.Secure.CONTENT_URI, true, mObserver);
+                Settings.Secure.CONTENT_URI, true, mObserver, mUserId);
     }
 
     public void stopObserving() {
@@ -275,6 +294,7 @@ public final class CutoutProgressSettings {
             mCr.unregisterContentObserver(mObserver);
             mObserver = null;
         }
+        mCallback = null;
     }
 
     public boolean isEnabled() {
@@ -600,11 +620,11 @@ public final class CutoutProgressSettings {
     }
 
     private int getInt(String key, int def) {
-        return Settings.Secure.getInt(mCr, key, def);
+        return Settings.Secure.getIntForUser(mCr, key, def, mUserId);
     }
 
     private void putInt(String key, int value) {
-        Settings.Secure.putInt(mCr, key, value);
+        Settings.Secure.putIntForUser(mCr, key, value, mUserId);
     }
 
     private static int clamp(int v, int lo, int hi) {
