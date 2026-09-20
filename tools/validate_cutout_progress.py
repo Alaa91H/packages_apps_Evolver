@@ -201,6 +201,20 @@ def validate_resources() -> None:
     if missing_sysui_keys:
         fail(f"Evolver preference keys missing from staged SystemUI settings: {missing_sysui_keys}")
 
+    stale_sysui_keys = sorted(sysui_keys - functional_keys)
+    if stale_sysui_keys:
+        fail(f"Staged SystemUI settings contain keys missing from Evolver XML: {stale_sysui_keys}")
+
+    dependencies = {
+        elem.attrib[ANDROID_DEPENDENCY]
+        for elem in xml_root.iter()
+        if ANDROID_DEPENDENCY in elem.attrib
+        and elem.attrib[ANDROID_DEPENDENCY].startswith("cutout_progress_")
+    }
+    missing_dependencies = sorted(dependencies - set(keys))
+    if missing_dependencies:
+        fail(f"Cutout Progress dependencies reference missing preference keys: {missing_dependencies}")
+
     permissions = {
         elem.attrib.get(ANDROID_NAME)
         for elem in ET.parse(SYSUI_MANIFEST).getroot()
@@ -226,11 +240,25 @@ def validate_calibrated_defaults() -> None:
 
     pairs = {
         "KEY_COMPLETION_PULSE": "DEFAULT_COMPLETION_PULSE",
+        "KEY_AUTO_GEOMETRY": "DEFAULT_AUTO_GEOMETRY",
         "KEY_PATH_MODE": "DEFAULT_PATH_MODE",
         "KEY_RING_SCALE_X": "DEFAULT_RING_SCALE_X",
         "KEY_RING_SCALE_Y": "DEFAULT_RING_SCALE_Y",
         "KEY_RING_OFFSET_X": "DEFAULT_RING_OFFSET_X",
         "KEY_RING_OFFSET_Y": "DEFAULT_RING_OFFSET_Y",
+        "KEY_RING_GAP": "DEFAULT_RING_GAP",
+        "KEY_DOWNLOAD_PRESENTATION": "DEFAULT_DOWNLOAD_PRESENTATION",
+        "KEY_MUSIC_PRESENTATION": "DEFAULT_MUSIC_PRESENTATION",
+        "KEY_PRIMARY_PRIORITY": "DEFAULT_PRIMARY_PRIORITY",
+        "KEY_MULTI_RING_SPACING": "DEFAULT_MULTI_RING_SPACING",
+        "KEY_MUSIC_WAVE_ENABLED": "DEFAULT_MUSIC_WAVE_ENABLED",
+        "KEY_MUSIC_WAVE_AMPLITUDE": "DEFAULT_MUSIC_WAVE_AMPLITUDE",
+        "KEY_MUSIC_WAVE_DENSITY": "DEFAULT_MUSIC_WAVE_DENSITY",
+        "KEY_MUSIC_WAVE_SPEED": "DEFAULT_MUSIC_WAVE_SPEED",
+        "KEY_TIMER_PRESENTATION": "DEFAULT_TIMER_PRESENTATION",
+        "KEY_TIMER_COLOR_MODE": "DEFAULT_TIMER_COLOR_MODE",
+        "KEY_AURORA_COLOR_MODE": "DEFAULT_AURORA_COLOR_MODE",
+        "KEY_AURORA_NOTIFICATION_COLOR_MODE": "DEFAULT_AURORA_NOTIFICATION_COLOR_MODE",
     }
 
     xml_defaults: dict[str, str] = {}
@@ -276,6 +304,15 @@ def validate_sources() -> None:
     parent = run(["git", "rev-parse", "HEAD^"], cwd=ROOT, check=False)
     if parent.returncode == 0:
         run(["git", "diff", "--check", "HEAD^", "HEAD"], cwd=ROOT)
+
+    # Check all fork-local changes against the current Evolution-X cnb tree, not only HEAD^.
+    # This catches whitespace defects hidden by later merge-only commits.
+    run([
+        "git", "fetch", "--no-tags", "--depth=1",
+        "https://github.com/Evolution-X/packages_apps_Evolver.git",
+        "cnb:refs/remotes/evolution-upstream/cnb",
+    ], cwd=ROOT)
+    run(["git", "diff", "--check", "refs/remotes/evolution-upstream/cnb", "HEAD"], cwd=ROOT)
 
 
 def git_blob_sha(data: bytes) -> str:

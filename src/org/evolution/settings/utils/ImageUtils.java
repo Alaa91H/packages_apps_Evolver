@@ -38,7 +38,7 @@ public class ImageUtils {
     private static final int BUFFER_SIZE = 8192;
     private static final long MAX_ANIMATED_IMAGE_BYTES = 50L * 1024L * 1024L;
     private static final int MAX_STATIC_DIMENSION = 4096;
-    
+
     public static String saveImageToInternalStorage(
             Context context, Uri imgUri, String featurePath, String filePrefix) {
         if (context == null || imgUri == null || featurePath == null || filePrefix == null) {

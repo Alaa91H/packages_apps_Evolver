@@ -42,14 +42,14 @@ public class MediaUtils {
     private static final String KEY_WALLPAPER_PATH = "current_wallpaper_path";
     private static final String STORAGE_ROOT = "/sdcard/Evolution-X";
     private static final String LEGACY_STORAGE_ROOT = "/sdcard/Lunaris-OS";
-    
+
     private static final List<String> SUPPORTED_VIDEO_FORMATS = Arrays.asList("mp4");
     private static final List<String> SUPPORTED_IMAGE_FORMATS = Arrays.asList("gif", "webp");
-    
+
     public static String saveMediaToWallpaperStorage(Context context, Uri mediaUri) {
         return saveMediaToExternalStorage(context, mediaUri, "Wallpapers", "wallpaper");
     }
-    
+
     public static String saveMediaToExternalStorage(
             Context context, Uri mediaUri, String featurePath, String filePrefix) {
         if (context == null || mediaUri == null || featurePath == null || filePrefix == null) {
@@ -226,12 +226,12 @@ public class MediaUtils {
         }
     }
 
-    private static long copyStreamWithLimit(InputStream input, FileOutputStream output, 
+    private static long copyStreamWithLimit(InputStream input, FileOutputStream output,
                                            long maxSize) throws IOException {
         byte[] buffer = new byte[BUFFER_SIZE];
         int bytesRead;
         long totalBytes = 0;
-        
+
         while ((bytesRead = input.read(buffer)) != -1) {
             totalBytes += bytesRead;
             if (totalBytes > maxSize) {
@@ -283,7 +283,7 @@ public class MediaUtils {
 
     private static String getExtensionFromMimeType(String mimeType) {
         if (mimeType == null) return null;
-        
+
         String lower = mimeType.toLowerCase(Locale.ROOT);
         if (lower.contains("mp4") || lower.equals("video/mp4")) {
             return ".mp4";
@@ -292,18 +292,18 @@ public class MediaUtils {
         } else if (lower.contains("webp") || lower.equals("image/webp")) {
             return ".webp";
         }
-        
+
         String extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
         if (extension != null) {
             return "." + extension;
         }
-        
+
         return null;
     }
 
     private static String getExtensionFromPath(String path) {
         if (path == null) return null;
-        
+
         String lowerPath = path.toLowerCase(Locale.ROOT);
         if (lowerPath.endsWith(".mp4")) {
             return ".mp4";
@@ -312,7 +312,7 @@ public class MediaUtils {
         } else if (lowerPath.endsWith(".webp")) {
             return ".webp";
         }
-        
+
         return null;
     }
 
