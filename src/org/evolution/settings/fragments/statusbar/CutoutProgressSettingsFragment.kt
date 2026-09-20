@@ -62,6 +62,7 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
         private const val KEY_FILENAME_TRUNCATE = "cutout_progress_filename_truncate"
 
         private const val KEY_COMPLETION_PULSE = "cutout_progress_completion_pulse"
+        private const val KEY_AUTO_GEOMETRY = "cutout_progress_auto_geometry"
         private const val KEY_PATH_MODE = "cutout_progress_path_mode"
         private const val KEY_RING_SCALE_X = "cutout_progress_ring_scale_x_x1000"
         private const val KEY_RING_SCALE_Y = "cutout_progress_ring_scale_y_x1000"
@@ -77,6 +78,7 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
         private const val KEY_MUSIC_WAVE_SPEED = "cutout_progress_music_wave_speed"
 
         private const val DEFAULT_COMPLETION_PULSE = 1
+        private const val DEFAULT_AUTO_GEOMETRY = 1
         private const val DEFAULT_PATH_MODE = 1
         private const val DEFAULT_RING_SCALE_X = 1050
         private const val DEFAULT_RING_SCALE_Y = 600
@@ -101,6 +103,7 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
         fun ensureCalibratedDefaults(resolver: ContentResolver) {
             val defaults = mapOf(
                 KEY_COMPLETION_PULSE to DEFAULT_COMPLETION_PULSE,
+                KEY_AUTO_GEOMETRY to DEFAULT_AUTO_GEOMETRY,
                 KEY_PATH_MODE to DEFAULT_PATH_MODE,
                 KEY_RING_SCALE_X to DEFAULT_RING_SCALE_X,
                 KEY_RING_SCALE_Y to DEFAULT_RING_SCALE_Y,
@@ -134,6 +137,12 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
     private lateinit var musicPresentationPref: ListPreference
     private lateinit var primaryPriorityPref: ListPreference
     private lateinit var multiRingSpacingPref: Preference
+    private lateinit var autoGeometryPref: Preference
+    private lateinit var pathModePref: Preference
+    private lateinit var scaleXPref: Preference
+    private lateinit var scaleYPref: Preference
+    private lateinit var offsetXPref: Preference
+    private lateinit var offsetYPref: Preference
 
     private lateinit var ringColorPref: Preference
     private lateinit var errorColorPref: Preference
@@ -157,6 +166,12 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
         musicPresentationPref = findPreference(KEY_MUSIC_PRESENTATION)!!
         primaryPriorityPref = findPreference(KEY_PRIMARY_PRIORITY)!!
         multiRingSpacingPref = findPreference(KEY_MULTI_RING_SPACING)!!
+        autoGeometryPref = findPreference(KEY_AUTO_GEOMETRY)!!
+        pathModePref = findPreference(KEY_PATH_MODE)!!
+        scaleXPref = findPreference(KEY_RING_SCALE_X)!!
+        scaleYPref = findPreference(KEY_RING_SCALE_Y)!!
+        offsetXPref = findPreference(KEY_RING_OFFSET_X)!!
+        offsetYPref = findPreference(KEY_RING_OFFSET_Y)!!
 
         ringColorPref = findPreference(KEY_RING_COLOR)!!
         errorColorPref = findPreference(KEY_ERROR_COLOR)!!
@@ -184,11 +199,18 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
             readSecureInt(KEY_DOWNLOAD_PRESENTATION, DEFAULT_DOWNLOAD_PRESENTATION),
             readSecureInt(KEY_MUSIC_PRESENTATION, DEFAULT_MUSIC_PRESENTATION)
         )
+        updateManualGeometryVisibility(
+            readSecureInt(KEY_AUTO_GEOMETRY, DEFAULT_AUTO_GEOMETRY) != 0
+        )
 
         ringColorModePref.onPreferenceChangeListener = this
         musicColorModePref.onPreferenceChangeListener = this
         downloadPresentationPref.onPreferenceChangeListener = this
         musicPresentationPref.onPreferenceChangeListener = this
+        autoGeometryPref.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { _, value ->
+            updateManualGeometryVisibility(value as Boolean)
+            true
+        }
 
         ringColorPref.setOnPreferenceClickListener {
             showColorPicker(
@@ -267,6 +289,15 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
             KEY_RING_COLOR_MODE -> ringColorPref.isVisible = (mode == COLOR_MODE_CUSTOM)
             KEY_MUSIC_COLOR_MODE -> musicColorPref.isVisible = (mode == MUSIC_COLOR_MODE_CUSTOM)
         }
+    }
+
+    private fun updateManualGeometryVisibility(autoEnabled: Boolean) {
+        val showManual = !autoEnabled
+        pathModePref.isVisible = showManual
+        scaleXPref.isVisible = showManual
+        scaleYPref.isVisible = showManual
+        offsetXPref.isVisible = showManual
+        offsetYPref.isVisible = showManual
     }
 
     private fun updateLayerPreferenceVisibility(downloadMode: Int, musicMode: Int) {
