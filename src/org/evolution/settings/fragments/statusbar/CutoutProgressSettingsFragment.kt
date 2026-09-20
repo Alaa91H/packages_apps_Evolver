@@ -58,6 +58,20 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
         private const val KEY_FILENAME_POSITION = "cutout_progress_filename_position"
         private const val KEY_FILENAME_TRUNCATE = "cutout_progress_filename_truncate"
 
+        private const val KEY_COMPLETION_PULSE = "cutout_progress_completion_pulse"
+        private const val KEY_PATH_MODE = "cutout_progress_path_mode"
+        private const val KEY_RING_SCALE_X = "cutout_progress_ring_scale_x_x1000"
+        private const val KEY_RING_SCALE_Y = "cutout_progress_ring_scale_y_x1000"
+        private const val KEY_RING_OFFSET_X = "cutout_progress_ring_offset_x_dp10"
+        private const val KEY_RING_OFFSET_Y = "cutout_progress_ring_offset_y_dp10"
+
+        private const val DEFAULT_COMPLETION_PULSE = 1
+        private const val DEFAULT_PATH_MODE = 1
+        private const val DEFAULT_RING_SCALE_X = 1050
+        private const val DEFAULT_RING_SCALE_Y = 600
+        private const val DEFAULT_RING_OFFSET_X = 0
+        private const val DEFAULT_RING_OFFSET_Y = 15
+
         private const val DEFAULT_RING_COLOR = 0xFF2196F3.toInt()
         private const val DEFAULT_ERROR_COLOR = 0xFFF44336.toInt()
         private const val DEFAULT_FLASH_COLOR = 0xFFFFFFFF.toInt()
@@ -85,6 +99,7 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
     private lateinit var fnameTruncPref: ListPreference
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+        ensureCalibratedDefaults()
         addPreferencesFromResource(R.xml.cutout_progress_settings)
 
         ringColorModePref = findPreference(KEY_RING_COLOR_MODE)!!
@@ -181,6 +196,28 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
         when (key) {
             KEY_RING_COLOR_MODE -> ringColorPref.isVisible = (mode == COLOR_MODE_CUSTOM)
             KEY_MUSIC_COLOR_MODE -> musicColorPref.isVisible = (mode == MUSIC_COLOR_MODE_CUSTOM)
+        }
+    }
+
+    /**
+     * Persist the calibrated camera-ring defaults only when a setting has never been stored.
+     * Existing user customizations are intentionally preserved.
+     */
+    private fun ensureCalibratedDefaults() {
+        val resolver = requireContext().contentResolver
+        val defaults = mapOf(
+            KEY_COMPLETION_PULSE to DEFAULT_COMPLETION_PULSE,
+            KEY_PATH_MODE to DEFAULT_PATH_MODE,
+            KEY_RING_SCALE_X to DEFAULT_RING_SCALE_X,
+            KEY_RING_SCALE_Y to DEFAULT_RING_SCALE_Y,
+            KEY_RING_OFFSET_X to DEFAULT_RING_OFFSET_X,
+            KEY_RING_OFFSET_Y to DEFAULT_RING_OFFSET_Y
+        )
+
+        defaults.forEach { (key, value) ->
+            if (Settings.Secure.getString(resolver, key) == null) {
+                Settings.Secure.putInt(resolver, key, value)
+            }
         }
     }
 
