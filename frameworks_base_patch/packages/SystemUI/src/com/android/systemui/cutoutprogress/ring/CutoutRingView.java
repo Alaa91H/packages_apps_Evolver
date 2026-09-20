@@ -279,13 +279,18 @@ public final class CutoutRingView extends View {
             }
 
             boolean nonInteractive = isDisplayNonInteractive();
-            if (!nonInteractive || (sCfgMusicShowOnAod && isDisplayAod())) {
-                long duration = musicWaveDurationMs();
-                long elapsed = Math.max(0L, SystemClock.elapsedRealtime() - mMusicWaveEpochMs);
-                mMusicWavePhase = (float) ((elapsed % duration)
-                        * (Math.PI * 2.0) / duration);
-                invalidate();
+            boolean visibleWhileIdle = sCfgMusicShowOnAod && isDisplayAod();
+            if (nonInteractive && !visibleWhileIdle) {
+                // No visible waveform in this display state. Do not keep a 1 Hz wakeup loop;
+                // onDisplayStateChanged() will restart the animation when it can be shown again.
+                return;
             }
+
+            long duration = musicWaveDurationMs();
+            long elapsed = Math.max(0L, SystemClock.elapsedRealtime() - mMusicWaveEpochMs);
+            mMusicWavePhase = (float) ((elapsed % duration)
+                    * (Math.PI * 2.0) / duration);
+            invalidate();
 
             long delay = nonInteractive ? 1000L : 33L;
             mMusicWaveScheduled = true;
@@ -552,8 +557,11 @@ public final class CutoutRingView extends View {
     }
 
     private void updateMusicWaveAnimation() {
+        boolean nonInteractive = isDisplayNonInteractive();
+        boolean visibleWhileIdle = sCfgMusicShowOnAod && isDisplayAod();
         if (!mMusicPlaying || !sCfgMusicRingEnabled || !sCfgMusicWaveEnabled
-                || isAuroraActiveNow() || !isAttachedToWindow() || !mHasCutout) {
+                || isAuroraActiveNow() || !isAttachedToWindow() || !mHasCutout
+                || (nonInteractive && !visibleWhileIdle)) {
             stopMusicWaveAnimation();
             return;
         }
