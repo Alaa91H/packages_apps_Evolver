@@ -268,7 +268,7 @@ public final class MusicRingColorManager {
         private final Drawable mArt;
         private final boolean mDark;
         private boolean mStarted;
-        private boolean mCancelled;
+        private volatile boolean mCancelled;
 
         PaletteTask(Bitmap sample, int generation, String trackId, Drawable art, boolean dark) {
             mSample = sample;
