@@ -157,6 +157,50 @@ public final class CutoutProgressSettings {
     public static final String KEY_MUSIC_WAVE_SPEED =
             "cutout_progress_music_wave_speed";
 
+    public static final String KEY_TIMER_ENABLED =
+            "cutout_progress_timer_enabled";
+    public static final String KEY_TIMER_PRESENTATION =
+            "cutout_progress_timer_presentation";
+    public static final String KEY_TIMER_COLOR_MODE =
+            "cutout_progress_timer_color_mode";
+    public static final String KEY_TIMER_CUSTOM_COLOR =
+            "cutout_progress_timer_custom_color";
+    public static final String KEY_TIMER_OPACITY =
+            "cutout_progress_timer_opacity";
+    public static final String KEY_TIMER_STROKE_WIDTH_DP10 =
+            "cutout_progress_timer_stroke_dp10";
+    public static final String KEY_TIMER_CLOCKWISE =
+            "cutout_progress_timer_clockwise";
+    public static final String KEY_TIMER_FLAME_ENABLED =
+            "cutout_progress_timer_flame_enabled";
+    public static final String KEY_TIMER_FLAME_SIZE_DP10 =
+            "cutout_progress_timer_flame_size_dp10";
+
+    public static final String KEY_AURORA_ENABLED =
+            "cutout_progress_aurora_enabled";
+    public static final String KEY_AURORA_CALLS =
+            "cutout_progress_aurora_calls";
+    public static final String KEY_AURORA_MUSIC =
+            "cutout_progress_aurora_music";
+    public static final String KEY_AURORA_RECORDING =
+            "cutout_progress_aurora_recording";
+    public static final String KEY_AURORA_NOTIFICATIONS =
+            "cutout_progress_aurora_notifications";
+    public static final String KEY_AURORA_COLOR_MODE =
+            "cutout_progress_aurora_color_mode";
+    public static final String KEY_AURORA_CUSTOM_COLOR =
+            "cutout_progress_aurora_custom_color";
+    public static final String KEY_AURORA_NOTIFICATION_COLOR_MODE =
+            "cutout_progress_aurora_notification_color_mode";
+    public static final String KEY_AURORA_SPREAD_DP10 =
+            "cutout_progress_aurora_spread_dp10";
+    public static final String KEY_AURORA_OPACITY =
+            "cutout_progress_aurora_opacity";
+    public static final String KEY_AURORA_SPEED =
+            "cutout_progress_aurora_speed";
+    public static final String KEY_AURORA_NOTIFICATION_DURATION_MS =
+            "cutout_progress_aurora_notification_duration_ms";
+
     public static final String KEY_GLOW_ENABLED = "cutout_progress_glow_enabled";
 
     public static final String KEY_GLOW_RADIUS_DP10 = "cutout_progress_glow_radius_dp10";
@@ -169,6 +213,13 @@ public final class CutoutProgressSettings {
     public static final int PRESENTATION_DISABLED = 2;
     public static final int PRIMARY_PRIORITY_DOWNLOAD = 0;
     public static final int PRIMARY_PRIORITY_MUSIC = 1;
+    public static final int PRIMARY_PRIORITY_TIMER = 2;
+
+    public static final int AURORA_COLOR_MODE_SPECTRUM = 0;
+    public static final int AURORA_COLOR_MODE_SOURCE = 1;
+    public static final int AURORA_COLOR_MODE_CUSTOM = 2;
+    public static final int AURORA_NOTIFICATION_COLOR_NOTIFICATION = 0;
+    public static final int AURORA_NOTIFICATION_COLOR_EFFECT = 1;
     private static final boolean DEF_ENABLED = false;
     private static final int DEF_RING_COLOR_MODE = RING_COLOR_MODE_ACCENT;
     private static final int DEF_RING_COLOR = 0xFF2196F3;
@@ -230,6 +281,31 @@ public final class CutoutProgressSettings {
     private static final float DEF_MUSIC_WAVE_AMPLITUDE_DP = 2.5f;
     private static final int DEF_MUSIC_WAVE_DENSITY = 48;
     private static final int DEF_MUSIC_WAVE_SPEED = 100;
+
+    private static final boolean DEF_TIMER_ENABLED = false;
+    private static final int DEF_TIMER_PRESENTATION = PRESENTATION_PRIMARY;
+    private static final int DEF_TIMER_COLOR_MODE = RING_COLOR_MODE_ACCENT;
+    private static final int DEF_TIMER_CUSTOM_COLOR = 0xFFFF8A00;
+    private static final int DEF_TIMER_OPACITY = 95;
+    private static final float DEF_TIMER_STROKE_DP = 2.0f;
+    private static final boolean DEF_TIMER_CLOCKWISE = true;
+    private static final boolean DEF_TIMER_FLAME_ENABLED = true;
+    private static final float DEF_TIMER_FLAME_SIZE_DP = 3.5f;
+
+    private static final boolean DEF_AURORA_ENABLED = false;
+    private static final boolean DEF_AURORA_CALLS = true;
+    private static final boolean DEF_AURORA_MUSIC = true;
+    private static final boolean DEF_AURORA_RECORDING = true;
+    private static final boolean DEF_AURORA_NOTIFICATIONS = true;
+    private static final int DEF_AURORA_COLOR_MODE = AURORA_COLOR_MODE_SPECTRUM;
+    private static final int DEF_AURORA_CUSTOM_COLOR = 0xFF7C4DFF;
+    private static final int DEF_AURORA_NOTIFICATION_COLOR_MODE =
+            AURORA_NOTIFICATION_COLOR_NOTIFICATION;
+    private static final float DEF_AURORA_SPREAD_DP = 8.0f;
+    private static final int DEF_AURORA_OPACITY = 85;
+    private static final int DEF_AURORA_SPEED = 100;
+    private static final int DEF_AURORA_NOTIFICATION_DURATION_MS = 2500;
+
     private static final boolean DEF_GLOW_ENABLED = false;
     private static final float DEF_GLOW_RADIUS_DP = 4.0f;
 
@@ -537,7 +613,7 @@ public final class CutoutProgressSettings {
 
     public int getPrimaryPriority() {
         return clamp(getInt(KEY_PRIMARY_PRIORITY, DEF_PRIMARY_PRIORITY),
-                PRIMARY_PRIORITY_DOWNLOAD, PRIMARY_PRIORITY_MUSIC);
+                PRIMARY_PRIORITY_DOWNLOAD, PRIMARY_PRIORITY_TIMER);
     }
 
     public float getMultiRingSpacingDp() {
@@ -560,6 +636,99 @@ public final class CutoutProgressSettings {
 
     public int getMusicWaveSpeed() {
         return clamp(getInt(KEY_MUSIC_WAVE_SPEED, DEF_MUSIC_WAVE_SPEED), 25, 250);
+    }
+
+    public boolean isTimerEnabled() {
+        return getInt(KEY_TIMER_ENABLED, DEF_TIMER_ENABLED ? 1 : 0) != 0;
+    }
+
+    public int getTimerPresentation() {
+        return clamp(getInt(KEY_TIMER_PRESENTATION, DEF_TIMER_PRESENTATION),
+                PRESENTATION_PRIMARY, PRESENTATION_DISABLED);
+    }
+
+    public int getTimerColorMode() {
+        return clamp(getInt(KEY_TIMER_COLOR_MODE, DEF_TIMER_COLOR_MODE),
+                RING_COLOR_MODE_ACCENT, RING_COLOR_MODE_CUSTOM);
+    }
+
+    public int getTimerCustomColor() {
+        return getInt(KEY_TIMER_CUSTOM_COLOR, DEF_TIMER_CUSTOM_COLOR);
+    }
+
+    public int getTimerOpacity() {
+        return clamp(getInt(KEY_TIMER_OPACITY, DEF_TIMER_OPACITY), 0, 100);
+    }
+
+    public float getTimerStrokeWidthDp() {
+        return clamp(getInt(KEY_TIMER_STROKE_WIDTH_DP10,
+                (int) (DEF_TIMER_STROKE_DP * 10)), 5, 80) / 10f;
+    }
+
+    public boolean isTimerClockwise() {
+        return getInt(KEY_TIMER_CLOCKWISE, DEF_TIMER_CLOCKWISE ? 1 : 0) != 0;
+    }
+
+    public boolean isTimerFlameEnabled() {
+        return getInt(KEY_TIMER_FLAME_ENABLED, DEF_TIMER_FLAME_ENABLED ? 1 : 0) != 0;
+    }
+
+    public float getTimerFlameSizeDp() {
+        return clamp(getInt(KEY_TIMER_FLAME_SIZE_DP10,
+                (int) (DEF_TIMER_FLAME_SIZE_DP * 10)), 10, 100) / 10f;
+    }
+
+    public boolean isAuroraEnabled() {
+        return getInt(KEY_AURORA_ENABLED, DEF_AURORA_ENABLED ? 1 : 0) != 0;
+    }
+
+    public boolean isAuroraCallsEnabled() {
+        return getInt(KEY_AURORA_CALLS, DEF_AURORA_CALLS ? 1 : 0) != 0;
+    }
+
+    public boolean isAuroraMusicEnabled() {
+        return getInt(KEY_AURORA_MUSIC, DEF_AURORA_MUSIC ? 1 : 0) != 0;
+    }
+
+    public boolean isAuroraRecordingEnabled() {
+        return getInt(KEY_AURORA_RECORDING, DEF_AURORA_RECORDING ? 1 : 0) != 0;
+    }
+
+    public boolean isAuroraNotificationsEnabled() {
+        return getInt(KEY_AURORA_NOTIFICATIONS, DEF_AURORA_NOTIFICATIONS ? 1 : 0) != 0;
+    }
+
+    public int getAuroraColorMode() {
+        return clamp(getInt(KEY_AURORA_COLOR_MODE, DEF_AURORA_COLOR_MODE),
+                AURORA_COLOR_MODE_SPECTRUM, AURORA_COLOR_MODE_CUSTOM);
+    }
+
+    public int getAuroraCustomColor() {
+        return getInt(KEY_AURORA_CUSTOM_COLOR, DEF_AURORA_CUSTOM_COLOR);
+    }
+
+    public int getAuroraNotificationColorMode() {
+        return clamp(getInt(KEY_AURORA_NOTIFICATION_COLOR_MODE,
+                DEF_AURORA_NOTIFICATION_COLOR_MODE),
+                AURORA_NOTIFICATION_COLOR_NOTIFICATION, AURORA_NOTIFICATION_COLOR_EFFECT);
+    }
+
+    public float getAuroraSpreadDp() {
+        return clamp(getInt(KEY_AURORA_SPREAD_DP10,
+                (int) (DEF_AURORA_SPREAD_DP * 10)), 20, 200) / 10f;
+    }
+
+    public int getAuroraOpacity() {
+        return clamp(getInt(KEY_AURORA_OPACITY, DEF_AURORA_OPACITY), 10, 100);
+    }
+
+    public int getAuroraSpeed() {
+        return clamp(getInt(KEY_AURORA_SPEED, DEF_AURORA_SPEED), 25, 250);
+    }
+
+    public int getAuroraNotificationDurationMs() {
+        return clamp(getInt(KEY_AURORA_NOTIFICATION_DURATION_MS,
+                DEF_AURORA_NOTIFICATION_DURATION_MS), 500, 8000);
     }
 
     public boolean isGlowEnabled() {
