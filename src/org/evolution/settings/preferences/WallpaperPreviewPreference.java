@@ -102,7 +102,11 @@ public class WallpaperPreviewPreference extends Preference {
                     mHomeWallpaper = ((BitmapDrawable) homeDrawable).getBitmap();
                 }
                 
-                mHandler.post(() -> updatePreviewImages());
+                mHandler.post(() -> {
+                    if (mAttached) {
+                        updatePreviewImages();
+                    }
+                });
                 
             } catch (Exception e) {
                 e.printStackTrace();
