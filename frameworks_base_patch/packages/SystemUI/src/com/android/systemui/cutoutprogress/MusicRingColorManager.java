@@ -162,6 +162,14 @@ public final class MusicRingColorManager {
     private void resolve(Drawable art, String trackId) {
         if (mDestroyed) return;
         final int generation = ++mResolveGeneration;
+        // Cancel obsolete queued palette work immediately. Generation checks still guard
+        // already-running work, while cancellation recycles samples that have not started.
+        synchronized (mPaletteTaskLock) {
+            if (mPendingPaletteTask != null) {
+                mPendingPaletteTask.cancel();
+                mPendingPaletteTask = null;
+            }
+        }
         switch (mMode) {
             case MODE_CUSTOM:
                 emitIfCurrent(generation, mCustomColor);
