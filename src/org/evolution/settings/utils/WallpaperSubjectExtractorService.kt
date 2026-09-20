@@ -245,34 +245,42 @@ class WallpaperSubjectExtractorService : Service() {
     }
 
     private fun saveForeground(foreground: Bitmap): String? {
+        var file: File? = null
         return try {
             val baseDir = Environment.getExternalStorageDirectory()
             val dir = File(baseDir, "Evolution-X/depthwallpaper")
 
-            if (!dir.exists()) {
-                if (!dir.mkdirs()) {
-                    Log.e(TAG, "Failed to create save directory")
-                    return null
-                }
+            if (!dir.exists() && !dir.mkdirs()) {
+                Log.e(TAG, "Failed to create save directory")
+                return null
+            }
+
+            val stamp = SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.US).format(Date())
+            file = File(dir, "${FILE_PREFIX}_${stamp}.png")
+
+            val compressed = FileOutputStream(file).use { out ->
+                val ok = foreground.compress(Bitmap.CompressFormat.PNG, 100, out)
+                out.flush()
+                ok
+            }
+            if (!compressed) {
+                Log.e(TAG, "Bitmap.compress() returned false")
+                file.delete()
+                return null
             }
 
             dir.listFiles { _, name ->
                 name.startsWith(FILE_PREFIX) && name.endsWith(".png")
-            }?.forEach { it.delete() }
-
-            val stamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-            val file = File(dir, "${FILE_PREFIX}_${stamp}.png")
-
-            FileOutputStream(file).use { out ->
-                if (!foreground.compress(Bitmap.CompressFormat.PNG, 100, out)) {
-                    Log.e(TAG, "Bitmap.compress() returned false")
-                    return null
+            }?.forEach { old ->
+                if (old != file && !old.delete()) {
+                    Log.w(TAG, "Failed to delete stale subject: ${old.name}")
                 }
             }
 
             file.absolutePath
         } catch (e: Exception) {
             Log.e(TAG, "saveForeground exception", e)
+            file?.delete()
             null
         }
     }
@@ -283,10 +291,8 @@ class WallpaperSubjectExtractorService : Service() {
         }
 
         try {
-            val pfd = wm.getWallpaperFile(WallpaperManager.FLAG_LOCK)
-            if (pfd != null) {
+            wm.getWallpaperFile(WallpaperManager.FLAG_LOCK)?.use { pfd ->
                 val bmp = BitmapFactory.decodeFileDescriptor(pfd.fileDescriptor)
-                pfd.close()
                 if (bmp != null) return bmp
             }
         } catch (e: Exception) {
