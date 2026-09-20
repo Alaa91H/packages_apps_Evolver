@@ -843,7 +843,10 @@ public final class CutoutRingView extends View {
             // Any live progress supersedes a delayed completion from the previous transfer.
             cancelPendingFinish();
         }
-        if (prev == 0 && pct > 0) {
+        if ((prev == 0 || prev == 100) && pct > 0 && pct < 100) {
+            // A new transfer can arrive while the previous 100% completion is still pending or
+            // animating. Give the new transfer its own minimum-visible window instead of reusing
+            // the previous download's start timestamp.
             mDownloadStartMs = SystemClock.elapsedRealtime();
         }
 
