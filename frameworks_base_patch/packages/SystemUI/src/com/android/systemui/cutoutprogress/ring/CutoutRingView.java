@@ -732,18 +732,29 @@ public final class CutoutRingView extends View {
 
         drawSource(canvas, primarySource, effectivePct, 0f);
 
-        int lane = 1;
-        if (downloadIndependent && musicIndependent
-                && sCfgPrimaryPriority == CutoutProgressSettings.PRIMARY_PRIORITY_MUSIC) {
-            drawSource(canvas, SOURCE_MUSIC, effectivePct, lane++ * sCfgMultiRingSpacingDp);
-            drawSource(canvas, SOURCE_DOWNLOAD, effectivePct, lane * sCfgMultiRingSpacingDp);
-        } else {
-            if (downloadIndependent) {
-                drawSource(canvas, SOURCE_DOWNLOAD, effectivePct, lane++ * sCfgMultiRingSpacingDp);
+        boolean downloadConfiguredIndependent = sCfgDownloadPresentation
+                == CutoutProgressSettings.PRESENTATION_INDEPENDENT;
+        boolean musicConfiguredIndependent = sCfgMusicPresentation
+                == CutoutProgressSettings.PRESENTATION_INDEPENDENT;
+        int downloadLane = 1;
+        int musicLane = 1;
+        if (downloadConfiguredIndependent && musicConfiguredIndependent) {
+            if (sCfgPrimaryPriority == CutoutProgressSettings.PRIMARY_PRIORITY_MUSIC) {
+                musicLane = 1;
+                downloadLane = 2;
+            } else {
+                downloadLane = 1;
+                musicLane = 2;
             }
-            if (musicIndependent) {
-                drawSource(canvas, SOURCE_MUSIC, effectivePct, lane * sCfgMultiRingSpacingDp);
-            }
+        }
+
+        if (downloadIndependent) {
+            drawSource(canvas, SOURCE_DOWNLOAD, effectivePct,
+                    downloadLane * sCfgMultiRingSpacingDp);
+        }
+        if (musicIndependent) {
+            drawSource(canvas, SOURCE_MUSIC, effectivePct,
+                    musicLane * sCfgMultiRingSpacingDp);
         }
     }
 
