@@ -24,6 +24,7 @@ ANDROID_NS = "http://schemas.android.com/apk/res/android"
 ANDROID_KEY = f"{{{ANDROID_NS}}}key"
 ANDROID_DEFAULT = f"{{{ANDROID_NS}}}defaultValue"
 ANDROID_NAME = f"{{{ANDROID_NS}}}name"
+ANDROID_DEPENDENCY = f"{{{ANDROID_NS}}}dependency"
 
 
 class ValidationError(RuntimeError):
