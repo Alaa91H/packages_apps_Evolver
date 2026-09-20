@@ -68,6 +68,7 @@ public final class CutoutRingView extends View {
     };
 
     private float mDp;
+    private float mScaledDensity;
     private final CameraCutoutGeometryResolver mGeometryResolver;
 
     private final Path mCutoutPath = new Path();
@@ -192,11 +193,11 @@ public final class CutoutRingView extends View {
     public CutoutRingView(Context ctx) {
         super(ctx);
         mDp = ctx.getResources().getDisplayMetrics().density;
+        mScaledDensity = ctx.getResources().getDisplayMetrics().scaledDensity;
         mGeometryResolver = new CameraCutoutGeometryResolver(ctx);
         mAnim = new OverlayAnimationHelper(this);
         mRenderer = new CircleRingRenderer();
         mBadge = new CountBadgePainter(mDp);
-        setLayerType(LAYER_TYPE_HARDWARE, null);
         initPaints();
     }
 
@@ -362,7 +363,18 @@ public final class CutoutRingView extends View {
         TypedValue tv = new TypedValue();
         boolean resolved = getContext().getTheme()
                 .resolveAttribute(android.R.attr.colorAccent, tv, true);
-        int base = resolved ? tv.data : 0xFF2196F3;
+        int base = 0xFF2196F3;
+        if (resolved) {
+            if (tv.resourceId != 0) {
+                try {
+                    base = getContext().getColor(tv.resourceId);
+                } catch (android.content.res.Resources.NotFoundException ignored) {
+                    base = tv.data;
+                }
+            } else {
+                base = tv.data;
+            }
+        }
 
         boolean isDark = (getContext().getResources().getConfiguration().uiMode
                 & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
@@ -708,13 +720,47 @@ public final class CutoutRingView extends View {
 
     private void refreshDensityIfNeeded() {
         float density = getResources().getDisplayMetrics().density;
+        float scaledDensity = getResources().getDisplayMetrics().scaledDensity;
         if (!Float.isFinite(density) || density <= 0f) density = 1f;
-        if (Math.abs(density - mDp) < 0.001f) return;
+        if (!Float.isFinite(scaledDensity) || scaledDensity <= 0f) scaledDensity = density;
+
+        boolean densityChanged = Math.abs(density - mDp) >= 0.001f;
+        boolean scaledDensityChanged = Math.abs(scaledDensity - mScaledDensity) >= 0.001f;
+        if (!densityChanged && !scaledDensityChanged) return;
 
         mDp = density;
-        mBadge = new CountBadgePainter(mDp);
+        mScaledDensity = scaledDensity;
+        if (densityChanged) {
+            mBadge = new CountBadgePainter(mDp);
+        }
         refreshPaints();
         refreshMusicPaint();
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        refreshDensityIfNeeded();
+        requestApplyInsets();
+        if (mIsCharging) {
+            animateChargingLevelTo(mBatteryPct);
+            if (mChargingPulseEnabled && sCfgChargingPulse) startChargingPulse();
+        }
+        if (mIsBatteryIndicatorActive) {
+            animateBatteryLevelTo(mBatteryIndicatorPct);
+        }
+        updateMusicWaveAnimation();
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        removeCallbacks(mBurnInHide);
+        cancelPendingFinish();
+        mAnim.cancelAll();
+        stopChargingAnimations();
+        stopBatteryIndicatorAnim();
+        stopMusicWaveAnimation();
+        super.onDetachedFromWindow();
     }
 
     @Override
@@ -1263,7 +1309,7 @@ public final class CutoutRingView extends View {
         mFilenamePaint.setTextSize(spToPx(sCfgFnameSp));
         mFilenamePaint.setTextAlign(Paint.Align.LEFT);
 
-        mBadge.applyConfig(baseColor, sCfgBadgeSp, mDp);
+        mBadge.applyConfig(baseColor, sCfgBadgeSp, mScaledDensity);
     }
 
     private void refreshMusicPaint() {
@@ -1325,17 +1371,27 @@ public final class CutoutRingView extends View {
     }
 
     private static String truncate(String s, int max, String mode) {
-        if (s.length() <= max) return s;
+        if (s == null || s.isEmpty() || max <= 0) return "";
+        int count = s.codePointCount(0, s.length());
+        if (count <= max) return s;
         String e = "\u2026";
         int avail = max - 1;
         if (avail <= 0) return e;
         switch (mode) {
-            case "start": return e + s.substring(s.length() - avail);
-            case "end": return s.substring(0, avail) + e;
+            case "start": {
+                int start = s.offsetByCodePoints(0, count - avail);
+                return e + s.substring(start);
+            }
+            case "end": {
+                int end = s.offsetByCodePoints(0, avail);
+                return s.substring(0, end) + e;
+            }
             default: {
                 int head = (avail + 1) / 2;
                 int tail = avail - head;
-                return s.substring(0, head) + e + s.substring(s.length() - tail);
+                int headEnd = s.offsetByCodePoints(0, head);
+                int tailStart = s.offsetByCodePoints(0, count - tail);
+                return s.substring(0, headEnd) + e + s.substring(tailStart);
             }
         }
     }
