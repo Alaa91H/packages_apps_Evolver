@@ -638,27 +638,30 @@ public final class CutoutRingView extends View {
         mGeometrySource = CameraCutoutGeometryResolver.SOURCE_NONE;
 
         DisplayCutout cutout = insets.getDisplayCutout();
-        if (cutout != null) {
-            mGeometryRotation = resolveCutoutRotation(cutout);
+        Display display = getDisplay();
+        mGeometryRotation = cutout != null
+                ? resolveCutoutRotation(cutout)
+                : display != null ? display.getRotation() : Surface.ROTATION_0;
 
-            if (sCfgAutoGeometry) {
-                CameraCutoutGeometryResolver.ResolvedGeometry geometry =
-                        mGeometryResolver.resolve(cutout);
-                if (geometry != null) {
-                    mCutoutPath.set(geometry.path);
-                    mHasCutout = true;
-                    mAutoGeometryActive = true;
-                    mResolvedPillLike = geometry.pillLike;
-                    mGeometryRotation = geometry.rotation;
-                    mGeometrySource = geometry.source;
-                }
+        if (sCfgAutoGeometry) {
+            // Camera-protection resources may exist even when an under-display camera does not
+            // expose a DisplayCutout. Let the resolver try the OEM/SystemUI geometry first.
+            CameraCutoutGeometryResolver.ResolvedGeometry geometry =
+                    mGeometryResolver.resolve(cutout);
+            if (geometry != null) {
+                mCutoutPath.set(geometry.path);
+                mHasCutout = true;
+                mAutoGeometryActive = true;
+                mResolvedPillLike = geometry.pillLike;
+                mGeometryRotation = geometry.rotation;
+                mGeometrySource = geometry.source;
             }
+        }
 
-            if (!mHasCutout) {
-                mHasCutout = extractPreferredCutout(cutout);
-                mResolvedPillLike = sCfgPathMode;
-                mGeometrySource = CameraCutoutGeometryResolver.SOURCE_DISPLAY_CUTOUT_PATH;
-            }
+        if (!mHasCutout && cutout != null) {
+            mHasCutout = extractPreferredCutout(cutout);
+            mResolvedPillLike = sCfgPathMode;
+            mGeometrySource = CameraCutoutGeometryResolver.SOURCE_DISPLAY_CUTOUT_PATH;
         }
 
         updateRendererForGeometry();
