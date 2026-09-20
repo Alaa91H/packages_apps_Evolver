@@ -115,7 +115,7 @@ public final class MusicProgressTracker {
 
         String title = strOrEmpty(md != null ? md.getString(MediaMetadata.METADATA_KEY_TITLE) : null);
         String artist = strOrEmpty(md != null ? md.getString(MediaMetadata.METADATA_KEY_ARTIST) : null);
-        String newId = buildTrackId(md, title, artist, mDurationMs);
+        String newId = buildTrackId(md, title, artist);
         boolean trackChanged = !Objects.equals(newId, mLastTrackId);
         if (trackChanged) {
             mLastTrackId = newId;
@@ -211,14 +211,20 @@ public final class MusicProgressTracker {
         mFrameScheduled = false;
     }
 
-    private static String buildTrackId(MediaMetadata md, String title, String artist,
-                                       long durationMs) {
+    private static String buildTrackId(MediaMetadata md, String title, String artist) {
         if (md == null) return null;
         String mediaId = strOrEmpty(md.getString(MediaMetadata.METADATA_KEY_MEDIA_ID));
+        if (!mediaId.isEmpty()) return "id:" + mediaId;
+
+        String mediaUri = strOrEmpty(md.getString(MediaMetadata.METADATA_KEY_MEDIA_URI));
+        if (!mediaUri.isEmpty()) return "uri:" + mediaUri;
+
         String album = strOrEmpty(md.getString(MediaMetadata.METADATA_KEY_ALBUM));
         String albumArtist = strOrEmpty(md.getString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST));
-        return mediaId + "|" + title + "|" + artist + "|" + album + "|" + albumArtist
-                + "|" + durationMs;
+        long disc = md.getLong(MediaMetadata.METADATA_KEY_DISC_NUMBER);
+        long track = md.getLong(MediaMetadata.METADATA_KEY_TRACK_NUMBER);
+        return "meta:" + title + "|" + artist + "|" + album + "|" + albumArtist
+                + "|" + disc + "|" + track;
     }
 
     private static float fraction(long posMs, long durMs) {
