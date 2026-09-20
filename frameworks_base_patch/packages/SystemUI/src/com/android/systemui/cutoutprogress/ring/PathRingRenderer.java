@@ -35,6 +35,7 @@ public final class PathRingRenderer implements RingViewRenderer {
     private final RectF mBaseBounds = new RectF();
     private final RectF mLastBounds = new RectF();
     private final Matrix mMatrix = new Matrix();
+    private final float[] mTangent = new float[2];
 
     private boolean mHasBasePath;
     private boolean mHasLastBounds;
@@ -150,11 +151,10 @@ public final class PathRingRenderer implements RingViewRenderer {
         float f = fraction - (float) Math.floor(fraction);
         float sign = mPathOrderClockwise ? 1f : -1f;
         float distance = normalizeDistance(mStartDistance + sign * mTotalLength * f);
-        float[] tangent = new float[2];
-        if (!mMeasure.getPosTan(distance, position, tangent)) return false;
+        if (!mMeasure.getPosTan(distance, position, mTangent)) return false;
 
-        float tx = tangent[0] * sign;
-        float ty = tangent[1] * sign;
+        float tx = mTangent[0] * sign;
+        float ty = mTangent[1] * sign;
         float len = (float) Math.hypot(tx, ty);
         if (len <= EPSILON) return false;
         tx /= len;
