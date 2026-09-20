@@ -75,6 +75,10 @@ public final class CutoutRingView extends View {
     private final Path mCutoutPath = new Path();
     private final Path mScaledPath = new Path();
     private final Matrix mScaleMatrix = new Matrix();
+    private final Matrix mShaderMatrix = new Matrix();
+    private final float[] mEffectPosition = new float[2];
+    private final float[] mEffectNormal = new float[2];
+    private final float[] mRotatedOffset = new float[2];
     private final RectF mPathBounds = new RectF();
     private final RectF mArcBounds = new RectF();
     private boolean mHasCutout = false;
@@ -687,9 +691,9 @@ public final class CutoutRingView extends View {
 
     private void applyRainbowShader(Paint paint, float cx, float cy) {
         SweepGradient shader = requireRainbowShader(cx, cy);
-        Matrix m = new Matrix();
-        m.setRotate(-90f, cx, cy);
-        shader.setLocalMatrix(m);
+        mShaderMatrix.reset();
+        mShaderMatrix.setRotate(-90f, cx, cy);
+        shader.setLocalMatrix(mShaderMatrix);
         paint.setShader(shader);
     }
 
@@ -1429,8 +1433,8 @@ public final class CutoutRingView extends View {
         float pad = (sCfgMusicStrokeDp * 0.65f + 0.8f) * mDp;
         mMusicWavePaint.setColor(sCfgMusicColor);
         mMusicWavePaint.setAlpha(sCfgMusicOpacity * 255 / 100);
-        float[] position = new float[2];
-        float[] normal = new float[2];
+        float[] position = mEffectPosition;
+        float[] normal = mEffectNormal;
 
         for (int i = 0; i < density; i++) {
             float fraction = i / (float) density;
@@ -1488,8 +1492,8 @@ public final class CutoutRingView extends View {
     }
 
     private void drawTimerFlame(Canvas canvas, int timerColor) {
-        float[] position = new float[2];
-        float[] normal = new float[2];
+        float[] position = mEffectPosition;
+        float[] normal = mEffectNormal;
         float endpoint = sCfgTimerClockwise ? mTimerFraction : 1f - mTimerFraction;
         endpoint = endpoint - (float) Math.floor(endpoint);
         if (!mRenderer.getPointAndOutwardNormal(endpoint, position, normal)) return;
@@ -1611,10 +1615,10 @@ public final class CutoutRingView extends View {
             mAuroraCx = cx;
             mAuroraCy = cy;
         }
-        Matrix matrix = new Matrix();
+        mShaderMatrix.reset();
         float degrees = -90f + (float) Math.toDegrees(mVisualEffectPhase);
-        matrix.setRotate(degrees, cx, cy);
-        mAuroraShader.setLocalMatrix(matrix);
+        mShaderMatrix.setRotate(degrees, cx, cy);
+        mAuroraShader.setLocalMatrix(mShaderMatrix);
         paint.setShader(mAuroraShader);
     }
 
@@ -1743,9 +1747,9 @@ public final class CutoutRingView extends View {
             halfW = mArcBounds.width() / 2f;
             halfH = mArcBounds.height() / 2f;
         } else {
-            float[] offRotated = rotateOffset(sCfgOffsetXDp, sCfgOffsetYDp);
-            cx += offRotated[0];
-            cy += offRotated[1];
+            rotateOffset(sCfgOffsetXDp, sCfgOffsetYDp, mRotatedOffset);
+            cx += mRotatedOffset[0];
+            cy += mRotatedOffset[1];
 
             float scaleX = sCfgScaleX;
             float scaleY = sCfgScaleY;
@@ -1775,17 +1779,26 @@ public final class CutoutRingView extends View {
         }
     }
 
-    private float[] rotateOffset(float dx, float dy) {
+    private void rotateOffset(float dx, float dy, float[] out) {
         switch (mGeometryRotation) {
             case Surface.ROTATION_90:
-                return new float[]{dy * mDp, -dx * mDp};
+                out[0] = dy * mDp;
+                out[1] = -dx * mDp;
+                break;
             case Surface.ROTATION_180:
-                return new float[]{-dx * mDp, -dy * mDp};
+                out[0] = -dx * mDp;
+                out[1] = -dy * mDp;
+                break;
             case Surface.ROTATION_270:
-                return new float[]{-dy * mDp, dx * mDp};
+                out[0] = -dy * mDp;
+                out[1] = dx * mDp;
+                break;
             default:
-                return new float[]{dx * mDp, dy * mDp};
+                out[0] = dx * mDp;
+                out[1] = dy * mDp;
+                break;
         }
+    }
     }
 
     private void initPaints() {
