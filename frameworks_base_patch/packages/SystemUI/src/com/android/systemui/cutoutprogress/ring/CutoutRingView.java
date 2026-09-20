@@ -1539,11 +1539,11 @@ public final class CutoutRingView extends View {
         if (isNotificationAuroraActive() && mNotificationAuroraColor != 0) {
             return mNotificationAuroraColor;
         }
-        if (sCfgAuroraRecording && mAuroraRecordingActive) {
-            return 0xFFF44336;
-        }
         if (sCfgAuroraCalls && mAuroraCallActive) {
             return 0xFF4CAF50;
+        }
+        if (sCfgAuroraRecording && mAuroraRecordingActive) {
+            return 0xFFF44336;
         }
         if (sCfgAuroraMusic && mMusicPlaying) {
             return sCfgMusicColor;

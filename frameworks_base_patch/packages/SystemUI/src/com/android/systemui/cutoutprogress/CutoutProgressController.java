@@ -52,8 +52,10 @@ import com.android.systemui.statusbar.notification.collection.NotificationEntry;
 import com.android.systemui.statusbar.notification.collection.notifcollection.NotifCollectionListener;
 
 import java.lang.reflect.Field;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 import javax.inject.Inject;
 
@@ -79,8 +81,11 @@ public class CutoutProgressController implements CoreStartable {
     private boolean mDownloadTrackingEnabled = false;
     private boolean mTimerTrackingEnabled = false;
     private boolean mNotificationAuroraTrackingEnabled = false;
+    private boolean mCallNotificationTrackingEnabled = false;
 
     private boolean mCallReceiverRegistered = false;
+    private boolean mTelecomCallActive = false;
+    private final Set<String> mActiveCallNotificationKeys = new HashSet<>();
     private boolean mScreenReceiverRegistered = false;
     private AudioManager mAudioManager;
     private boolean mRecordingCallbackRegistered = false;
@@ -255,6 +260,8 @@ public class CutoutProgressController implements CoreStartable {
         final boolean wantTimerTracking = mSettings.isTimerEnabled();
         final boolean wantNotificationAurora = mSettings.isAuroraEnabled()
                 && mSettings.isAuroraNotificationsEnabled();
+        final boolean wantCallNotificationTracking = mSettings.isAuroraEnabled()
+                && mSettings.isAuroraCallsEnabled();
 
         final boolean startDownloadTracking =
                 wantDownloadTracking && !mDownloadTrackingEnabled;
@@ -264,12 +271,18 @@ public class CutoutProgressController implements CoreStartable {
                 wantTimerTracking && !mTimerTrackingEnabled;
         final boolean stopTimerTracking =
                 !wantTimerTracking && mTimerTrackingEnabled;
+        final boolean startCallNotificationTracking =
+                wantCallNotificationTracking && !mCallNotificationTrackingEnabled;
+        final boolean stopCallNotificationTracking =
+                !wantCallNotificationTracking && mCallNotificationTrackingEnabled;
 
         mDownloadTrackingEnabled = wantDownloadTracking;
         mTimerTrackingEnabled = wantTimerTracking;
         mNotificationAuroraTrackingEnabled = wantNotificationAurora;
+        mCallNotificationTrackingEnabled = wantCallNotificationTracking;
 
-        if (wantDownloadTracking || wantTimerTracking || wantNotificationAurora) {
+        if (wantDownloadTracking || wantTimerTracking || wantNotificationAurora
+                || wantCallNotificationTracking) {
             registerPipelineListener();
         } else {
             unregisterPipelineListener();
@@ -287,6 +300,13 @@ public class CutoutProgressController implements CoreStartable {
         } else if (startTimerTracking) {
             clearTimerState();
             seedTimerFromPipeline();
+        }
+
+        if (stopCallNotificationTracking) {
+            clearCallNotifications();
+        } else if (startCallNotificationTracking) {
+            clearCallNotifications();
+            seedCallNotificationsFromPipeline();
         }
 
         if (mSettings.isChargingRingEnabled() || mSettings.isBatteryIndicatorEnabled()) {
@@ -327,6 +347,8 @@ public class CutoutProgressController implements CoreStartable {
         mDownloadTrackingEnabled = false;
         mTimerTrackingEnabled = false;
         mNotificationAuroraTrackingEnabled = false;
+        mCallNotificationTrackingEnabled = false;
+        clearCallNotifications();
         if (mMusicController != null) {
             mMusicController.stop();
         }
@@ -390,8 +412,14 @@ public class CutoutProgressController implements CoreStartable {
                 if (mDownloadTrackingEnabled) {
                     mTracker.onNotificationChanged(entry);
                 }
+                if (mCallNotificationTrackingEnabled) {
+                    updateCallNotification(entry);
+                }
                 if (mTimerTrackingEnabled) {
                     updateTimerFromNotification(entry);
+                }
+                if (mCallNotificationTrackingEnabled) {
+                    updateCallNotification(entry);
                 }
                 if (mNotificationAuroraTrackingEnabled) {
                     triggerNotificationAurora(entry);
@@ -422,6 +450,9 @@ public class CutoutProgressController implements CoreStartable {
                 if (!mSettings.isEnabled() || !isEntryForCurrentUser(entry)) return;
                 if (mDownloadTrackingEnabled) {
                     mTracker.onNotificationRemoved(entry, reason);
+                }
+                if (mCallNotificationTrackingEnabled && entry != null && entry.getSbn() != null) {
+                    removeCallNotification(entry.getSbn().getKey());
                 }
                 if (mTimerTrackingEnabled && entry != null && entry.getSbn() != null
                         && entry.getSbn().getKey().equals(mTimerKey)) {
@@ -456,9 +487,51 @@ public class CutoutProgressController implements CoreStartable {
             return;
         }
         Notification notification = entry.getSbn().getNotification();
+        if (mCallNotificationTrackingEnabled
+                && Notification.CATEGORY_CALL.equals(notification.category)) {
+            return;
+        }
         int color = notification.color;
         runOnMain(() -> mRingView.showNotificationAurora(
                 color, mSettings.getAuroraNotificationDurationMs()));
+    }
+
+    private void updateCallNotification(NotificationEntry entry) {
+        if (entry == null || entry.getSbn() == null) return;
+        Notification notification = entry.getSbn().getNotification();
+        String key = entry.getSbn().getKey();
+        if (notification != null && Notification.CATEGORY_CALL.equals(notification.category)) {
+            mActiveCallNotificationKeys.add(key);
+        } else {
+            mActiveCallNotificationKeys.remove(key);
+        }
+        updateAuroraCallState();
+    }
+
+    private void removeCallNotification(String key) {
+        if (key != null && mActiveCallNotificationKeys.remove(key)) {
+            updateAuroraCallState();
+        }
+    }
+
+    private void seedCallNotificationsFromPipeline() {
+        if (!mSettings.isEnabled() || !mCallNotificationTrackingEnabled) return;
+        for (NotificationEntry entry : mPipeline.getAllNotifs()) {
+            if (isEntryForCurrentUser(entry)) updateCallNotification(entry);
+        }
+    }
+
+    private void clearCallNotifications() {
+        if (!mActiveCallNotificationKeys.isEmpty()) {
+            mActiveCallNotificationKeys.clear();
+        }
+        updateAuroraCallState();
+    }
+
+    private void updateAuroraCallState() {
+        if (mRingView == null) return;
+        boolean active = mTelecomCallActive || !mActiveCallNotificationKeys.isEmpty();
+        mRingView.setAuroraCallActive(active);
     }
 
     private boolean updateTimerFromNotification(NotificationEntry entry) {
@@ -668,8 +741,8 @@ public class CutoutProgressController implements CoreStartable {
             inCall = telecom != null && telecom.isInCall();
         } catch (RuntimeException ignored) {
         }
-        final boolean active = inCall;
-        runOnMain(() -> mRingView.setAuroraCallActive(active));
+        mTelecomCallActive = inCall;
+        runOnMain(this::updateAuroraCallState);
     }
 
     private void unregisterCallStateReceiver() {
@@ -680,7 +753,8 @@ public class CutoutProgressController implements CoreStartable {
             }
         }
         mCallReceiverRegistered = false;
-        if (mRingView != null) mRingView.setAuroraCallActive(false);
+        mTelecomCallActive = false;
+        if (mRingView != null) updateAuroraCallState();
     }
 
     private void registerRecordingCallback() {
