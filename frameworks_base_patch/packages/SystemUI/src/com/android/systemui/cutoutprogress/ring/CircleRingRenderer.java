@@ -26,7 +26,11 @@ public final class CircleRingRenderer implements RingViewRenderer {
 
     @Override
     public void updateBounds(RectF bounds) {
-        mBounds.set(bounds);
+        if (bounds == null || bounds.isEmpty()) {
+            mBounds.setEmpty();
+        } else {
+            mBounds.set(bounds);
+        }
     }
 
     @Override
@@ -78,11 +82,16 @@ public final class CircleRingRenderer implements RingViewRenderer {
                               int segments, float gapDeg, float arcDeg,
                               int highlight,
                               Paint basePaint, Paint shinePaint, float alpha) {
+        if (mBounds.isEmpty() || segments <= 0) return;
+        float safeArcDeg = Math.max(0f, arcDeg);
+        float safeGapDeg = Math.max(0f, gapDeg);
+        if (safeArcDeg + safeGapDeg <= 0f) return;
+
         for (int i = 0; i < segments; i++) {
-            float startAngle = -90f + i * (arcDeg + gapDeg);
+            float startAngle = -90f + i * (safeArcDeg + safeGapDeg);
             if (i == highlight || i == highlight - 1) {
                 Paint tmp = new Paint(shinePaint);
-                tmp.setAlpha((int)(255 * alpha));
+                tmp.setAlpha((int)(255 * Math.max(0f, Math.min(1f, alpha))));
                 canvas.drawArc(mBounds, startAngle, safeArcDeg, false, tmp);
             } else {
                 canvas.drawArc(mBounds, startAngle, safeArcDeg, false, basePaint);
