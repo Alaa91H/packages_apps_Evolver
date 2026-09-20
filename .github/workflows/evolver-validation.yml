@@ -31,3 +31,6 @@ jobs:
 
       - name: Validate Evolver and staged SystemUI integration
         run: python3 tools/validate_cutout_progress.py
+
+      - name: Validate Arabic localization and RTL
+        run: python3 tools/validate_arabic_localization.py
