@@ -50,12 +50,12 @@ public final class CutoutRingView extends View {
 
     private static final long CHARGING_PULSE_DURATION_MS = 900L;
 
-    private static final int SOURCE_NONE = 0;
-    private static final int SOURCE_DOWNLOAD = 1;
-    private static final int SOURCE_MUSIC = 2;
-    private static final int SOURCE_CHARGING = 3;
-    private static final int SOURCE_BATTERY = 4;
-    private static final int SOURCE_TIMER = 5;
+    private static final int SOURCE_NONE = RingRouter.SOURCE_NONE;
+    private static final int SOURCE_DOWNLOAD = RingRouter.SOURCE_DOWNLOAD;
+    private static final int SOURCE_MUSIC = RingRouter.SOURCE_MUSIC;
+    private static final int SOURCE_CHARGING = RingRouter.SOURCE_CHARGING;
+    private static final int SOURCE_BATTERY = RingRouter.SOURCE_BATTERY;
+    private static final int SOURCE_TIMER = RingRouter.SOURCE_TIMER;
 
     private static final int[] RAINBOW_COLORS = {
             0xFFFF0000,
@@ -89,6 +89,7 @@ public final class CutoutRingView extends View {
 
     private final OverlayAnimationHelper mAnim;
     private RingViewRenderer mRenderer;
+    private final RingRouter.Result mRingLayout = new RingRouter.Result();
     private CountBadgePainter mBadge;
 
     private final Paint mRingPaint = makePaint();
@@ -1172,104 +1173,47 @@ public final class CutoutRingView extends View {
                 && mTimerFraction > 0f
                 && sCfgTimerPresentation != CutoutProgressSettings.PRESENTATION_DISABLED;
 
-        boolean downloadPrimary = preview || (downloadActive
-                && sCfgDownloadPresentation == CutoutProgressSettings.PRESENTATION_PRIMARY);
-        boolean musicPrimary = musicActive
-                && sCfgMusicPresentation == CutoutProgressSettings.PRESENTATION_PRIMARY;
-        boolean timerPrimary = timerActive
-                && sCfgTimerPresentation == CutoutProgressSettings.PRESENTATION_PRIMARY;
-
-        boolean forceDownload = downloadPrimary && (mAnim.isErrorAnimating
+        boolean forceDownload = downloadActive && (mAnim.isErrorAnimating
                 || mAnim.isFinishAnimating || mPendingFinish != null);
-        int primarySource = SOURCE_NONE;
-        if (forceDownload) {
-            primarySource = SOURCE_DOWNLOAD;
-        } else {
-            int preferred = priorityToSource();
-            if (preferred == SOURCE_DOWNLOAD && downloadPrimary) {
-                primarySource = SOURCE_DOWNLOAD;
-            } else if (preferred == SOURCE_MUSIC && musicPrimary) {
-                primarySource = SOURCE_MUSIC;
-            } else if (preferred == SOURCE_TIMER && timerPrimary) {
-                primarySource = SOURCE_TIMER;
-            } else if (downloadPrimary) {
-                primarySource = SOURCE_DOWNLOAD;
-            } else if (musicPrimary) {
-                primarySource = SOURCE_MUSIC;
-            } else if (timerPrimary) {
-                primarySource = SOURCE_TIMER;
-            }
-        }
-
-        if (primarySource == SOURCE_NONE && mIsCharging && sCfgChargingRing) {
-            primarySource = SOURCE_CHARGING;
-        } else if (primarySource == SOURCE_NONE
-                && mIsBatteryIndicatorActive && !mIsCharging) {
-            primarySource = SOURCE_BATTERY;
-        }
-
-        boolean downloadIndependent = !preview && downloadActive
-                && sCfgDownloadPresentation == CutoutProgressSettings.PRESENTATION_INDEPENDENT;
-        boolean musicIndependent = musicActive
-                && sCfgMusicPresentation == CutoutProgressSettings.PRESENTATION_INDEPENDENT;
-        boolean timerIndependent = timerActive
-                && sCfgTimerPresentation == CutoutProgressSettings.PRESENTATION_INDEPENDENT;
         boolean auroraActive = isAuroraActiveNow();
 
-        if (primarySource == SOURCE_NONE && !downloadIndependent && !musicIndependent
-                && !timerIndependent && !auroraActive) {
+        RingRouter.resolve(
+                mRingLayout,
+                preview,
+                downloadActive,
+                musicActive,
+                timerActive,
+                forceDownload,
+                sCfgDownloadPresentation,
+                sCfgMusicPresentation,
+                sCfgTimerPresentation,
+                sCfgPrimaryPriority,
+                mIsCharging,
+                sCfgChargingRing,
+                mIsBatteryIndicatorActive);
+
+        if (!mRingLayout.hasRings() && !auroraActive) {
             return;
         }
 
-        if (primarySource != SOURCE_NONE) {
-            drawSource(canvas, primarySource, effectivePct, 0f);
+        if (mRingLayout.primarySource != SOURCE_NONE) {
+            drawSource(canvas, mRingLayout.primarySource, effectivePct, 0f);
         }
 
         float outermostLaneDp = 0f;
-        float outermostStrokeDp = primarySource != SOURCE_NONE
-                ? sourceStrokeWidthDp(primarySource) : 0f;
-        int preferred = priorityToSource();
+        float outermostStrokeDp = mRingLayout.primarySource != SOURCE_NONE
+                ? sourceStrokeWidthDp(mRingLayout.primarySource) : 0f;
 
-        if (preferred == SOURCE_DOWNLOAD && downloadIndependent) {
-            float stroke = sourceStrokeWidthDp(SOURCE_DOWNLOAD);
-            outermostLaneDp = nextLaneOffsetDp(
-                    outermostLaneDp, outermostStrokeDp, stroke);
+        for (int i = 0; i < mRingLayout.independentCount; i++) {
+            int source = mRingLayout.independentSourceAt(i);
+            float stroke = sourceStrokeWidthDp(source);
+            outermostLaneDp = RingRouter.nextLaneOffsetDp(
+                    outermostLaneDp,
+                    outermostStrokeDp,
+                    stroke,
+                    sCfgMultiRingSpacingDp);
             outermostStrokeDp = stroke;
-            drawSource(canvas, SOURCE_DOWNLOAD, effectivePct, outermostLaneDp);
-        } else if (preferred == SOURCE_MUSIC && musicIndependent) {
-            float stroke = sourceStrokeWidthDp(SOURCE_MUSIC);
-            outermostLaneDp = nextLaneOffsetDp(
-                    outermostLaneDp, outermostStrokeDp, stroke);
-            outermostStrokeDp = stroke;
-            drawSource(canvas, SOURCE_MUSIC, effectivePct, outermostLaneDp);
-        } else if (preferred == SOURCE_TIMER && timerIndependent) {
-            float stroke = sourceStrokeWidthDp(SOURCE_TIMER);
-            outermostLaneDp = nextLaneOffsetDp(
-                    outermostLaneDp, outermostStrokeDp, stroke);
-            outermostStrokeDp = stroke;
-            drawSource(canvas, SOURCE_TIMER, effectivePct, outermostLaneDp);
-        }
-
-        if (preferred != SOURCE_DOWNLOAD && downloadIndependent) {
-            float stroke = sourceStrokeWidthDp(SOURCE_DOWNLOAD);
-            outermostLaneDp = nextLaneOffsetDp(
-                    outermostLaneDp, outermostStrokeDp, stroke);
-            outermostStrokeDp = stroke;
-            drawSource(canvas, SOURCE_DOWNLOAD, effectivePct, outermostLaneDp);
-        }
-        if (preferred != SOURCE_MUSIC && musicIndependent) {
-            float stroke = sourceStrokeWidthDp(SOURCE_MUSIC);
-            outermostLaneDp = nextLaneOffsetDp(
-                    outermostLaneDp, outermostStrokeDp, stroke);
-            outermostStrokeDp = stroke;
-            drawSource(canvas, SOURCE_MUSIC, effectivePct, outermostLaneDp);
-        }
-        if (preferred != SOURCE_TIMER && timerIndependent) {
-            float stroke = sourceStrokeWidthDp(SOURCE_TIMER);
-            outermostLaneDp = nextLaneOffsetDp(
-                    outermostLaneDp, outermostStrokeDp, stroke);
-            outermostStrokeDp = stroke;
-            drawSource(canvas, SOURCE_TIMER, effectivePct, outermostLaneDp);
+            drawSource(canvas, source, effectivePct, outermostLaneDp);
         }
 
         if (auroraActive) {
@@ -1289,26 +1233,6 @@ public final class CutoutRingView extends View {
                 return Math.max(0f, sCfgStrokeDp);
             default:
                 return 0f;
-        }
-    }
-
-    private float nextLaneOffsetDp(
-            float previousOffsetDp, float previousStrokeDp, float currentStrokeDp) {
-        // Treat the configured spacing as the preferred center-line distance, but never allow
-        // thick rings to intersect. Keep a small optical clearance between their painted edges.
-        float nonOverlapStep = (Math.max(0f, previousStrokeDp)
-                + Math.max(0f, currentStrokeDp)) * 0.5f + 0.75f;
-        return previousOffsetDp + Math.max(sCfgMultiRingSpacingDp, nonOverlapStep);
-    }
-
-    private int priorityToSource() {
-        switch (sCfgPrimaryPriority) {
-            case CutoutProgressSettings.PRIMARY_PRIORITY_MUSIC:
-                return SOURCE_MUSIC;
-            case CutoutProgressSettings.PRIMARY_PRIORITY_TIMER:
-                return SOURCE_TIMER;
-            default:
-                return SOURCE_DOWNLOAD;
         }
     }
 
