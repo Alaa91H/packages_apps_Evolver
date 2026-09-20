@@ -1107,39 +1107,27 @@ public final class CutoutRingView extends View {
 
     private void drawMusicWave(Canvas canvas) {
         int density = Math.max(16, Math.min(96, sCfgMusicWaveDensity));
-        float a = mArcBounds.width() / 2f;
-        float b = mArcBounds.height() / 2f;
-        if (a <= 0f || b <= 0f) return;
-
-        float cx = mArcBounds.centerX();
-        float cy = mArcBounds.centerY();
         float amplitudeBase = Math.max(0.5f, sCfgMusicWaveAmplitudeDp) * mDp;
         float pad = (sCfgMusicStrokeDp * 0.65f + 0.8f) * mDp;
         mMusicWavePaint.setColor(sCfgMusicColor);
         mMusicWavePaint.setAlpha(sCfgMusicOpacity * 255 / 100);
+        float[] position = new float[2];
+        float[] normal = new float[2];
 
         for (int i = 0; i < density; i++) {
-            float t = (float) (Math.PI * 2.0 * i / density);
-            float cos = (float) Math.cos(t);
-            float sin = (float) Math.sin(t);
-            float x = cx + a * cos;
-            float y = cy + b * sin;
-
-            float nx = cos / a;
-            float ny = sin / b;
-            float norm = (float) Math.sqrt(nx * nx + ny * ny);
-            if (norm <= 0f) continue;
-            nx /= norm;
-            ny /= norm;
-
+            float fraction = i / (float) density;
+            if (!mRenderer.getPointAndOutwardNormal(fraction, position, normal)) continue;
+            float t = (float) (Math.PI * 2.0 * fraction);
             float wave = 0.55f
                     + 0.25f * (float) Math.sin(t * 3f + mMusicWavePhase)
                     + 0.20f * (float) Math.sin(t * 7f - mMusicWavePhase * 1.7f);
             wave = Math.max(0.12f, Math.min(1f, wave));
             float amplitude = amplitudeBase * wave;
             canvas.drawLine(
-                    x + nx * pad, y + ny * pad,
-                    x + nx * (pad + amplitude), y + ny * (pad + amplitude),
+                    position[0] + normal[0] * pad,
+                    position[1] + normal[1] * pad,
+                    position[0] + normal[0] * (pad + amplitude),
+                    position[1] + normal[1] * (pad + amplitude),
                     mMusicWavePaint);
         }
     }
