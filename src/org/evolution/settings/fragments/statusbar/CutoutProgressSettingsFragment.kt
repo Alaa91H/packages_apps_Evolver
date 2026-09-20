@@ -301,7 +301,7 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
         timerEnabledPref.onPreferenceChangeListener =
             Preference.OnPreferenceChangeListener { _, value ->
                 updateTimerFlameDependency(
-                    value as Boolean, isSecureEnabled(KEY_TIMER_FLAME_ENABLED)
+                    value as Boolean, isSecureEnabled(KEY_TIMER_FLAME_ENABLED, true)
                 )
                 true
             }
@@ -329,7 +329,7 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
         auroraEnabledPref.onPreferenceChangeListener =
             Preference.OnPreferenceChangeListener { _, value ->
                 updateAuroraNotificationDependency(
-                    value as Boolean, isSecureEnabled(KEY_AURORA_NOTIFICATIONS)
+                    value as Boolean, isSecureEnabled(KEY_AURORA_NOTIFICATIONS, true)
                 )
                 true
             }
@@ -444,7 +444,7 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
     private fun updateNestedDependencyState() {
         updateTimerFlameDependency(
             isSecureEnabled(KEY_TIMER_ENABLED),
-            isSecureEnabled(KEY_TIMER_FLAME_ENABLED)
+            isSecureEnabled(KEY_TIMER_FLAME_ENABLED, true)
         )
         updateMusicWaveDependency(
             isSecureEnabled(KEY_MUSIC_RING_ENABLED),
@@ -452,7 +452,7 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
         )
         updateAuroraNotificationDependency(
             isSecureEnabled(KEY_AURORA_ENABLED),
-            isSecureEnabled(KEY_AURORA_NOTIFICATIONS)
+            isSecureEnabled(KEY_AURORA_NOTIFICATIONS, true)
         )
     }
 
@@ -478,7 +478,8 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
         auroraNotificationDurationPref.isEnabled = enabled
     }
 
-    private fun isSecureEnabled(key: String): Boolean = readSecureInt(key, 0) != 0
+    private fun isSecureEnabled(key: String, defaultValue: Boolean = false): Boolean =
+        readSecureInt(key, if (defaultValue) 1 else 0) != 0
 
 
     private fun updateColorPickerVisibility(mode: Int, key: String) {
