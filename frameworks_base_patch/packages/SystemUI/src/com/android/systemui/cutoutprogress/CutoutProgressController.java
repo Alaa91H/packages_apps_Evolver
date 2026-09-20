@@ -16,16 +16,23 @@
 
 package com.android.systemui.cutoutprogress;
 
+import android.app.Notification;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.UserInfo;
 import android.graphics.PixelFormat;
+import android.media.AudioManager;
+import android.media.AudioRecordingConfiguration;
 import android.os.BatteryManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.UserHandle;
+import android.os.SystemClock;
+import android.telecom.TelecomManager;
+import android.telephony.TelephonyCallback;
+import android.telephony.TelephonyManager;
 import android.view.WindowManager;
 
 import com.android.systemui.CoreStartable;
@@ -37,6 +44,9 @@ import com.android.systemui.statusbar.policy.ConfigurationController;
 import com.android.systemui.statusbar.notification.collection.NotifPipeline;
 import com.android.systemui.statusbar.notification.collection.NotificationEntry;
 import com.android.systemui.statusbar.notification.collection.notifcollection.NotifCollectionListener;
+
+import java.util.List;
+import java.util.Locale;
 
 import javax.inject.Inject;
 
@@ -58,6 +68,15 @@ public class CutoutProgressController implements CoreStartable {
     private boolean mOverlayAttached = false;
     private boolean mBatteryReceiverRegistered = false;
     private NotifCollectionListener mNotifListener;
+
+    private TelephonyManager mTelephonyManager;
+    private boolean mCallCallbackRegistered = false;
+    private AudioManager mAudioManager;
+    private boolean mRecordingCallbackRegistered = false;
+
+    private String mTimerKey;
+    private long mTimerEndElapsedMs = 0L;
+    private long mTimerTotalMs = 0L;
 
     private final ConfigurationController.ConfigurationListener mConfigurationListener =
             new ConfigurationController.ConfigurationListener() {
@@ -81,6 +100,28 @@ public class CutoutProgressController implements CoreStartable {
             onSettingsChanged();
         }
     };
+
+    private final class AuroraCallStateCallback extends TelephonyCallback
+            implements TelephonyCallback.CallStateListener {
+        @Override
+        public void onCallStateChanged(int state) {
+            boolean active = state != TelephonyManager.CALL_STATE_IDLE;
+            runOnMain(() -> mRingView.setAuroraCallActive(active));
+        }
+    }
+
+    private final AuroraCallStateCallback mCallStateCallback = new AuroraCallStateCallback();
+
+    private final AudioManager.AudioRecordingCallback mRecordingCallback =
+            new AudioManager.AudioRecordingCallback() {
+        @Override
+        public void onRecordingConfigChanged(List<AudioRecordingConfiguration> configs) {
+            boolean active = configs != null && !configs.isEmpty();
+            runOnMain(() -> mRingView.setAuroraRecordingActive(active));
+        }
+    };
+
+    private final Runnable mTimerTick = this::updateTimerTick;
 
     private final BroadcastReceiver mBatteryReceiver = new BroadcastReceiver() {
         @Override
@@ -165,6 +206,10 @@ public class CutoutProgressController implements CoreStartable {
             mMusicController.applySettings(mSettings);
         }
 
+        if (!mSettings.isTimerEnabled()) {
+            clearTimerState();
+        }
+
         if (mSettings.isEnabled()) {
             enableFeature();
         } else {
@@ -174,12 +219,17 @@ public class CutoutProgressController implements CoreStartable {
 
     private void enableFeature() {
         attachOverlay();
-        if (mSettings.getDownloadPresentation()
-                != CutoutProgressSettings.PRESENTATION_DISABLED) {
+        boolean needsPipeline =
+                mSettings.getDownloadPresentation()
+                        != CutoutProgressSettings.PRESENTATION_DISABLED
+                || mSettings.isTimerEnabled()
+                || (mSettings.isAuroraEnabled() && mSettings.isAuroraNotificationsEnabled());
+        if (needsPipeline) {
             registerPipelineListener();
         } else {
             unregisterPipelineListener();
             mTracker.reset();
+            clearTimerState();
         }
 
         if (mSettings.isChargingRingEnabled() || mSettings.isBatteryIndicatorEnabled()) {
@@ -192,11 +242,25 @@ public class CutoutProgressController implements CoreStartable {
             boolean musicVisible = mSettings.isMusicRingEnabled()
                     && mSettings.getMusicPresentation()
                     != CutoutProgressSettings.PRESENTATION_DISABLED;
-            if (musicVisible) {
+            boolean musicNeededForAurora = mSettings.isAuroraEnabled()
+                    && mSettings.isAuroraMusicEnabled();
+            if (musicVisible || musicNeededForAurora) {
                 mMusicController.start();
             } else {
                 mMusicController.stop();
             }
+        }
+
+        if (mSettings.isAuroraEnabled() && mSettings.isAuroraCallsEnabled()) {
+            registerCallStateCallback();
+        } else {
+            unregisterCallStateCallback();
+        }
+
+        if (mSettings.isAuroraEnabled() && mSettings.isAuroraRecordingEnabled()) {
+            registerRecordingCallback();
+        } else {
+            unregisterRecordingCallback();
         }
     }
 
@@ -206,6 +270,10 @@ public class CutoutProgressController implements CoreStartable {
             mMusicController.stop();
         }
         unregisterBatteryReceiver();
+        unregisterCallStateCallback();
+        unregisterRecordingCallback();
+        clearTimerState();
+        if (mRingView != null) mRingView.clearTransientEffects();
         mTracker.reset();
         detachOverlay();
     }
@@ -257,20 +325,36 @@ public class CutoutProgressController implements CoreStartable {
         mNotifListener = new NotifCollectionListener() {
             @Override
             public void onEntryAdded(NotificationEntry entry) {
-                if (mSettings.isEnabled() && isEntryForCurrentUser(entry)) {
+                if (!mSettings.isEnabled() || !isEntryForCurrentUser(entry)) return;
+                if (mSettings.getDownloadPresentation()
+                        != CutoutProgressSettings.PRESENTATION_DISABLED) {
                     mTracker.onNotificationChanged(entry);
                 }
+                updateTimerFromNotification(entry);
+                triggerNotificationAurora(entry);
             }
 
             @Override
             public void onEntryUpdated(NotificationEntry entry) {
-                if (mSettings.isEnabled()) mTracker.onNotificationChanged(entry);
+                if (!mSettings.isEnabled() || !isEntryForCurrentUser(entry)) return;
+                if (mSettings.getDownloadPresentation()
+                        != CutoutProgressSettings.PRESENTATION_DISABLED) {
+                    mTracker.onNotificationChanged(entry);
+                }
+                updateTimerFromNotification(entry);
             }
 
             @Override
             public void onEntryRemoved(NotificationEntry entry, int reason) {
-                if (mSettings.isEnabled() && isEntryForCurrentUser(entry)) {
+                if (!mSettings.isEnabled() || !isEntryForCurrentUser(entry)) return;
+                if (mSettings.getDownloadPresentation()
+                        != CutoutProgressSettings.PRESENTATION_DISABLED) {
                     mTracker.onNotificationRemoved(entry, reason);
+                }
+                if (entry != null && entry.getSbn() != null
+                        && entry.getSbn().getKey().equals(mTimerKey)) {
+                    clearTimerState();
+                    mMainHandler.post(CutoutProgressController.this::seedTimerFromPipeline);
                 }
             }
         };
@@ -279,9 +363,12 @@ public class CutoutProgressController implements CoreStartable {
         // Collection listeners do not replay already-present notifications. Seed the tracker so
         // enabling/re-enabling the feature during an active transfer works immediately.
         for (NotificationEntry entry : mPipeline.getAllNotifs()) {
-            if (isEntryForCurrentUser(entry)) {
+            if (!isEntryForCurrentUser(entry)) continue;
+            if (mSettings.getDownloadPresentation()
+                    != CutoutProgressSettings.PRESENTATION_DISABLED) {
                 mTracker.onNotificationChanged(entry);
             }
+            updateTimerFromNotification(entry);
         }
     }
 
@@ -289,6 +376,181 @@ public class CutoutProgressController implements CoreStartable {
         if (mNotifListener == null) return;
         mPipeline.removeCollectionListener(mNotifListener);
         mNotifListener = null;
+    }
+
+    private void triggerNotificationAurora(NotificationEntry entry) {
+        if (!mSettings.isAuroraEnabled() || !mSettings.isAuroraNotificationsEnabled()
+                || entry == null || entry.getSbn() == null
+                || entry.getSbn().getNotification() == null) {
+            return;
+        }
+        Notification notification = entry.getSbn().getNotification();
+        int color = notification.color;
+        runOnMain(() -> mRingView.showNotificationAurora(
+                color, mSettings.getAuroraNotificationDurationMs()));
+    }
+
+    private void updateTimerFromNotification(NotificationEntry entry) {
+        if (!mSettings.isTimerEnabled() || entry == null || entry.getSbn() == null) return;
+        Notification notification = entry.getSbn().getNotification();
+        if (notification == null || notification.extras == null) return;
+
+        boolean showChronometer = notification.extras.getBoolean(
+                Notification.EXTRA_SHOW_CHRONOMETER, false);
+        boolean countDown = notification.extras.getBoolean(
+                Notification.EXTRA_CHRONOMETER_COUNT_DOWN, false);
+        if (!showChronometer || !countDown) return;
+
+        String pkg = entry.getSbn().getPackageName();
+        String normalizedPkg = pkg == null ? "" : pkg.toLowerCase(Locale.ROOT);
+        boolean likelyClock = Notification.CATEGORY_ALARM.equals(notification.category)
+                || normalizedPkg.contains("clock")
+                || normalizedPkg.contains("deskclock")
+                || normalizedPkg.contains("timer");
+        if (!likelyClock) return;
+
+        long nowWall = System.currentTimeMillis();
+        long remaining = notification.when - nowWall;
+        if (remaining <= 0L) return;
+
+        long nowElapsed = SystemClock.elapsedRealtime();
+        long endElapsed = nowElapsed + remaining;
+        String key = entry.getSbn().getKey();
+
+        // If several timers are active, visualize the one that expires first.
+        if (mTimerKey != null && !mTimerKey.equals(key)
+                && mTimerEndElapsedMs > nowElapsed && mTimerEndElapsedMs <= endElapsed) {
+            return;
+        }
+
+        boolean newTimer = mTimerKey == null || !mTimerKey.equals(key);
+        boolean endChanged = !newTimer && Math.abs(endElapsed - mTimerEndElapsedMs) > 1000L;
+        mTimerKey = key;
+        mTimerEndElapsedMs = endElapsed;
+        if (newTimer || endChanged || mTimerTotalMs <= 0L) {
+            mTimerTotalMs = Math.max(1000L, remaining);
+        }
+
+        removeTimerTick();
+        updateTimerTick();
+    }
+
+    private void seedTimerFromPipeline() {
+        if (!mSettings.isEnabled() || !mSettings.isTimerEnabled()) return;
+        for (NotificationEntry entry : mPipeline.getAllNotifs()) {
+            if (isEntryForCurrentUser(entry)) updateTimerFromNotification(entry);
+        }
+    }
+
+    private void updateTimerTick() {
+        mMainHandler.removeCallbacks(mTimerTick);
+        if (!mSettings.isEnabled() || !mSettings.isTimerEnabled()
+                || mTimerKey == null || mTimerTotalMs <= 0L) {
+            clearTimerState();
+            return;
+        }
+
+        long remaining = mTimerEndElapsedMs - SystemClock.elapsedRealtime();
+        if (remaining <= 0L) {
+            clearTimerState();
+            return;
+        }
+
+        float fraction = Math.max(0f, Math.min(1f, remaining / (float) mTimerTotalMs));
+        mRingView.setTimerState(true, fraction);
+        mMainHandler.postDelayed(mTimerTick, 250L);
+    }
+
+    private void removeTimerTick() {
+        mMainHandler.removeCallbacks(mTimerTick);
+    }
+
+    private void clearTimerState() {
+        removeTimerTick();
+        mTimerKey = null;
+        mTimerEndElapsedMs = 0L;
+        mTimerTotalMs = 0L;
+        if (mRingView != null) mRingView.setTimerState(false, 0f);
+    }
+
+    private void registerCallStateCallback() {
+        if (mCallCallbackRegistered) {
+            seedCallState();
+            return;
+        }
+        mTelephonyManager = mContext.getSystemService(TelephonyManager.class);
+        if (mTelephonyManager == null) return;
+        try {
+            mTelephonyManager.registerTelephonyCallback(
+                    mContext.getMainExecutor(), mCallStateCallback);
+            mCallCallbackRegistered = true;
+            seedCallState();
+        } catch (RuntimeException ignored) {
+            mCallCallbackRegistered = false;
+        }
+    }
+
+    private void seedCallState() {
+        boolean inCall = false;
+        try {
+            TelecomManager telecom = mContext.getSystemService(TelecomManager.class);
+            inCall = telecom != null && telecom.isInCall();
+        } catch (RuntimeException ignored) {
+        }
+        final boolean active = inCall;
+        runOnMain(() -> mRingView.setAuroraCallActive(active));
+    }
+
+    private void unregisterCallStateCallback() {
+        if (mCallCallbackRegistered && mTelephonyManager != null) {
+            try {
+                mTelephonyManager.unregisterTelephonyCallback(mCallStateCallback);
+            } catch (RuntimeException ignored) {
+            }
+        }
+        mCallCallbackRegistered = false;
+        mTelephonyManager = null;
+        if (mRingView != null) mRingView.setAuroraCallActive(false);
+    }
+
+    private void registerRecordingCallback() {
+        if (mRecordingCallbackRegistered) {
+            seedRecordingState();
+            return;
+        }
+        mAudioManager = mContext.getSystemService(AudioManager.class);
+        if (mAudioManager == null) return;
+        try {
+            mAudioManager.registerAudioRecordingCallback(mRecordingCallback, mMainHandler);
+            mRecordingCallbackRegistered = true;
+            seedRecordingState();
+        } catch (RuntimeException ignored) {
+            mRecordingCallbackRegistered = false;
+        }
+    }
+
+    private void seedRecordingState() {
+        boolean active = false;
+        try {
+            List<AudioRecordingConfiguration> configs =
+                    mAudioManager != null ? mAudioManager.getActiveRecordingConfigurations() : null;
+            active = configs != null && !configs.isEmpty();
+        } catch (RuntimeException ignored) {
+        }
+        final boolean recording = active;
+        runOnMain(() -> mRingView.setAuroraRecordingActive(recording));
+    }
+
+    private void unregisterRecordingCallback() {
+        if (mRecordingCallbackRegistered && mAudioManager != null) {
+            try {
+                mAudioManager.unregisterAudioRecordingCallback(mRecordingCallback);
+            } catch (RuntimeException ignored) {
+            }
+        }
+        mRecordingCallbackRegistered = false;
+        mAudioManager = null;
+        if (mRingView != null) mRingView.setAuroraRecordingActive(false);
     }
 
     private boolean isEntryForCurrentUser(NotificationEntry entry) {
