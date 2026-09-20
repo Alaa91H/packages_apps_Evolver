@@ -123,6 +123,9 @@ public final class MusicRingController {
             mColorManager = null;
         }
 
+        mIsPlaying = false;
+        mFraction = 0f;
+        mTrackId = "";
         mRingView.setMusicPlaying(false);
         mRingView.setMusicProgress(0f);
     }
