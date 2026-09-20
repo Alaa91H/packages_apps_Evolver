@@ -299,11 +299,11 @@ public final class CutoutProgressSettings {
     }
 
     public float getStrokeWidthDp() {
-        return getInt(KEY_STROKE_WIDTH_DP10, (int)(DEF_STROKE_DP * 10)) / 10f;
+        return clamp(getInt(KEY_STROKE_WIDTH_DP10, (int)(DEF_STROKE_DP * 10)), 5, 80) / 10f;
     }
 
     public float getRingGap() {
-        return getInt(KEY_RING_GAP_X1000, (int)(DEF_RING_GAP * 1000)) / 1000f;
+        return clamp(getInt(KEY_RING_GAP_X1000, (int)(DEF_RING_GAP * 1000)), 1000, 2000) / 1000f;
     }
 
     public int getOpacity() {
@@ -321,11 +321,11 @@ public final class CutoutProgressSettings {
     }
 
     public int getFinishHoldMs() {
-        return getInt(KEY_FINISH_HOLD_MS, DEF_FINISH_HOLD_MS);
+        return clamp(getInt(KEY_FINISH_HOLD_MS, DEF_FINISH_HOLD_MS), 0, 2000);
     }
 
     public int getFinishExitMs() {
-        return getInt(KEY_FINISH_EXIT_MS, DEF_FINISH_EXIT_MS);
+        return clamp(getInt(KEY_FINISH_EXIT_MS, DEF_FINISH_EXIT_MS), 0, 2000);
     }
 
     public boolean isFinishUseFlash() {
@@ -345,19 +345,19 @@ public final class CutoutProgressSettings {
     }
 
     public float getRingScaleX() {
-        return getInt(KEY_RING_SCALE_X_X1000, (int)(DEF_RING_SCALE_X * 1000)) / 1000f;
+        return clamp(getInt(KEY_RING_SCALE_X_X1000, (int)(DEF_RING_SCALE_X * 1000)), 500, 3000) / 1000f;
     }
 
     public float getRingScaleY() {
-        return getInt(KEY_RING_SCALE_Y_X1000, (int)(DEF_RING_SCALE_Y * 1000)) / 1000f;
+        return clamp(getInt(KEY_RING_SCALE_Y_X1000, (int)(DEF_RING_SCALE_Y * 1000)), 500, 3000) / 1000f;
     }
 
     public float getRingOffsetXDp() {
-        return getInt(KEY_RING_OFFSET_X_DP10, (int)(DEF_RING_OFFSET_X * 10)) / 10f;
+        return clamp(getInt(KEY_RING_OFFSET_X_DP10, (int)(DEF_RING_OFFSET_X * 10)), -200, 200) / 10f;
     }
 
     public float getRingOffsetYDp() {
-        return getInt(KEY_RING_OFFSET_Y_DP10, (int)(DEF_RING_OFFSET_Y * 10)) / 10f;
+        return clamp(getInt(KEY_RING_OFFSET_Y_DP10, (int)(DEF_RING_OFFSET_Y * 10)), -200, 200) / 10f;
     }
 
     public boolean isBgRingEnabled() {
@@ -377,7 +377,7 @@ public final class CutoutProgressSettings {
     }
 
     public int getMinVisMs() {
-        return getInt(KEY_MIN_VIS_MS, DEF_MIN_VIS_MS);
+        return clamp(getInt(KEY_MIN_VIS_MS, DEF_MIN_VIS_MS), 100, 3000);
     }
 
     public boolean isShowCountBadge() {
@@ -385,15 +385,15 @@ public final class CutoutProgressSettings {
     }
 
     public float getBadgeOffsetXDp() {
-        return getInt(KEY_BADGE_OFFSET_X_DP10, (int)(DEF_BADGE_OFFSET * 10)) / 10f;
+        return clamp(getInt(KEY_BADGE_OFFSET_X_DP10, (int)(DEF_BADGE_OFFSET * 10)), -100, 100) / 10f;
     }
 
     public float getBadgeOffsetYDp() {
-        return getInt(KEY_BADGE_OFFSET_Y_DP10, (int)(DEF_BADGE_OFFSET * 10)) / 10f;
+        return clamp(getInt(KEY_BADGE_OFFSET_Y_DP10, (int)(DEF_BADGE_OFFSET * 10)), -100, 100) / 10f;
     }
 
     public float getBadgeTextSizeSp() {
-        return getInt(KEY_BADGE_TEXT_SIZE_SP10, (int)(DEF_BADGE_TEXT_SP * 10)) / 10f;
+        return clamp(getInt(KEY_BADGE_TEXT_SIZE_SP10, (int)(DEF_BADGE_TEXT_SP * 10)), 60, 180) / 10f;
     }
 
     public boolean isPercentEnabled() {
@@ -401,7 +401,7 @@ public final class CutoutProgressSettings {
     }
 
     public float getPercentTextSizeSp() {
-        return getInt(KEY_PERCENT_SIZE_SP10, (int)(DEF_PERCENT_SP * 10)) / 10f;
+        return clamp(getInt(KEY_PERCENT_SIZE_SP10, (int)(DEF_PERCENT_SP * 10)), 60, 200) / 10f;
     }
 
     public boolean isPercentBold() {
@@ -427,7 +427,7 @@ public final class CutoutProgressSettings {
     }
 
     public float getFilenameTextSizeSp() {
-        return getInt(KEY_FILENAME_SIZE_SP10, (int)(DEF_FILENAME_SP * 10)) / 10f;
+        return clamp(getInt(KEY_FILENAME_SIZE_SP10, (int)(DEF_FILENAME_SP * 10)), 50, 180) / 10f;
     }
 
     public boolean isFilenameBold() {
@@ -449,7 +449,7 @@ public final class CutoutProgressSettings {
     }
 
     public int getFilenameMaxChars() {
-        return getInt(KEY_FILENAME_MAX_CHARS, DEF_FILENAME_MAX_CHARS);
+        return clamp(getInt(KEY_FILENAME_MAX_CHARS, DEF_FILENAME_MAX_CHARS), 5, 60);
     }
 
     public String getFilenameTruncateMode() {
@@ -494,7 +494,7 @@ public final class CutoutProgressSettings {
     }
 
     public float getMusicStrokeWidthDp() {
-        return getInt(KEY_MUSIC_STROKE_WIDTH_DP10, (int)(DEF_MUSIC_STROKE_DP * 10)) / 10f;
+        return clamp(getInt(KEY_MUSIC_STROKE_WIDTH_DP10, (int)(DEF_MUSIC_STROKE_DP * 10)), 5, 80) / 10f;
     }
 
     public boolean isMusicShowOnAod() {
@@ -522,7 +522,7 @@ public final class CutoutProgressSettings {
 
     public float getMultiRingSpacingDp() {
         return clamp(getInt(KEY_MULTI_RING_SPACING_DP10,
-                (int)(DEF_MULTI_RING_SPACING_DP * 10)), 5, 120) / 10f;
+                (int)(DEF_MULTI_RING_SPACING_DP * 10)), 10, 120) / 10f;
     }
 
     public boolean isMusicWaveEnabled() {
@@ -547,7 +547,7 @@ public final class CutoutProgressSettings {
     }
 
     public float getGlowRadiusDp() {
-        return getInt(KEY_GLOW_RADIUS_DP10, (int)(DEF_GLOW_RADIUS_DP * 10)) / 10f;
+        return clamp(getInt(KEY_GLOW_RADIUS_DP10, (int)(DEF_GLOW_RADIUS_DP * 10)), 10, 150) / 10f;
     }
 
     public void setBatteryIndicatorEnabled(boolean value) {
