@@ -428,13 +428,21 @@ public class CutoutProgressController implements CoreStartable {
         }
 
         boolean newTimer = mTimerKey == null || !mTimerKey.equals(key);
-        boolean endChanged = !newTimer
-                && Math.abs(countdown.endElapsedMs - mTimerEndElapsedMs) > 1000L;
+        boolean wasRunning = mTimerRunning;
+        long previousEndElapsedMs = mTimerEndElapsedMs;
+        long endDelta = newTimer ? 0L : countdown.endElapsedMs - previousEndElapsedMs;
+
         mTimerKey = key;
         mTimerEndElapsedMs = countdown.endElapsedMs;
         mTimerRunning = countdown.running;
-        if (newTimer || endChanged || mTimerTotalMs <= 0L) {
+
+        if (newTimer || mTimerTotalMs <= 0L) {
             mTimerTotalMs = Math.max(1000L, remaining);
+        } else if (wasRunning && countdown.running && Math.abs(endDelta) > 1000L) {
+            // Preserve the user's progress across +time/-time edits. Pause/resume changes the
+            // absolute end base too, but must not reset the ring back to 100%.
+            mTimerTotalMs = Math.max(1000L, mTimerTotalMs + endDelta);
+            mTimerTotalMs = Math.max(mTimerTotalMs, remaining);
         }
 
         removeTimerTick();
