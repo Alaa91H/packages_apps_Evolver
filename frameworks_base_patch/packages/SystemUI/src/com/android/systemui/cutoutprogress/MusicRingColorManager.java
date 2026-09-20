@@ -72,6 +72,8 @@ public final class MusicRingColorManager {
     private Drawable mLastResolvedArt = null;
     private volatile int mResolveGeneration = 0;
     private volatile boolean mDestroyed = false;
+    private final Object mPaletteTaskLock = new Object();
+    private PaletteTask mPendingPaletteTask;
 
     private int mCurrentColor = DEFAULT_FALLBACK;
 
@@ -120,6 +122,12 @@ public final class MusicRingColorManager {
         mDestroyed = true;
         mResolveGeneration++;
         mCallback = null;
+        synchronized (mPaletteTaskLock) {
+            if (mPendingPaletteTask != null) {
+                mPendingPaletteTask.cancel();
+                mPendingPaletteTask = null;
+            }
+        }
         mBgExecutor.shutdownNow();
     }
 
@@ -238,40 +246,95 @@ public final class MusicRingColorManager {
             return;
         }
 
-        final String capturedId = trackId;
-        final Drawable capturedArt = art;
-        final boolean dark = isDarkMode();
-
+        final PaletteTask task = new PaletteTask(sampled, generation, trackId, art, isDarkMode());
+        synchronized (mPaletteTaskLock) {
+            if (mPendingPaletteTask != null) {
+                mPendingPaletteTask.cancel();
+            }
+            mPendingPaletteTask = task;
+        }
         try {
-            mBgExecutor.execute(() -> {
-                if (mDestroyed || generation != mResolveGeneration) {
-                    sampled.recycle();
+            mBgExecutor.execute(task);
+        } catch (RejectedExecutionException ignored) {
+            task.cancel();
+            clearPaletteTask(task);
+        }
+    }
+
+    private final class PaletteTask implements Runnable {
+        private Bitmap mSample;
+        private final int mGeneration;
+        private final String mTrackId;
+        private final Drawable mArt;
+        private final boolean mDark;
+        private boolean mStarted;
+        private boolean mCancelled;
+
+        PaletteTask(Bitmap sample, int generation, String trackId, Drawable art, boolean dark) {
+            mSample = sample;
+            mGeneration = generation;
+            mTrackId = trackId;
+            mArt = art;
+            mDark = dark;
+        }
+
+        synchronized void cancel() {
+            mCancelled = true;
+            if (!mStarted) recycleSampleLocked();
+        }
+
+        @Override
+        public void run() {
+            final Bitmap sample;
+            synchronized (this) {
+                if (mCancelled || mSample == null) {
+                    clearPaletteTask(this);
                     return;
                 }
-                int color = DEFAULT_FALLBACK;
-                try {
-                    Palette palette = Palette.from(sampled).maximumColorCount(16).generate();
+                mStarted = true;
+                sample = mSample;
+            }
+
+            int color = DEFAULT_FALLBACK;
+            try {
+                if (!mDestroyed && mGeneration == mResolveGeneration) {
+                    Palette palette = Palette.from(sample).maximumColorCount(16).generate();
                     color = pickBestSwatch(palette);
-                } catch (RuntimeException ignored) {
-                    color = DEFAULT_FALLBACK;
-                } finally {
-                    sampled.recycle();
                 }
-                int finalColor = ensureVisible(color, dark);
-                mMainHandler.post(() -> {
-                    if (mDestroyed
-                            || generation != mResolveGeneration
-                            || !Objects.equals(capturedId, mCachedTrackId)
-                            || capturedArt != mLastArt) {
-                        return;
-                    }
-                    mLastResolvedArt = capturedArt;
-                    if (capturedId != null) mCachedColor = finalColor;
-                    emit(finalColor);
-                });
+            } catch (RuntimeException ignored) {
+                color = DEFAULT_FALLBACK;
+            } finally {
+                synchronized (this) {
+                    recycleSampleLocked();
+                }
+                clearPaletteTask(this);
+            }
+
+            final int finalColor = ensureVisible(color, mDark);
+            mMainHandler.post(() -> {
+                if (mDestroyed || mCancelled
+                        || mGeneration != mResolveGeneration
+                        || !Objects.equals(mTrackId, mCachedTrackId)
+                        || mArt != mLastArt) {
+                    return;
+                }
+                mLastResolvedArt = mArt;
+                if (mTrackId != null) mCachedColor = finalColor;
+                emit(finalColor);
             });
-        } catch (RejectedExecutionException ignored) {
-            sampled.recycle();
+        }
+
+        private void recycleSampleLocked() {
+            if (mSample != null && !mSample.isRecycled()) {
+                mSample.recycle();
+            }
+            mSample = null;
+        }
+    }
+
+    private void clearPaletteTask(PaletteTask task) {
+        synchronized (mPaletteTaskLock) {
+            if (mPendingPaletteTask == task) mPendingPaletteTask = null;
         }
     }
 
