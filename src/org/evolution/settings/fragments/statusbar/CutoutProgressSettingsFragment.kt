@@ -52,6 +52,7 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
         private const val PRESENTATION_INDEPENDENT = 1
 
         private const val KEY_RING_COLOR = "cutout_progress_ring_color"
+        private const val KEY_RING_GAP = "cutout_progress_ring_gap_x1000"
         private const val KEY_ERROR_COLOR = "cutout_progress_error_color"
         private const val KEY_FLASH_COLOR = "cutout_progress_finish_flash_color"
         private const val KEY_BG_COLOR = "cutout_progress_bg_ring_color"
@@ -143,6 +144,7 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
     private lateinit var scaleYPref: Preference
     private lateinit var offsetXPref: Preference
     private lateinit var offsetYPref: Preference
+    private lateinit var ringGapPref: Preference
 
     private lateinit var ringColorPref: Preference
     private lateinit var errorColorPref: Preference
@@ -172,6 +174,7 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
         scaleYPref = findPreference(KEY_RING_SCALE_Y)!!
         offsetXPref = findPreference(KEY_RING_OFFSET_X)!!
         offsetYPref = findPreference(KEY_RING_OFFSET_Y)!!
+        ringGapPref = findPreference(KEY_RING_GAP)!!
 
         ringColorPref = findPreference(KEY_RING_COLOR)!!
         errorColorPref = findPreference(KEY_ERROR_COLOR)!!
@@ -298,6 +301,7 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
         scaleYPref.isVisible = showManual
         offsetXPref.isVisible = showManual
         offsetYPref.isVisible = showManual
+        ringGapPref.isVisible = showManual
     }
 
     private fun updateLayerPreferenceVisibility(downloadMode: Int, musicMode: Int) {
