@@ -845,6 +845,27 @@
     <string name="cutout_progress_music_aod_title">Show on AOD</string>
     <string name="cutout_progress_music_aod_summary">Keep the music ring visible on ambient display</string>
 
+    <string name="cutout_progress_cat_layers">Multi-ring behavior</string>
+    <string name="cutout_progress_download_presentation_title">Download ring placement</string>
+    <string name="cutout_progress_download_presentation_summary">Choose whether downloads use the primary camera ring, a dedicated outer ring, or no ring</string>
+    <string name="cutout_progress_music_presentation_title">Music ring placement</string>
+    <string name="cutout_progress_music_presentation_summary">Choose whether music uses the primary camera ring, a dedicated outer ring, or no ring</string>
+    <string name="cutout_progress_presentation_primary">Primary ring</string>
+    <string name="cutout_progress_presentation_independent">Independent outer ring</string>
+    <string name="cutout_progress_presentation_disabled">Disabled</string>
+    <string name="cutout_progress_primary_priority_title">Primary ring priority</string>
+    <string name="cutout_progress_primary_priority_summary">When download and music both request the primary ring, choose which one stays visible</string>
+    <string name="cutout_progress_primary_priority_download">Downloads first</string>
+    <string name="cutout_progress_primary_priority_music">Music first</string>
+    <string name="cutout_progress_multi_ring_spacing_title">Independent ring spacing</string>
+    <string name="cutout_progress_multi_ring_spacing_summary">Distance between automatically stacked rings</string>
+
+    <string name="cutout_progress_music_wave_title">Outer waveform</string>
+    <string name="cutout_progress_music_wave_summary">Draw an animated waveform outside the active music ring; it follows the resolved music color including album-art colors</string>
+    <string name="cutout_progress_music_wave_amplitude_title">Waveform amplitude</string>
+    <string name="cutout_progress_music_wave_density_title">Waveform density</string>
+    <string name="cutout_progress_music_wave_speed_title">Waveform speed</string>
+
     <!-- Status bar/Bluetooth -->
     <string name="status_bar_bluetooth_battery_title">Bluetooth battery status</string>
     <string name="status_bar_bluetooth_battery_summary">Display battery status for the connected Bluetooth device, if available</string>
