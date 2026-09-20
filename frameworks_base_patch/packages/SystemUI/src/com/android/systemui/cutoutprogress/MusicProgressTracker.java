@@ -61,6 +61,7 @@ public final class MusicProgressTracker {
     private Bitmap mLastArtBitmap = null;
 
     private boolean mFrameScheduled = false;
+    private boolean mStarted = false;
 
     private final MediaSessionManagerHelper.MediaMetadataListener mListener =
             new MediaSessionManagerHelper.MediaMetadataListener() {
@@ -79,7 +80,7 @@ public final class MusicProgressTracker {
         @Override
         public void run() {
             mFrameScheduled = false;
-            if (mIsPlaying && mDurationMs > 0) {
+            if (mStarted && mIsPlaying && mDurationMs > 0) {
                 dispatchInterpolatedProgress();
                 scheduleFrame();
             }
@@ -94,12 +95,16 @@ public final class MusicProgressTracker {
     }
 
     public void start() {
+        if (mStarted) return;
+        mStarted = true;
         // MediaSessionManagerHelper immediately dispatches the current metadata/playback state
         // from addMediaMetadataListener(); do not process both snapshots twice.
         mHelper.addMediaMetadataListener(mListener);
     }
 
     public void stop() {
+        if (!mStarted) return;
+        mStarted = false;
         mHelper.removeMediaMetadataListener(mListener);
         stopFrames();
         mIsPlaying = false;
@@ -108,6 +113,7 @@ public final class MusicProgressTracker {
     }
 
     private void handleMetadataChanged() {
+        if (!mStarted) return;
         MediaMetadata md = mHelper.getCurrentMediaMetadata();
 
         long dur  = md != null ? md.getLong(MediaMetadata.METADATA_KEY_DURATION) : -1L;
@@ -142,6 +148,7 @@ public final class MusicProgressTracker {
     }
 
     private void handlePlaybackStateChanged() {
+        if (!mStarted) return;
         PlaybackState ps = mHelper.getMediaControllerPlaybackState();
         boolean nowPlaying = mHelper.isMediaPlaying();
 
