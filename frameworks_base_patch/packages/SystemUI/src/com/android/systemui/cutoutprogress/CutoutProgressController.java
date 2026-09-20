@@ -500,7 +500,11 @@ public class CutoutProgressController implements CoreStartable {
         if (entry == null || entry.getSbn() == null) return;
         Notification notification = entry.getSbn().getNotification();
         String key = entry.getSbn().getKey();
-        if (notification != null && Notification.CATEGORY_CALL.equals(notification.category)) {
+        boolean activeCallNotification = notification != null
+                && Notification.CATEGORY_CALL.equals(notification.category)
+                && (((notification.flags & Notification.FLAG_ONGOING_EVENT) != 0)
+                    || notification.fullScreenIntent != null);
+        if (activeCallNotification) {
             mActiveCallNotificationKeys.add(key);
         } else {
             mActiveCallNotificationKeys.remove(key);
