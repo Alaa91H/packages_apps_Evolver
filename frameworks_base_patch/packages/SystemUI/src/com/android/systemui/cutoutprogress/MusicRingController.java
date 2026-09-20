@@ -50,8 +50,8 @@ public final class MusicRingController {
     public void applySettings(CutoutProgressSettings settings) {
         mSettings = settings;
         if (mColorManager != null) {
-            mColorManager.setMode(settings.getMusicColorMode());
             mColorManager.setCustomColor(settings.getMusicCustomColor());
+            mColorManager.setMode(settings.getMusicColorMode());
         }
         mRingView.applyMusicSettings(
                 settings.getMusicOpacity(),
@@ -76,8 +76,8 @@ public final class MusicRingController {
             mRingView.setMusicRingColor(color);
         });
         if (mSettings != null) {
-            mColorManager.setMode(mSettings.getMusicColorMode());
             mColorManager.setCustomColor(mSettings.getMusicCustomColor());
+            mColorManager.setMode(mSettings.getMusicColorMode());
         }
 
         mTracker = new MusicProgressTracker(mContext, mHelper, new MusicProgressTracker.Callbacks() {
