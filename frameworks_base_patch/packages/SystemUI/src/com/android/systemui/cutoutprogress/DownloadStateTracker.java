@@ -109,10 +109,15 @@ public final class DownloadStateTracker {
             if (existing != null) {
                 mActive.remove(id);
                 notifyCountChanged();
-                publishAggregated();
-                // A shared ring represents the aggregate transfer state. Do not play a global
-                // completion animation while another tracked transfer is still active.
-                if (mActive.isEmpty()) fireComplete();
+                // Preserve the last visible progress when the final transfer completes. Sending
+                // an intermediate zero would reset the view's minimum-visible timer before the
+                // completion animation starts.
+                if (mActive.isEmpty()) {
+                    fire(mOnLabelChanged, null);
+                    fireComplete();
+                } else {
+                    publishAggregated();
+                }
             }
             return;
         }
@@ -158,9 +163,11 @@ public final class DownloadStateTracker {
         if (snap == null) return;
 
         notifyCountChanged();
-        publishAggregated();
-
-        if (!mActive.isEmpty()) return;
+        if (!mActive.isEmpty()) {
+            publishAggregated();
+            return;
+        }
+        fire(mOnLabelChanged, null);
 
         if (snap.progress >= COMPLETE_THRESHOLD_PCT
                 || ((reason == NotificationListenerService.REASON_APP_CANCEL
@@ -169,6 +176,8 @@ public final class DownloadStateTracker {
             fireComplete();
         } else if (reason == NotificationListenerService.REASON_ERROR) {
             fireError();
+        } else {
+            fire(mOnProgress, 0);
         }
     }
 
