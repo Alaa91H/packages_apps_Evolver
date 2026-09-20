@@ -30,7 +30,7 @@ import androidx.core.graphics.ColorUtils;
 import androidx.palette.graphics.Palette;
 
 import java.util.Objects;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public final class MusicRingColorManager {
@@ -55,7 +55,7 @@ public final class MusicRingColorManager {
     private final Context mContext;
     private final Handler mMainHandler;
 
-    private final Executor mBgExecutor = Executors.newSingleThreadExecutor(r -> {
+    private final ExecutorService mBgExecutor = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "MusicRingPalette");
         t.setPriority(Thread.MIN_PRIORITY);
         return t;
@@ -101,6 +101,12 @@ public final class MusicRingColorManager {
 
     public int getCurrentColor() {
         return mCurrentColor;
+    }
+
+    public void destroy() {
+        mResolveGeneration++;
+        mCallback = null;
+        mBgExecutor.shutdownNow();
     }
 
     public void onTrackChanged(String trackId, Drawable art) {
