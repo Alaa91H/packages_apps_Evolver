@@ -47,7 +47,8 @@ final class CameraCutoutGeometryResolver {
     static final int SOURCE_DISPLAY_CUTOUT_PATH = 2;
     static final int SOURCE_DISPLAY_CUTOUT_BOUNDS = 3;
 
-    private static final float SAFE_AREA_ASPECT_THRESHOLD = 1.28f;
+    private static final float SAFE_AREA_MIN_ASPECT = 1.15f;
+    private static final float SAFE_AREA_MAX_ASPECT = 2.50f;
     private static final float PILL_ASPECT_THRESHOLD = 1.20f;
     private static final float EDGE_TOLERANCE_PX = 2f;
 
@@ -94,8 +95,6 @@ final class CameraCutoutGeometryResolver {
     }
 
     ResolvedGeometry resolve(DisplayCutout cutout) {
-        if (cutout == null) return null;
-
         final Display display = mContext.getDisplay();
         final DisplayInfo info = new DisplayInfo();
         if (display != null) {
@@ -105,9 +104,13 @@ final class CameraCutoutGeometryResolver {
         final int rotation = resolveRotation(cutout, info);
         final int logicalWidth = resolveLogicalWidth(info);
         final int logicalHeight = resolveLogicalHeight(info);
+        final Candidate reference = cutout != null
+                ? chooseDisplayCutoutCandidate(cutout, logicalWidth, logicalHeight)
+                : null;
 
         Path protection = loadAndTransformProtectionPath(
-                display, cutout, info, rotation, logicalWidth, logicalHeight);
+                display, cutout, info, rotation, logicalWidth, logicalHeight,
+                reference != null ? reference.bounds : null);
         if (isUsable(protection)) {
             RectF bounds = boundsOf(protection);
             boolean normalized = false;
@@ -137,7 +140,9 @@ final class CameraCutoutGeometryResolver {
                     logicalHeight);
         }
 
-        Candidate candidate = chooseDisplayCutoutCandidate(
+        if (cutout == null) return null;
+
+        Candidate candidate = reference != null ? reference : chooseDisplayCutoutCandidate(
                 cutout, logicalWidth, logicalHeight);
         if (candidate == null || candidate.bounds.isEmpty()) return null;
 
@@ -284,95 +289,169 @@ final class CameraCutoutGeometryResolver {
             DisplayInfo info,
             int rotation,
             int logicalWidth,
-            int logicalHeight) {
+            int logicalHeight,
+            RectF referenceBounds) {
         String displayUniqueId = display != null ? display.getUniqueId() : null;
 
         ProtectionSpec inner = new ProtectionSpec(
                 safeString(R.string.config_innerBuiltInDisplayCutoutProtection),
-                safeString(R.string.config_protectedInnerScreenUniqueId));
+                safeString(R.string.config_protectedInnerScreenUniqueId), false);
         ProtectionSpec outer = new ProtectionSpec(
                 safeString(R.string.config_frontBuiltInDisplayCutoutProtection),
-                safeString(R.string.config_protectedScreenUniqueId));
+                safeString(R.string.config_protectedScreenUniqueId), true);
 
-        ProtectionSpec selected = selectProtectionSpec(displayUniqueId, inner, outer);
-        if (selected == null || selected.pathData.isEmpty()) return null;
+        // An explicit display-id match is authoritative. This is the normal path for foldables.
+        if (displayUniqueId != null && !displayUniqueId.isEmpty()) {
+            if (inner.explicitlyMatches(displayUniqueId)) {
+                return transformProtectionSpec(inner, display, cutout, info, rotation,
+                        logicalWidth, logicalHeight);
+            }
+            if (outer.explicitlyMatches(displayUniqueId)) {
+                return transformProtectionSpec(outer, display, cutout, info, rotation,
+                        logicalWidth, logicalHeight);
+            }
+        }
 
+        List<ProtectionSpec> generic = new ArrayList<>(2);
+        if (outer.isGeneric()) generic.add(outer);
+        if (inner.isGeneric()) generic.add(inner);
+        if (generic.isEmpty()) return null;
+        if (generic.size() == 1) {
+            return transformProtectionSpec(generic.get(0), display, cutout, info, rotation,
+                    logicalWidth, logicalHeight);
+        }
+
+        // Older overlays sometimes omit displayUniqueId for both inner and outer paths. Instead
+        // of blindly choosing the outer path, transform both and pick the one that best matches
+        // the cutout visible on the current logical display.
+        Path best = null;
+        double bestScore = Double.MAX_VALUE;
+        for (ProtectionSpec spec : generic) {
+            Path transformed = transformProtectionSpec(spec, display, cutout, info, rotation,
+                    logicalWidth, logicalHeight);
+            if (!isUsable(transformed)) continue;
+            RectF bounds = boundsOf(transformed);
+            double score = protectionMatchScore(bounds, referenceBounds,
+                    logicalWidth, logicalHeight, spec.isOuter);
+            if (score < bestScore) {
+                bestScore = score;
+                best = transformed;
+            }
+        }
+        return best;
+    }
+
+    private Path transformProtectionSpec(
+            ProtectionSpec spec,
+            Display display,
+            DisplayCutout cutout,
+            DisplayInfo info,
+            int rotation,
+            int logicalWidth,
+            int logicalHeight) {
+        if (spec == null || !spec.hasPath()) return null;
         final Path path;
         try {
-            path = PathParser.createPathFromPathData(selected.pathData.trim());
+            path = PathParser.createPathFromPathData(spec.pathData);
         } catch (Throwable ignored) {
             return null;
         }
         if (!isUsable(path)) return null;
 
-        float ratio = 1f;
-        try {
-            DisplayCutout.CutoutPathParserInfo parserInfo =
-                    cutout.getCutoutPathParserInfo();
-            float parsed = parserInfo.getPhysicalPixelDisplaySizeRatio();
-            if (Float.isFinite(parsed) && parsed > 0f) {
-                ratio = parsed;
-            }
-        } catch (Throwable ignored) {
-        }
-
+        float ratio = resolvePhysicalPixelRatio(
+                cutout, display, logicalWidth, logicalHeight, rotation);
         Matrix matrix = new Matrix();
         matrix.postScale(ratio, ratio);
 
-        int lw = logicalWidth;
-        int lh = logicalHeight;
-        if (lw <= 0 || lh <= 0) {
-            lw = resolveLogicalWidth(info);
-            lh = resolveLogicalHeight(info);
-        }
-        boolean flipped =
-                rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270;
+        int lw = logicalWidth > 0 ? logicalWidth : resolveLogicalWidth(info);
+        int lh = logicalHeight > 0 ? logicalHeight : resolveLogicalHeight(info);
+        boolean flipped = rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270;
         int naturalWidth = flipped ? lh : lw;
         int naturalHeight = flipped ? lw : lh;
-        transformPhysicalToLogicalCoordinates(
-                rotation, naturalWidth, naturalHeight, matrix);
-
+        transformPhysicalToLogicalCoordinates(rotation, naturalWidth, naturalHeight, matrix);
         path.transform(matrix);
         return path;
+    }
+
+    private static double protectionMatchScore(
+            RectF candidate, RectF reference, int logicalWidth, int logicalHeight,
+            boolean outerPreferred) {
+        if (candidate == null || candidate.isEmpty()) return Double.MAX_VALUE;
+        if (reference == null || reference.isEmpty()) {
+            // Single-display/UDC fallback: prefer the outer/front resource, then the smaller
+            // compact region to avoid accidentally selecting an inner-panel mask.
+            double area = Math.max(1.0, (double) candidate.width() * candidate.height());
+            return (outerPreferred ? 0.0 : 1.0) + area * 1e-9;
+        }
+
+        double dw = Math.max(1.0, logicalWidth);
+        double dh = Math.max(1.0, logicalHeight);
+        double dx = (candidate.centerX() - reference.centerX()) / dw;
+        double dy = (candidate.centerY() - reference.centerY()) / dh;
+        double centerDistance = dx * dx + dy * dy;
+
+        double a = Math.max(1.0, (double) candidate.width() * candidate.height());
+        double b = Math.max(1.0, (double) reference.width() * reference.height());
+        double sizePenalty = Math.abs(Math.log(a / b));
+
+        RectF overlap = new RectF(candidate);
+        boolean intersects = overlap.intersect(reference) && !overlap.isEmpty();
+        double overlapPenalty = intersects ? 0.0 : 1.0;
+        return centerDistance * 10.0 + sizePenalty * 0.15 + overlapPenalty;
+    }
+
+    private static float resolvePhysicalPixelRatio(
+            DisplayCutout cutout, Display display, int logicalWidth, int logicalHeight,
+            int rotation) {
+        if (cutout != null) {
+            try {
+                float parsed = cutout.getCutoutPathParserInfo().getPhysicalPixelDisplaySizeRatio();
+                if (Float.isFinite(parsed) && parsed > 0f) return parsed;
+            } catch (Throwable ignored) {
+            }
+        }
+
+        if (display != null) {
+            Display.Mode mode = display.getMode();
+            if (mode != null) {
+                boolean flipped = rotation == Surface.ROTATION_90
+                        || rotation == Surface.ROTATION_270;
+                int naturalLogicalWidth = flipped ? logicalHeight : logicalWidth;
+                int naturalLogicalHeight = flipped ? logicalWidth : logicalHeight;
+                int physicalWidth = mode.getPhysicalWidth();
+                int physicalHeight = mode.getPhysicalHeight();
+                if (naturalLogicalWidth > 0 && naturalLogicalHeight > 0
+                        && physicalWidth > 0 && physicalHeight > 0) {
+                    float sx = naturalLogicalWidth / (float) physicalWidth;
+                    float sy = naturalLogicalHeight / (float) physicalHeight;
+                    if (Float.isFinite(sx) && Float.isFinite(sy) && sx > 0f && sy > 0f) {
+                        // Resolution overrides should be uniform. Use the smaller factor if an
+                        // OEM reports slightly asymmetric logical dimensions.
+                        return Math.min(sx, sy);
+                    }
+                }
+            }
+        }
+        return 1f;
     }
 
     private static final class ProtectionSpec {
         final String pathData;
         final String displayUniqueId;
+        final boolean isOuter;
 
-        ProtectionSpec(String pathData, String displayUniqueId) {
+        ProtectionSpec(String pathData, String displayUniqueId, boolean isOuter) {
             this.pathData = pathData == null ? "" : pathData.trim();
-            this.displayUniqueId =
-                    displayUniqueId == null ? "" : displayUniqueId.trim();
+            this.displayUniqueId = displayUniqueId == null ? "" : displayUniqueId.trim();
+            this.isOuter = isOuter;
         }
 
-        boolean hasPath() {
-            return !pathData.isEmpty();
-        }
-
+        boolean hasPath() { return !pathData.isEmpty(); }
         boolean explicitlyMatches(String currentDisplayUniqueId) {
-            return hasPath()
-                    && !displayUniqueId.isEmpty()
+            return hasPath() && !displayUniqueId.isEmpty()
                     && displayUniqueId.equals(currentDisplayUniqueId);
         }
-
-        boolean isGeneric() {
-            return hasPath() && displayUniqueId.isEmpty();
-        }
-    }
-
-    private static ProtectionSpec selectProtectionSpec(
-            String displayUniqueId, ProtectionSpec inner, ProtectionSpec outer) {
-        if (displayUniqueId != null && !displayUniqueId.isEmpty()) {
-            if (inner.explicitlyMatches(displayUniqueId)) return inner;
-            if (outer.explicitlyMatches(displayUniqueId)) return outer;
-        }
-
-        // Outer/front is the common single-display case. Inner is only used generically if there
-        // is no usable outer protection path.
-        if (outer.isGeneric()) return outer;
-        if (inner.isGeneric()) return inner;
-        return null;
+        boolean isGeneric() { return hasPath() && displayUniqueId.isEmpty(); }
     }
 
     private String safeString(int resId) {
@@ -389,11 +468,14 @@ final class CameraCutoutGeometryResolver {
                 && info.rotation <= Surface.ROTATION_270) {
             return info.rotation;
         }
-        try {
-            return cutout.getCutoutPathParserInfo().getRotation();
-        } catch (Throwable ignored) {
-            return Surface.ROTATION_0;
+        if (cutout != null) {
+            try {
+                return cutout.getCutoutPathParserInfo().getRotation();
+            } catch (Throwable ignored) {
+            }
         }
+        Display display = mContext.getDisplay();
+        return display != null ? display.getRotation() : Surface.ROTATION_0;
     }
 
     private int resolveLogicalWidth(DisplayInfo info) {
@@ -410,7 +492,11 @@ final class CameraCutoutGeometryResolver {
         if (b == null || b.isEmpty()) return false;
         float min = Math.min(b.width(), b.height());
         float max = Math.max(b.width(), b.height());
-        if (min <= 0f || max / min < SAFE_AREA_ASPECT_THRESHOLD) return false;
+        if (min <= 0f) return false;
+        float aspect = max / min;
+        // Moderately elongated edge masks are common around punch-hole cameras. Extremely wide
+        // regions are real notches/cutouts and must not be collapsed into a fake circle.
+        if (aspect < SAFE_AREA_MIN_ASPECT || aspect > SAFE_AREA_MAX_ASPECT) return false;
 
         boolean touchesLeft = b.left <= EDGE_TOLERANCE_PX;
         boolean touchesTop = b.top <= EDGE_TOLERANCE_PX;
