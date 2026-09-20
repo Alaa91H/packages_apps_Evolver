@@ -130,6 +130,12 @@ public final class MusicRingController {
         mRingView.setMusicProgress(0f);
     }
 
+    public void onThemeChanged() {
+        if (mColorManager != null) {
+            mColorManager.onThemeChanged();
+        }
+    }
+
     public boolean isPlaying() {
         return mIsPlaying;
     }
