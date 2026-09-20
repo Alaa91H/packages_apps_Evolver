@@ -110,12 +110,28 @@ final class CameraCutoutGeometryResolver {
                 display, cutout, info, rotation, logicalWidth, logicalHeight);
         if (isUsable(protection)) {
             RectF bounds = boundsOf(protection);
+            boolean normalized = false;
+            if (looksLikeEdgeSafeArea(bounds, logicalWidth, logicalHeight)) {
+                float diameter = Math.min(bounds.width(), bounds.height());
+                if (diameter > 0f) {
+                    RectF compact = new RectF(
+                            bounds.centerX() - diameter / 2f,
+                            bounds.centerY() - diameter / 2f,
+                            bounds.centerX() + diameter / 2f,
+                            bounds.centerY() + diameter / 2f);
+                    Path normalizedPath = new Path();
+                    normalizedPath.addOval(compact, Path.Direction.CW);
+                    protection = normalizedPath;
+                    bounds = compact;
+                    normalized = true;
+                }
+            }
             return buildResolved(
                     protection,
                     bounds,
                     SOURCE_CAMERA_PROTECTION,
                     rotation,
-                    false,
+                    normalized,
                     false,
                     logicalWidth,
                     logicalHeight);
