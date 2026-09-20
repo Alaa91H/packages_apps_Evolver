@@ -52,6 +52,28 @@ public final class CircleRingRenderer implements RingViewRenderer {
     }
 
     @Override
+    public boolean getPointAndOutwardNormal(float fraction, float[] position, float[] normal) {
+        if (position == null || position.length < 2 || normal == null || normal.length < 2
+                || mBounds.isEmpty()) return false;
+        float f = fraction - (float) Math.floor(fraction);
+        double angle = -Math.PI / 2.0 + Math.PI * 2.0 * f;
+        float cos = (float) Math.cos(angle);
+        float sin = (float) Math.sin(angle);
+        float a = mBounds.width() / 2f;
+        float b = mBounds.height() / 2f;
+        if (a <= 0f || b <= 0f) return false;
+        position[0] = mBounds.centerX() + a * cos;
+        position[1] = mBounds.centerY() + b * sin;
+        float nx = cos / a;
+        float ny = sin / b;
+        float len = (float) Math.hypot(nx, ny);
+        if (len <= 0f) return false;
+        normal[0] = nx / len;
+        normal[1] = ny / len;
+        return true;
+    }
+
+    @Override
     public void drawSegmented(Canvas canvas,
                               int segments, float gapDeg, float arcDeg,
                               int highlight,
