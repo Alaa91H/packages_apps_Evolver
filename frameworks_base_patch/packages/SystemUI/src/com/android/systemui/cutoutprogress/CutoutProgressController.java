@@ -545,7 +545,14 @@ public class CutoutProgressController implements CoreStartable {
 
     private void updateAuroraCallState() {
         if (mRingView == null) return;
-        boolean active = mTelecomCallActive || !mActiveCallNotificationKeys.isEmpty();
+        // State seeding can be posted to the main handler. If call Aurora was disabled or the
+        // active user changed before that runnable executes, force the effect off instead of
+        // resurrecting stale call state.
+        boolean allowed = mSettings.isEnabled()
+                && mSettings.isAuroraEnabled()
+                && mSettings.isAuroraCallsEnabled();
+        boolean active = allowed
+                && (mTelecomCallActive || !mActiveCallNotificationKeys.isEmpty());
         mRingView.setAuroraCallActive(active);
     }
 
