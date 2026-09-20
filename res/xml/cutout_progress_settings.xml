@@ -393,6 +393,12 @@
         android:dependency="cutout_progress_enabled">
 
         <org.evolution.settings.preferences.SecureSettingSwitchPreference
+            android:key="cutout_progress_auto_geometry"
+            android:title="@string/cutout_progress_auto_geometry_title"
+            android:summary="@string/cutout_progress_auto_geometry_summary"
+            android:defaultValue="true" />
+
+        <org.evolution.settings.preferences.SecureSettingSwitchPreference
             android:key="cutout_progress_path_mode"
             android:title="@string/cutout_progress_path_mode_title"
             android:summary="@string/cutout_progress_path_mode_summary"
