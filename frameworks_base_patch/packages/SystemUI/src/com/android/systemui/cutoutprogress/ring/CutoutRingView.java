@@ -248,24 +248,20 @@ public final class CutoutRingView extends View {
                 return;
             }
 
-            boolean nonInteractive = isDisplayNonInteractive();
-            if (nonInteractive) {
-                // Keep a stable full charging indication on AOD/off states; do not animate a
-                // full-screen SystemUI overlay at frame rate while the device is idle.
-                if (mChargingPulsePhase != 1f) {
-                    mChargingPulsePhase = 1f;
-                    invalidate();
-                }
-            } else {
-                long cycle = CHARGING_PULSE_DURATION_MS * 2L;
-                long elapsed = Math.max(0L, SystemClock.elapsedRealtime() - mChargingPulseEpochMs);
-                float unit = (elapsed % cycle) / (float) CHARGING_PULSE_DURATION_MS;
-                mChargingPulsePhase = unit <= 1f ? unit : 2f - unit;
-                invalidate();
+            if (isDisplayNonInteractive()) {
+                // The non-animated charging ring is drawn from the battery level when no pulse
+                // frame is scheduled. Stop here rather than waking SystemUI once per second.
+                return;
             }
 
+            long cycle = CHARGING_PULSE_DURATION_MS * 2L;
+            long elapsed = Math.max(0L, SystemClock.elapsedRealtime() - mChargingPulseEpochMs);
+            float unit = (elapsed % cycle) / (float) CHARGING_PULSE_DURATION_MS;
+            mChargingPulsePhase = unit <= 1f ? unit : 2f - unit;
+            invalidate();
+
             mChargingPulseScheduled = true;
-            postDelayed(this, nonInteractive ? 1000L : 33L);
+            postDelayed(this, 33L);
         }
     };
 
@@ -785,7 +781,7 @@ public final class CutoutRingView extends View {
     private void startChargingPulse() {
         stopChargingPulse();
         if (!mIsCharging || !mChargingPulseEnabled || !sCfgChargingPulse
-                || !isAttachedToWindow()) {
+                || !isAttachedToWindow() || isDisplayNonInteractive()) {
             return;
         }
         mChargingPulseEpochMs = SystemClock.elapsedRealtime();
