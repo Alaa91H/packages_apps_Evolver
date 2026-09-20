@@ -60,8 +60,8 @@ public class CutoutProgressController implements CoreStartable {
                     BatteryManager.BATTERY_STATUS_UNKNOWN);
             int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0);
             int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, 100);
-            int pct = scale > 0 ? level * 100 / scale : 0;
-            pct = Math.max(0, Math.min(100, pct));
+            int rawPct = scale > 0 ? level * 100 / scale : 0;
+            final int pct = Math.max(0, Math.min(100, rawPct));
 
             boolean charging = status == BatteryManager.BATTERY_STATUS_CHARGING
                             || status == BatteryManager.BATTERY_STATUS_FULL;
