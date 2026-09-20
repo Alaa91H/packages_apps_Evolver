@@ -68,6 +68,7 @@ public class ImageUtils {
                      FileOutputStream output = new FileOutputStream(outputFile)) {
                     if (input == null) {
                         Log.e(TAG, "Failed to get input stream from URI");
+                        outputFile.delete();
                         return null;
                     }
                     long copied = copyStreamWithLimit(
@@ -132,8 +133,8 @@ public class ImageUtils {
         if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null;
 
         int sampleSize = 1;
-        while (bounds.outWidth / (sampleSize * 2) >= reqWidth
-                || bounds.outHeight / (sampleSize * 2) >= reqHeight) {
+        while (bounds.outWidth / sampleSize > reqWidth
+                || bounds.outHeight / sampleSize > reqHeight) {
             sampleSize *= 2;
         }
 
