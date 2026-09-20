@@ -53,6 +53,8 @@ public final class CutoutProgressSettings {
 
     public static final String KEY_COMPLETION_PULSE = "cutout_progress_completion_pulse";
 
+    public static final String KEY_AUTO_GEOMETRY = "cutout_progress_auto_geometry";
+
     public static final String KEY_PATH_MODE = "cutout_progress_path_mode";
 
     public static final String KEY_RING_SCALE_X_X1000 = "cutout_progress_ring_scale_x_x1000";
@@ -181,6 +183,7 @@ public final class CutoutProgressSettings {
     private static final int DEF_FINISH_EXIT_MS = 500;
     private static final boolean DEF_FINISH_USE_FLASH = true;
     private static final boolean DEF_COMPLETION_PULSE = true;
+    private static final boolean DEF_AUTO_GEOMETRY = true;
     private static final boolean DEF_PATH_MODE = true;
     private static final float DEF_RING_SCALE_X = 1.05f;
     private static final float DEF_RING_SCALE_Y = 0.60f;
@@ -331,6 +334,10 @@ public final class CutoutProgressSettings {
 
     public boolean isCompletionPulse() {
         return getInt(KEY_COMPLETION_PULSE, DEF_COMPLETION_PULSE ? 1 : 0) != 0;
+    }
+
+    public boolean isAutoGeometryEnabled() {
+        return getInt(KEY_AUTO_GEOMETRY, DEF_AUTO_GEOMETRY ? 1 : 0) != 0;
     }
 
     public boolean isPathMode() {
