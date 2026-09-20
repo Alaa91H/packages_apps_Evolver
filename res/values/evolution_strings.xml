@@ -794,6 +794,8 @@
     <string name="cutout_progress_finish_flash_summary">Briefly flash the ring with the finish color when complete</string>
     <string name="cutout_progress_pulse_title">Completion pulse</string>
     <string name="cutout_progress_pulse_summary">Brief brightness pulse before the finish animation</string>
+    <string name="cutout_progress_auto_geometry_title">Automatic camera fit</string>
+    <string name="cutout_progress_auto_geometry_summary">Automatically detect the physical camera cutout, keep its size and position stable across rotation and resolution changes, and fall back safely when device geometry is incomplete</string>
     <string name="cutout_progress_path_mode_title">Pill mode</string>
     <string name="cutout_progress_path_mode_summary">Use a pill-shaped path for elongated cutouts</string>
     <string name="cutout_progress_scale_x_title">Horizontal scale</string>
