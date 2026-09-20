@@ -18,6 +18,7 @@ package org.evolution.settings.fragments.statusbar
 
 import android.content.ContentResolver
 import android.os.Bundle
+import android.os.UserHandle
 import android.provider.Settings
 import androidx.compose.ui.graphics.Color
 import androidx.preference.ListPreference
@@ -121,8 +122,8 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
             )
 
             defaults.forEach { (key, value) ->
-                if (Settings.Secure.getString(resolver, key) == null) {
-                    Settings.Secure.putInt(resolver, key, value)
+                if (Settings.Secure.getStringForUser(resolver, key, UserHandle.USER_CURRENT) == null) {
+                    Settings.Secure.putIntForUser(resolver, key, value, UserHandle.USER_CURRENT)
                 }
             }
         }
@@ -352,10 +353,14 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
     }
 
     private fun readSecureInt(key: String, default: Int): Int =
-        Settings.Secure.getInt(requireContext().contentResolver, key, default)
+        Settings.Secure.getIntForUser(
+            requireContext().contentResolver, key, default, UserHandle.USER_CURRENT
+        )
 
     private fun writeSecureInt(key: String, value: Int) {
-        Settings.Secure.putInt(requireContext().contentResolver, key, value)
+        Settings.Secure.putIntForUser(
+            requireContext().contentResolver, key, value, UserHandle.USER_CURRENT
+        )
     }
 
     private fun argbToHex(argb: Int): String =
