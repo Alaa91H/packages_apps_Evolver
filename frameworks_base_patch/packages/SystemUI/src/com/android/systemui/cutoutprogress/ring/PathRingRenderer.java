@@ -45,6 +45,7 @@ public final class PathRingRenderer implements RingViewRenderer {
     private float mStartDistance;
     private float mOppositeDistance;
     private boolean mPathOrderClockwise = true;
+    private boolean mMetricsResolved;
 
     public static boolean canTracePath(Path path) {
         if (path == null || path.isEmpty()) return false;
@@ -66,6 +67,7 @@ public final class PathRingRenderer implements RingViewRenderer {
         mHasLastBounds = false;
         mAppliedGeneration = -1;
         mTotalLength = 0f;
+        mMetricsResolved = false;
     }
 
     @Override
@@ -93,9 +95,10 @@ public final class PathRingRenderer implements RingViewRenderer {
             return;
         }
 
-        mStartDistance = findVisualTopDistance(bounds);
-        mOppositeDistance = findVisualBottomDistance(bounds);
-        mPathOrderClockwise = determinePathOrderClockwise();
+        // Top/bottom/orientation sampling is intentionally lazy. Aurora/background layers only
+        // need drawFullRing(), so eagerly sampling the contour here would repeat expensive work
+        // for every glow lane on every frame.
+        mMetricsResolved = false;
 
         mLastBounds.set(bounds);
         mHasLastBounds = true;
@@ -112,6 +115,7 @@ public final class PathRingRenderer implements RingViewRenderer {
     public void drawProgress(Canvas canvas, float sweepFraction,
                              boolean clockwise, Paint paint) {
         if (mTotalLength <= EPSILON) return;
+        ensureMetrics();
         float fraction = clamp01(sweepFraction);
         if (fraction <= 0f) return;
         if (fraction >= 1f) {
@@ -128,6 +132,7 @@ public final class PathRingRenderer implements RingViewRenderer {
     @Override
     public void drawSymmetricProgress(Canvas canvas, float sweepFraction, Paint paint) {
         if (mTotalLength <= EPSILON) return;
+        ensureMetrics();
         float fraction = clamp01(sweepFraction);
         if (fraction <= 0f) return;
         if (fraction >= 1f) {
@@ -147,6 +152,7 @@ public final class PathRingRenderer implements RingViewRenderer {
     public boolean getPointAndOutwardNormal(float fraction, float[] position, float[] normal) {
         if (position == null || position.length < 2 || normal == null || normal.length < 2
                 || mTotalLength <= EPSILON) return false;
+        ensureMetrics();
 
         float f = fraction - (float) Math.floor(fraction);
         float sign = mPathOrderClockwise ? 1f : -1f;
@@ -173,6 +179,7 @@ public final class PathRingRenderer implements RingViewRenderer {
                               int highlight,
                               Paint basePaint, Paint shinePaint, float alpha) {
         if (mTotalLength <= EPSILON || segments <= 0) return;
+        ensureMetrics();
 
         float totalDeg = segments * (Math.max(0f, arcDeg) + Math.max(0f, gapDeg));
         if (totalDeg <= 0f) return;
@@ -218,6 +225,14 @@ public final class PathRingRenderer implements RingViewRenderer {
             mMeasure.getSegment(s, mTotalLength, out, true);
             mMeasure.getSegment(0f, e - mTotalLength, out, true);
         }
+    }
+
+    private void ensureMetrics() {
+        if (mMetricsResolved || mTotalLength <= EPSILON || !mHasLastBounds) return;
+        mStartDistance = findVisualTopDistance(mLastBounds);
+        mOppositeDistance = findVisualBottomDistance(mLastBounds);
+        mPathOrderClockwise = determinePathOrderClockwise();
+        mMetricsResolved = true;
     }
 
     private float findVisualTopDistance(RectF bounds) {
@@ -297,6 +312,7 @@ public final class PathRingRenderer implements RingViewRenderer {
         mWorkPath.reset();
         mMeasure.setPath(null, false);
         mTotalLength = 0f;
+        mMetricsResolved = false;
         mHasLastBounds = false;
         mAppliedGeneration = -1;
     }
