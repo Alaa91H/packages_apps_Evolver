@@ -230,8 +230,8 @@ public final class CutoutRingView extends View {
                 return;
             }
 
-            boolean dozing = isDisplayNonInteractive();
-            if (!dozing || sCfgMusicShowOnAod) {
+            boolean nonInteractive = isDisplayNonInteractive();
+            if (!nonInteractive || (sCfgMusicShowOnAod && isDisplayAod())) {
                 long duration = musicWaveDurationMs();
                 long elapsed = Math.max(0L, SystemClock.elapsedRealtime() - mMusicWaveEpochMs);
                 mMusicWavePhase = (float) ((elapsed % duration)
@@ -239,7 +239,7 @@ public final class CutoutRingView extends View {
                 invalidate();
             }
 
-            long delay = dozing ? 1000L : 33L;
+            long delay = nonInteractive ? 1000L : 33L;
             mMusicWaveScheduled = true;
             postDelayed(this, delay);
         }
@@ -399,7 +399,8 @@ public final class CutoutRingView extends View {
 
     private boolean shouldDrawMusicNow() {
         return mMusicPlaying && mHasCutout
-                && (sCfgMusicShowOnAod || !isDisplayNonInteractive());
+                && (!isDisplayNonInteractive()
+                        || (sCfgMusicShowOnAod && isDisplayAod()));
     }
 
     private int resolveRingColor() {
@@ -898,7 +899,8 @@ public final class CutoutRingView extends View {
         }
 
         boolean musicActive = mMusicPlaying
-                && (sCfgMusicShowOnAod || !isDisplayNonInteractive())
+                && (!isDisplayNonInteractive()
+                        || (sCfgMusicShowOnAod && isDisplayAod()))
                 && sCfgMusicPresentation != CutoutProgressSettings.PRESENTATION_DISABLED;
 
         boolean downloadPrimary = preview || (downloadActive
@@ -959,6 +961,13 @@ public final class CutoutRingView extends View {
             drawSource(canvas, SOURCE_MUSIC, effectivePct,
                     musicLane * sCfgMultiRingSpacingDp);
         }
+    }
+
+    private boolean isDisplayAod() {
+        Display display = getDisplay();
+        if (display == null) return false;
+        int state = display.getState();
+        return state == Display.STATE_DOZE || state == Display.STATE_DOZE_SUSPEND;
     }
 
     private boolean isDisplayNonInteractive() {
