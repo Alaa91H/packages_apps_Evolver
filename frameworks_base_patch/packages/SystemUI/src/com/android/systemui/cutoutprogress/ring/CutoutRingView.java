@@ -55,6 +55,7 @@ public final class CutoutRingView extends View {
     private static final int SOURCE_MUSIC = 2;
     private static final int SOURCE_CHARGING = 3;
     private static final int SOURCE_BATTERY = 4;
+    private static final int SOURCE_TIMER = 5;
 
     private static final int[] RAINBOW_COLORS = {
             0xFFFF0000,
@@ -101,6 +102,12 @@ public final class CutoutRingView extends View {
     private float mRainbowCy = Float.NaN;
     private final Paint mMusicPaint = makePaint();
     private final Paint mMusicWavePaint = makePaint();
+    private final Paint mTimerPaint = makePaint();
+    private final Paint mFlamePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint mAuroraPaint = makePaint();
+    private SweepGradient mAuroraShader = null;
+    private float mAuroraCx = Float.NaN;
+    private float mAuroraCy = Float.NaN;
 
     private int mProgress = 0;
     private int mDownloadCount = 0;
@@ -129,6 +136,17 @@ public final class CutoutRingView extends View {
     private float mMusicWavePhase = 0f;
     private boolean mMusicWaveScheduled = false;
     private long mMusicWaveEpochMs = 0L;
+
+    private boolean mTimerActive = false;
+    private float mTimerFraction = 0f;
+
+    private boolean mAuroraCallActive = false;
+    private boolean mAuroraRecordingActive = false;
+    private long mNotificationAuroraUntilMs = 0L;
+    private int mNotificationAuroraColor = 0;
+    private float mVisualEffectPhase = 0f;
+    private boolean mVisualEffectScheduled = false;
+    private long mVisualEffectEpochMs = 0L;
 
     private int sCfgRingColorMode;
     private int sCfgRingColor;
@@ -192,6 +210,29 @@ public final class CutoutRingView extends View {
     private int sCfgMusicWaveDensity = 48;
     private int sCfgMusicWaveSpeed = 100;
 
+    private boolean sCfgTimerEnabled = false;
+    private int sCfgTimerPresentation = CutoutProgressSettings.PRESENTATION_PRIMARY;
+    private int sCfgTimerColorMode = CutoutProgressSettings.RING_COLOR_MODE_ACCENT;
+    private int sCfgTimerColor = 0xFFFF8A00;
+    private int sCfgTimerOpacity = 95;
+    private float sCfgTimerStrokeDp = 2f;
+    private boolean sCfgTimerClockwise = true;
+    private boolean sCfgTimerFlameEnabled = true;
+    private float sCfgTimerFlameSizeDp = 3.5f;
+
+    private boolean sCfgAuroraEnabled = false;
+    private boolean sCfgAuroraCalls = true;
+    private boolean sCfgAuroraMusic = true;
+    private boolean sCfgAuroraRecording = true;
+    private boolean sCfgAuroraNotifications = true;
+    private int sCfgAuroraColorMode = CutoutProgressSettings.AURORA_COLOR_MODE_SPECTRUM;
+    private int sCfgAuroraColor = 0xFF7C4DFF;
+    private int sCfgAuroraNotificationColorMode =
+            CutoutProgressSettings.AURORA_NOTIFICATION_COLOR_NOTIFICATION;
+    private float sCfgAuroraSpreadDp = 8f;
+    private int sCfgAuroraOpacity = 85;
+    private int sCfgAuroraSpeed = 100;
+
     private final Runnable mChargingPulseTick = new Runnable() {
         @Override
         public void run() {
@@ -226,7 +267,8 @@ public final class CutoutRingView extends View {
         @Override
         public void run() {
             mMusicWaveScheduled = false;
-            if (!mMusicPlaying || !sCfgMusicWaveEnabled || !isAttachedToWindow() || !mHasCutout) {
+            if (!mMusicPlaying || !sCfgMusicWaveEnabled || isMusicAuroraActive()
+                    || !isAttachedToWindow() || !mHasCutout) {
                 return;
             }
 
@@ -242,6 +284,32 @@ public final class CutoutRingView extends View {
             long delay = nonInteractive ? 1000L : 33L;
             mMusicWaveScheduled = true;
             postDelayed(this, delay);
+        }
+    };
+
+    private final Runnable mVisualEffectTick = new Runnable() {
+        @Override
+        public void run() {
+            mVisualEffectScheduled = false;
+            long now = SystemClock.elapsedRealtime();
+            if (mNotificationAuroraUntilMs > 0L && now >= mNotificationAuroraUntilMs) {
+                mNotificationAuroraUntilMs = 0L;
+                invalidate();
+            }
+
+            if (!isAttachedToWindow() || !mHasCutout || !needsVisualEffectAnimation()) {
+                return;
+            }
+
+            boolean nonInteractive = isDisplayNonInteractive();
+            long duration = visualEffectDurationMs();
+            long elapsed = Math.max(0L, now - mVisualEffectEpochMs);
+            mVisualEffectPhase = (float) ((elapsed % duration)
+                    * (Math.PI * 2.0) / duration);
+            invalidate();
+
+            mVisualEffectScheduled = true;
+            postDelayed(this, nonInteractive ? 1000L : 33L);
         }
     };
 
@@ -314,6 +382,28 @@ public final class CutoutRingView extends View {
         sCfgMusicWaveSpeed = s.getMusicWaveSpeed();
         sCfgMusicShowOnAod = s.isMusicShowOnAod();
 
+        sCfgTimerEnabled = s.isTimerEnabled();
+        sCfgTimerPresentation = s.getTimerPresentation();
+        sCfgTimerColorMode = s.getTimerColorMode();
+        sCfgTimerColor = s.getTimerCustomColor();
+        sCfgTimerOpacity = s.getTimerOpacity();
+        sCfgTimerStrokeDp = s.getTimerStrokeWidthDp();
+        sCfgTimerClockwise = s.isTimerClockwise();
+        sCfgTimerFlameEnabled = s.isTimerFlameEnabled();
+        sCfgTimerFlameSizeDp = s.getTimerFlameSizeDp();
+
+        sCfgAuroraEnabled = s.isAuroraEnabled();
+        sCfgAuroraCalls = s.isAuroraCallsEnabled();
+        sCfgAuroraMusic = s.isAuroraMusicEnabled();
+        sCfgAuroraRecording = s.isAuroraRecordingEnabled();
+        sCfgAuroraNotifications = s.isAuroraNotificationsEnabled();
+        sCfgAuroraColorMode = s.getAuroraColorMode();
+        sCfgAuroraColor = s.getAuroraCustomColor();
+        sCfgAuroraNotificationColorMode = s.getAuroraNotificationColorMode();
+        sCfgAuroraSpreadDp = s.getAuroraSpreadDp();
+        sCfgAuroraOpacity = s.getAuroraOpacity();
+        sCfgAuroraSpeed = s.getAuroraSpeed();
+
         updateRendererForGeometry();
 
         if (!sCfgChargingRing && mIsCharging) {
@@ -334,6 +424,7 @@ public final class CutoutRingView extends View {
                 s.isMusicClockwise(),
                 sCfgMusicColor);
         restartMusicWaveAnimation();
+        restartVisualEffectAnimation();
         requestApplyInsets();
         invalidate();
     }
@@ -366,7 +457,55 @@ public final class CutoutRingView extends View {
         if (mMusicPlaying == playing) return;
         mMusicPlaying = playing;
         updateMusicWaveAnimation();
+        updateVisualEffectAnimation();
         if (mHasCutout) invalidate();
+    }
+
+    public void setTimerState(boolean active, float fraction) {
+        fraction = Math.max(0f, Math.min(1f, fraction));
+        boolean changed = mTimerActive != active || Math.abs(mTimerFraction - fraction) > 0.0005f;
+        mTimerActive = active;
+        mTimerFraction = active ? fraction : 0f;
+        if (!active) {
+            updateVisualEffectAnimation();
+        } else if (sCfgTimerFlameEnabled) {
+            updateVisualEffectAnimation();
+        }
+        if (changed && mHasCutout) invalidate();
+    }
+
+    public void setAuroraCallActive(boolean active) {
+        if (mAuroraCallActive == active) return;
+        mAuroraCallActive = active;
+        updateVisualEffectAnimation();
+        if (mHasCutout) invalidate();
+    }
+
+    public void setAuroraRecordingActive(boolean active) {
+        if (mAuroraRecordingActive == active) return;
+        mAuroraRecordingActive = active;
+        updateVisualEffectAnimation();
+        if (mHasCutout) invalidate();
+    }
+
+    public void showNotificationAurora(int color, long durationMs) {
+        if (!sCfgAuroraEnabled || !sCfgAuroraNotifications) return;
+        mNotificationAuroraColor = color;
+        mNotificationAuroraUntilMs = SystemClock.elapsedRealtime()
+                + Math.max(250L, durationMs);
+        updateVisualEffectAnimation();
+        if (mHasCutout) invalidate();
+    }
+
+    public void clearTransientEffects() {
+        mAuroraCallActive = false;
+        mAuroraRecordingActive = false;
+        mNotificationAuroraUntilMs = 0L;
+        mNotificationAuroraColor = 0;
+        setTimerState(false, 0f);
+        stopVisualEffectAnimation();
+        updateMusicWaveAnimation();
+        invalidate();
     }
 
     private void restartMusicWaveAnimation() {
@@ -375,7 +514,8 @@ public final class CutoutRingView extends View {
     }
 
     private void updateMusicWaveAnimation() {
-        if (!mMusicPlaying || !sCfgMusicWaveEnabled || !isAttachedToWindow() || !mHasCutout) {
+        if (!mMusicPlaying || !sCfgMusicWaveEnabled || isMusicAuroraActive()
+                || !isAttachedToWindow() || !mHasCutout) {
             stopMusicWaveAnimation();
             return;
         }
@@ -395,6 +535,59 @@ public final class CutoutRingView extends View {
     private long musicWaveDurationMs() {
         long duration = (long) (2600f * 100f / Math.max(25, sCfgMusicWaveSpeed));
         return Math.max(700L, Math.min(8000L, duration));
+    }
+
+    private boolean isMusicAuroraActive() {
+        return sCfgAuroraEnabled && sCfgAuroraMusic && mMusicPlaying
+                && !isDisplayNonInteractive();
+    }
+
+    private boolean isNotificationAuroraActive() {
+        return sCfgAuroraEnabled && sCfgAuroraNotifications
+                && mNotificationAuroraUntilMs > SystemClock.elapsedRealtime();
+    }
+
+    private boolean isAuroraActiveNow() {
+        if (!sCfgAuroraEnabled || isDisplayNonInteractive()) return false;
+        return (sCfgAuroraCalls && mAuroraCallActive)
+                || (sCfgAuroraMusic && mMusicPlaying)
+                || (sCfgAuroraRecording && mAuroraRecordingActive)
+                || isNotificationAuroraActive();
+    }
+
+    private boolean needsVisualEffectAnimation() {
+        return isAuroraActiveNow()
+                || (mTimerActive && sCfgTimerEnabled && sCfgTimerFlameEnabled
+                    && sCfgTimerPresentation != CutoutProgressSettings.PRESENTATION_DISABLED);
+    }
+
+    private long visualEffectDurationMs() {
+        int speed = isAuroraActiveNow() ? Math.max(25, sCfgAuroraSpeed) : 100;
+        long duration = (long) (2400f * 100f / speed);
+        return Math.max(650L, Math.min(9000L, duration));
+    }
+
+    private void restartVisualEffectAnimation() {
+        stopVisualEffectAnimation();
+        updateVisualEffectAnimation();
+    }
+
+    private void updateVisualEffectAnimation() {
+        if (!isAttachedToWindow() || !mHasCutout || !needsVisualEffectAnimation()) {
+            stopVisualEffectAnimation();
+            return;
+        }
+        if (mVisualEffectScheduled) return;
+        mVisualEffectEpochMs = SystemClock.elapsedRealtime();
+        mVisualEffectScheduled = true;
+        post(mVisualEffectTick);
+    }
+
+    private void stopVisualEffectAnimation() {
+        removeCallbacks(mVisualEffectTick);
+        mVisualEffectScheduled = false;
+        mVisualEffectEpochMs = 0L;
+        mVisualEffectPhase = 0f;
     }
 
     private boolean shouldDrawMusicNow() {
@@ -697,6 +890,9 @@ public final class CutoutRingView extends View {
         mRainbowShader = null;
         mRainbowCx = Float.NaN;
         mRainbowCy = Float.NaN;
+        mAuroraShader = null;
+        mAuroraCx = Float.NaN;
+        mAuroraCy = Float.NaN;
 
         if (mHasCutout) {
             recalcScaledPath();
@@ -708,6 +904,7 @@ public final class CutoutRingView extends View {
             stopChargingPulse();
         }
         updateMusicWaveAnimation();
+        updateVisualEffectAnimation();
         invalidate();
         return super.onApplyWindowInsets(insets);
     }
@@ -823,6 +1020,7 @@ public final class CutoutRingView extends View {
             animateBatteryLevelTo(mBatteryIndicatorPct);
         }
         updateMusicWaveAnimation();
+        updateVisualEffectAnimation();
     }
 
     @Override
@@ -833,6 +1031,7 @@ public final class CutoutRingView extends View {
         stopChargingAnimations();
         stopBatteryIndicatorAnim();
         stopMusicWaveAnimation();
+        stopVisualEffectAnimation();
         super.onDetachedFromWindow();
     }
 
@@ -919,22 +1118,37 @@ public final class CutoutRingView extends View {
                         || (sCfgMusicShowOnAod && isDisplayAod()))
                 && sCfgMusicPresentation != CutoutProgressSettings.PRESENTATION_DISABLED;
 
+        boolean timerActive = mTimerActive && sCfgTimerEnabled
+                && mTimerFraction > 0f
+                && sCfgTimerPresentation != CutoutProgressSettings.PRESENTATION_DISABLED;
+
         boolean downloadPrimary = preview || (downloadActive
                 && sCfgDownloadPresentation == CutoutProgressSettings.PRESENTATION_PRIMARY);
         boolean musicPrimary = musicActive
                 && sCfgMusicPresentation == CutoutProgressSettings.PRESENTATION_PRIMARY;
+        boolean timerPrimary = timerActive
+                && sCfgTimerPresentation == CutoutProgressSettings.PRESENTATION_PRIMARY;
 
+        boolean forceDownload = downloadPrimary && (mAnim.isErrorAnimating
+                || mAnim.isFinishAnimating || mPendingFinish != null);
         int primarySource = SOURCE_NONE;
-        if (downloadPrimary && musicPrimary) {
-            boolean forceDownload = mAnim.isErrorAnimating
-                    || mAnim.isFinishAnimating || mPendingFinish != null;
-            primarySource = forceDownload
-                    || sCfgPrimaryPriority == CutoutProgressSettings.PRIMARY_PRIORITY_DOWNLOAD
-                    ? SOURCE_DOWNLOAD : SOURCE_MUSIC;
-        } else if (downloadPrimary) {
+        if (forceDownload) {
             primarySource = SOURCE_DOWNLOAD;
-        } else if (musicPrimary) {
-            primarySource = SOURCE_MUSIC;
+        } else {
+            int preferred = priorityToSource();
+            if (preferred == SOURCE_DOWNLOAD && downloadPrimary) {
+                primarySource = SOURCE_DOWNLOAD;
+            } else if (preferred == SOURCE_MUSIC && musicPrimary) {
+                primarySource = SOURCE_MUSIC;
+            } else if (preferred == SOURCE_TIMER && timerPrimary) {
+                primarySource = SOURCE_TIMER;
+            } else if (downloadPrimary) {
+                primarySource = SOURCE_DOWNLOAD;
+            } else if (musicPrimary) {
+                primarySource = SOURCE_MUSIC;
+            } else if (timerPrimary) {
+                primarySource = SOURCE_TIMER;
+            }
         }
 
         if (primarySource == SOURCE_NONE && mIsCharging && sCfgChargingRing) {
@@ -948,34 +1162,65 @@ public final class CutoutRingView extends View {
                 && sCfgDownloadPresentation == CutoutProgressSettings.PRESENTATION_INDEPENDENT;
         boolean musicIndependent = musicActive
                 && sCfgMusicPresentation == CutoutProgressSettings.PRESENTATION_INDEPENDENT;
+        boolean timerIndependent = timerActive
+                && sCfgTimerPresentation == CutoutProgressSettings.PRESENTATION_INDEPENDENT;
+        boolean auroraActive = isAuroraActiveNow();
 
-        if (primarySource == SOURCE_NONE && !downloadIndependent && !musicIndependent) return;
-
-        drawSource(canvas, primarySource, effectivePct, 0f);
-
-        boolean downloadConfiguredIndependent = sCfgDownloadPresentation
-                == CutoutProgressSettings.PRESENTATION_INDEPENDENT;
-        boolean musicConfiguredIndependent = sCfgMusicPresentation
-                == CutoutProgressSettings.PRESENTATION_INDEPENDENT;
-        int downloadLane = 1;
-        int musicLane = 1;
-        if (downloadConfiguredIndependent && musicConfiguredIndependent) {
-            if (sCfgPrimaryPriority == CutoutProgressSettings.PRIMARY_PRIORITY_MUSIC) {
-                musicLane = 1;
-                downloadLane = 2;
-            } else {
-                downloadLane = 1;
-                musicLane = 2;
-            }
+        if (primarySource == SOURCE_NONE && !downloadIndependent && !musicIndependent
+                && !timerIndependent && !auroraActive) {
+            return;
         }
 
-        if (downloadIndependent) {
-            drawSource(canvas, SOURCE_DOWNLOAD, effectivePct,
-                    downloadLane * sCfgMultiRingSpacingDp);
+        if (primarySource != SOURCE_NONE) {
+            drawSource(canvas, primarySource, effectivePct, 0f);
         }
-        if (musicIndependent) {
-            drawSource(canvas, SOURCE_MUSIC, effectivePct,
-                    musicLane * sCfgMultiRingSpacingDp);
+
+        int lane = 1;
+        float outermostLaneDp = 0f;
+        int preferred = priorityToSource();
+
+        if (preferred == SOURCE_DOWNLOAD && downloadIndependent) {
+            outermostLaneDp = lane * sCfgMultiRingSpacingDp;
+            drawSource(canvas, SOURCE_DOWNLOAD, effectivePct, outermostLaneDp);
+            lane++;
+        } else if (preferred == SOURCE_MUSIC && musicIndependent) {
+            outermostLaneDp = lane * sCfgMultiRingSpacingDp;
+            drawSource(canvas, SOURCE_MUSIC, effectivePct, outermostLaneDp);
+            lane++;
+        } else if (preferred == SOURCE_TIMER && timerIndependent) {
+            outermostLaneDp = lane * sCfgMultiRingSpacingDp;
+            drawSource(canvas, SOURCE_TIMER, effectivePct, outermostLaneDp);
+            lane++;
+        }
+
+        if (preferred != SOURCE_DOWNLOAD && downloadIndependent) {
+            outermostLaneDp = lane * sCfgMultiRingSpacingDp;
+            drawSource(canvas, SOURCE_DOWNLOAD, effectivePct, outermostLaneDp);
+            lane++;
+        }
+        if (preferred != SOURCE_MUSIC && musicIndependent) {
+            outermostLaneDp = lane * sCfgMultiRingSpacingDp;
+            drawSource(canvas, SOURCE_MUSIC, effectivePct, outermostLaneDp);
+            lane++;
+        }
+        if (preferred != SOURCE_TIMER && timerIndependent) {
+            outermostLaneDp = lane * sCfgMultiRingSpacingDp;
+            drawSource(canvas, SOURCE_TIMER, effectivePct, outermostLaneDp);
+        }
+
+        if (auroraActive) {
+            drawAurora(canvas, outermostLaneDp);
+        }
+    }
+
+    private int priorityToSource() {
+        switch (sCfgPrimaryPriority) {
+            case CutoutProgressSettings.PRIMARY_PRIORITY_MUSIC:
+                return SOURCE_MUSIC;
+            case CutoutProgressSettings.PRIMARY_PRIORITY_TIMER:
+                return SOURCE_TIMER;
+            default:
+                return SOURCE_DOWNLOAD;
         }
     }
 
@@ -1009,6 +1254,9 @@ public final class CutoutRingView extends View {
                 break;
             case SOURCE_BATTERY:
                 drawBatteryIndicatorRing(canvas, laneOffsetDp);
+                break;
+            case SOURCE_TIMER:
+                drawTimerRing(canvas, laneOffsetDp);
                 break;
             default:
                 break;
@@ -1100,7 +1348,7 @@ public final class CutoutRingView extends View {
 
         mMusicPaint.setAlpha(sCfgMusicOpacity * 255 / 100);
         mRenderer.drawProgress(canvas, mMusicFraction, sCfgMusicClockwise, mMusicPaint);
-        if (sCfgMusicWaveEnabled) {
+        if (sCfgMusicWaveEnabled && !isMusicAuroraActive()) {
             drawMusicWave(canvas);
         }
     }
@@ -1130,6 +1378,169 @@ public final class CutoutRingView extends View {
                     position[1] + normal[1] * (pad + amplitude),
                     mMusicWavePaint);
         }
+    }
+
+    private void drawTimerRing(Canvas canvas, float laneOffsetDp) {
+        computeArcBounds(laneOffsetDp);
+        mRenderer.updateBounds(mArcBounds);
+
+        if (sCfgBgRing) {
+            mBgPaint.setAlpha(sCfgBgOpacity * 255 / 100);
+            mRenderer.drawFullRing(canvas, mBgPaint);
+        }
+
+        int timerColor = resolveTimerColor();
+        applyStroke(mTimerPaint, timerColor, sCfgTimerStrokeDp * mDp,
+                sCfgTimerOpacity * 255 / 100);
+        if (sCfgTimerColorMode == CutoutProgressSettings.RING_COLOR_MODE_RAINBOW) {
+            applyRainbowShader(mTimerPaint, mArcBounds.centerX(), mArcBounds.centerY());
+        } else {
+            clearShader(mTimerPaint);
+        }
+
+        mRenderer.drawProgress(canvas, mTimerFraction, sCfgTimerClockwise, mTimerPaint);
+        clearShader(mTimerPaint);
+
+        if (sCfgTimerFlameEnabled && mTimerFraction > 0.002f) {
+            drawTimerFlame(canvas, timerColor);
+        }
+    }
+
+    private int resolveTimerColor() {
+        switch (sCfgTimerColorMode) {
+            case CutoutProgressSettings.RING_COLOR_MODE_ACCENT:
+                return resolveAccentColor();
+            case CutoutProgressSettings.RING_COLOR_MODE_RAINBOW:
+                return 0xFFFF8A00;
+            default:
+                return sCfgTimerColor;
+        }
+    }
+
+    private void drawTimerFlame(Canvas canvas, int timerColor) {
+        float[] position = new float[2];
+        float[] normal = new float[2];
+        float endpoint = sCfgTimerClockwise ? mTimerFraction : 1f - mTimerFraction;
+        endpoint = endpoint - (float) Math.floor(endpoint);
+        if (!mRenderer.getPointAndOutwardNormal(endpoint, position, normal)) return;
+
+        float flameSize = Math.max(1f, sCfgTimerFlameSizeDp) * mDp;
+        float flicker = 0.88f + 0.12f * (float) Math.sin(mVisualEffectPhase * 3.1f);
+        float wick = Math.max(sCfgTimerStrokeDp * 0.55f * mDp, flameSize * 0.22f);
+        float fx = position[0] + normal[0] * (wick + flameSize * 0.35f);
+        float fy = position[1] + normal[1] * (wick + flameSize * 0.35f);
+
+        mFlamePaint.setStyle(Paint.Style.STROKE);
+        mFlamePaint.setStrokeCap(Paint.Cap.ROUND);
+        mFlamePaint.setStrokeWidth(Math.max(1f, sCfgTimerStrokeDp * 0.45f * mDp));
+        mFlamePaint.setColor(timerColor);
+        mFlamePaint.setAlpha(sCfgTimerOpacity * 220 / 100);
+        canvas.drawLine(position[0], position[1],
+                position[0] + normal[0] * wick,
+                position[1] + normal[1] * wick, mFlamePaint);
+
+        mFlamePaint.setStyle(Paint.Style.FILL);
+        mFlamePaint.setColor(timerColor);
+        mFlamePaint.setAlpha(sCfgTimerOpacity * 190 / 100);
+        canvas.drawCircle(fx, fy, flameSize * 0.58f * flicker, mFlamePaint);
+
+        int inner = blendColors(timerColor, Color.WHITE, 0.58f);
+        mFlamePaint.setColor(inner);
+        mFlamePaint.setAlpha(sCfgTimerOpacity * 230 / 100);
+        canvas.drawCircle(
+                fx - normal[0] * flameSize * 0.12f,
+                fy - normal[1] * flameSize * 0.12f,
+                flameSize * 0.34f * (1.06f - 0.06f * flicker), mFlamePaint);
+
+        mFlamePaint.setColor(Color.WHITE);
+        mFlamePaint.setAlpha(sCfgTimerOpacity * 210 / 100);
+        canvas.drawCircle(
+                fx - normal[0] * flameSize * 0.20f,
+                fy - normal[1] * flameSize * 0.20f,
+                flameSize * 0.13f, mFlamePaint);
+    }
+
+    private void drawAurora(Canvas canvas, float outermostLaneDp) {
+        boolean notificationActive = isNotificationAuroraActive();
+        boolean useNotificationColor = notificationActive
+                && sCfgAuroraNotificationColorMode
+                == CutoutProgressSettings.AURORA_NOTIFICATION_COLOR_NOTIFICATION
+                && mNotificationAuroraColor != 0;
+
+        int baseColor;
+        boolean spectrum;
+        if (useNotificationColor) {
+            baseColor = mNotificationAuroraColor;
+            spectrum = false;
+        } else {
+            spectrum = sCfgAuroraColorMode == CutoutProgressSettings.AURORA_COLOR_MODE_SPECTRUM;
+            if (sCfgAuroraColorMode == CutoutProgressSettings.AURORA_COLOR_MODE_CUSTOM) {
+                baseColor = sCfgAuroraColor;
+            } else {
+                baseColor = resolveAuroraSourceColor();
+            }
+        }
+
+        final int layers = 8;
+        float spread = Math.max(2f, sCfgAuroraSpreadDp);
+        for (int i = 0; i < layers; i++) {
+            float t = i / (float) (layers - 1);
+            float offset = outermostLaneDp + 0.8f + t * spread;
+            computeArcBounds(offset);
+            mRenderer.updateBounds(mArcBounds);
+
+            float shimmer = 0.86f + 0.14f * (float) Math.sin(
+                    mVisualEffectPhase + t * Math.PI * 2.3f);
+            float falloff = (1f - t);
+            falloff *= falloff;
+            int alpha = (int) (sCfgAuroraOpacity * 255f / 100f
+                    * (0.18f + 0.82f * falloff) * shimmer);
+            float width = Math.max(0.65f, 1.65f - 0.8f * t) * mDp;
+            int layerColor = spectrum ? Color.WHITE
+                    : blendColors(baseColor, Color.WHITE, 0.20f * (1f - t));
+
+            applyStroke(mAuroraPaint, layerColor, width, Math.max(0, Math.min(255, alpha)));
+            mAuroraPaint.setStrokeCap(Paint.Cap.ROUND);
+            if (spectrum) {
+                applyAuroraSpectrumShader(mAuroraPaint,
+                        mArcBounds.centerX(), mArcBounds.centerY());
+            } else {
+                clearShader(mAuroraPaint);
+            }
+            mRenderer.drawFullRing(canvas, mAuroraPaint);
+        }
+        clearShader(mAuroraPaint);
+    }
+
+    private int resolveAuroraSourceColor() {
+        if (isNotificationAuroraActive() && mNotificationAuroraColor != 0) {
+            return mNotificationAuroraColor;
+        }
+        if (sCfgAuroraRecording && mAuroraRecordingActive) {
+            return 0xFFF44336;
+        }
+        if (sCfgAuroraCalls && mAuroraCallActive) {
+            return 0xFF4CAF50;
+        }
+        if (sCfgAuroraMusic && mMusicPlaying) {
+            return sCfgMusicColor;
+        }
+        return resolveAccentColor();
+    }
+
+    private void applyAuroraSpectrumShader(Paint paint, float cx, float cy) {
+        if (mAuroraShader == null
+                || Math.abs(cx - mAuroraCx) > 0.5f
+                || Math.abs(cy - mAuroraCy) > 0.5f) {
+            mAuroraShader = new SweepGradient(cx, cy, RAINBOW_COLORS, null);
+            mAuroraCx = cx;
+            mAuroraCy = cy;
+        }
+        Matrix matrix = new Matrix();
+        float degrees = -90f + (float) Math.toDegrees(mVisualEffectPhase);
+        matrix.setRotate(degrees, cx, cy);
+        mAuroraShader.setLocalMatrix(matrix);
+        paint.setShader(mAuroraShader);
     }
 
     private void drawChargingRing(Canvas canvas, float laneOffsetDp) {
@@ -1336,6 +1747,27 @@ public final class CutoutRingView extends View {
         sCfgMusicWaveAmplitudeDp = 2.5f;
         sCfgMusicWaveDensity = 48;
         sCfgMusicWaveSpeed = 100;
+        sCfgTimerEnabled = false;
+        sCfgTimerPresentation = CutoutProgressSettings.PRESENTATION_PRIMARY;
+        sCfgTimerColorMode = CutoutProgressSettings.RING_COLOR_MODE_ACCENT;
+        sCfgTimerColor = 0xFFFF8A00;
+        sCfgTimerOpacity = 95;
+        sCfgTimerStrokeDp = 2f;
+        sCfgTimerClockwise = true;
+        sCfgTimerFlameEnabled = true;
+        sCfgTimerFlameSizeDp = 3.5f;
+        sCfgAuroraEnabled = false;
+        sCfgAuroraCalls = true;
+        sCfgAuroraMusic = true;
+        sCfgAuroraRecording = true;
+        sCfgAuroraNotifications = true;
+        sCfgAuroraColorMode = CutoutProgressSettings.AURORA_COLOR_MODE_SPECTRUM;
+        sCfgAuroraColor = 0xFF7C4DFF;
+        sCfgAuroraNotificationColorMode =
+                CutoutProgressSettings.AURORA_NOTIFICATION_COLOR_NOTIFICATION;
+        sCfgAuroraSpreadDp = 8f;
+        sCfgAuroraOpacity = 85;
+        sCfgAuroraSpeed = 100;
         sCfgBgRing = sCfgMinVis = true;
         sCfgMinVisMs = 500;
         sCfgChargingRing = true;
@@ -1358,6 +1790,10 @@ public final class CutoutRingView extends View {
         applyStroke(mErrorPaint, sCfgErrorColor, stroke * 1.5f, 255);
         applyStroke(mBgPaint, sCfgBgColor, stroke, sCfgBgOpacity * 255 / 100);
         applyStroke(mChargingPaint, baseColor, stroke, sCfgOpacity * 255 / 100);
+        applyStroke(mTimerPaint, resolveTimerColor(),
+                sCfgTimerStrokeDp * mDp, sCfgTimerOpacity * 255 / 100);
+        mFlamePaint.setAntiAlias(true);
+        mAuroraPaint.setAntiAlias(true);
 
         mRainbowPaint.setStyle(Paint.Style.STROKE);
         mRainbowPaint.setAntiAlias(true);
