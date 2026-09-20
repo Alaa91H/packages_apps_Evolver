@@ -881,6 +881,7 @@
     <string name="cutout_progress_timer_clockwise_title">Timer clockwise direction</string>
     <string name="cutout_progress_timer_flame_title">Burning fuse effect</string>
     <string name="cutout_progress_timer_flame_summary">Animate a small flame at the shrinking edge of the countdown ring; disable for a clean shrinking ring</string>
+    <string name="cutout_progress_timer_flame_color_title">Flame color</string>
     <string name="cutout_progress_timer_flame_size_title">Flame size</string>
 
     <string name="cutout_progress_aurora_title">Aurora around rings</string>

@@ -81,6 +81,7 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
         private const val KEY_TIMER_PRESENTATION = "cutout_progress_timer_presentation"
         private const val KEY_TIMER_COLOR_MODE = "cutout_progress_timer_color_mode"
         private const val KEY_TIMER_CUSTOM_COLOR = "cutout_progress_timer_custom_color"
+        private const val KEY_TIMER_FLAME_COLOR = "cutout_progress_timer_flame_color"
         private const val KEY_AURORA_COLOR_MODE = "cutout_progress_aurora_color_mode"
         private const val KEY_AURORA_CUSTOM_COLOR = "cutout_progress_aurora_custom_color"
         private const val KEY_AURORA_NOTIFICATION_COLOR_MODE =
@@ -115,6 +116,7 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
         private const val DEFAULT_BG_COLOR = 0xFF808080.toInt()
         private const val DEFAULT_MUSIC_COLOR = 0xFF9C27B0.toInt()
         private const val DEFAULT_TIMER_COLOR = 0xFFFF8A00.toInt()
+        private const val DEFAULT_TIMER_FLAME_COLOR = 0xFFFF6D00.toInt()
         private const val DEFAULT_AURORA_COLOR = 0xFF7C4DFF.toInt()
 
         @JvmStatic
@@ -177,6 +179,7 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
     private lateinit var bgColorPref: Preference
     private lateinit var musicColorPref: Preference
     private lateinit var timerColorPref: Preference
+    private lateinit var timerFlameColorPref: Preference
     private lateinit var auroraColorPref: Preference
 
     private lateinit var finishStylePref: ListPreference
@@ -213,6 +216,7 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
         bgColorPref = findPreference(KEY_BG_COLOR)!!
         musicColorPref = findPreference(KEY_MUSIC_CUSTOM_COLOR)!!
         timerColorPref = findPreference(KEY_TIMER_CUSTOM_COLOR)!!
+        timerFlameColorPref = findPreference(KEY_TIMER_FLAME_COLOR)!!
         auroraColorPref = findPreference(KEY_AURORA_CUSTOM_COLOR)!!
 
         finishStylePref = findPreference(KEY_FINISH_STYLE)!!
@@ -307,6 +311,14 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
                 title = getString(R.string.cutout_progress_timer_custom_color_title),
                 key = KEY_TIMER_CUSTOM_COLOR,
                 default = DEFAULT_TIMER_COLOR
+            )
+            true
+        }
+        timerFlameColorPref.setOnPreferenceClickListener {
+            showColorPicker(
+                title = getString(R.string.cutout_progress_timer_flame_color_title),
+                key = KEY_TIMER_FLAME_COLOR,
+                default = DEFAULT_TIMER_FLAME_COLOR
             )
             true
         }
@@ -427,6 +439,7 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
         bgColorPref.summary = "#${argbToHex(readSecureInt(KEY_BG_COLOR, DEFAULT_BG_COLOR))}"
         musicColorPref.summary = "#${argbToHex(readSecureInt(KEY_MUSIC_CUSTOM_COLOR, DEFAULT_MUSIC_COLOR))}"
         timerColorPref.summary = "#${argbToHex(readSecureInt(KEY_TIMER_CUSTOM_COLOR, DEFAULT_TIMER_COLOR))}"
+        timerFlameColorPref.summary = "#${argbToHex(readSecureInt(KEY_TIMER_FLAME_COLOR, DEFAULT_TIMER_FLAME_COLOR))}"
         auroraColorPref.summary = "#${argbToHex(readSecureInt(KEY_AURORA_CUSTOM_COLOR, DEFAULT_AURORA_COLOR))}"
     }
 

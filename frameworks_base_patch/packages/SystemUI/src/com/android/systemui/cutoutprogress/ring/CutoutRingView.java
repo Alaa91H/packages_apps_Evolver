@@ -218,6 +218,7 @@ public final class CutoutRingView extends View {
     private float sCfgTimerStrokeDp = 2f;
     private boolean sCfgTimerClockwise = true;
     private boolean sCfgTimerFlameEnabled = true;
+    private int sCfgTimerFlameColor = 0xFFFF6D00;
     private float sCfgTimerFlameSizeDp = 3.5f;
 
     private boolean sCfgAuroraEnabled = false;
@@ -390,6 +391,7 @@ public final class CutoutRingView extends View {
         sCfgTimerStrokeDp = s.getTimerStrokeWidthDp();
         sCfgTimerClockwise = s.isTimerClockwise();
         sCfgTimerFlameEnabled = s.isTimerFlameEnabled();
+        sCfgTimerFlameColor = s.getTimerFlameColor();
         sCfgTimerFlameSizeDp = s.getTimerFlameSizeDp();
 
         sCfgAuroraEnabled = s.isAuroraEnabled();
@@ -1402,7 +1404,7 @@ public final class CutoutRingView extends View {
         clearShader(mTimerPaint);
 
         if (sCfgTimerFlameEnabled && mTimerFraction > 0.002f) {
-            drawTimerFlame(canvas, timerColor);
+            drawTimerFlame(canvas, sCfgTimerFlameColor);
         }
     }
 
@@ -1755,6 +1757,7 @@ public final class CutoutRingView extends View {
         sCfgTimerStrokeDp = 2f;
         sCfgTimerClockwise = true;
         sCfgTimerFlameEnabled = true;
+        sCfgTimerFlameColor = 0xFFFF6D00;
         sCfgTimerFlameSizeDp = 3.5f;
         sCfgAuroraEnabled = false;
         sCfgAuroraCalls = true;

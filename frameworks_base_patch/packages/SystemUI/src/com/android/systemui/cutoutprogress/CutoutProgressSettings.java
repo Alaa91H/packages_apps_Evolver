@@ -173,6 +173,8 @@ public final class CutoutProgressSettings {
             "cutout_progress_timer_clockwise";
     public static final String KEY_TIMER_FLAME_ENABLED =
             "cutout_progress_timer_flame_enabled";
+    public static final String KEY_TIMER_FLAME_COLOR =
+            "cutout_progress_timer_flame_color";
     public static final String KEY_TIMER_FLAME_SIZE_DP10 =
             "cutout_progress_timer_flame_size_dp10";
 
@@ -290,6 +292,7 @@ public final class CutoutProgressSettings {
     private static final float DEF_TIMER_STROKE_DP = 2.0f;
     private static final boolean DEF_TIMER_CLOCKWISE = true;
     private static final boolean DEF_TIMER_FLAME_ENABLED = true;
+    private static final int DEF_TIMER_FLAME_COLOR = 0xFFFF6D00;
     private static final float DEF_TIMER_FLAME_SIZE_DP = 3.5f;
 
     private static final boolean DEF_AURORA_ENABLED = false;
@@ -671,6 +674,10 @@ public final class CutoutProgressSettings {
 
     public boolean isTimerFlameEnabled() {
         return getInt(KEY_TIMER_FLAME_ENABLED, DEF_TIMER_FLAME_ENABLED ? 1 : 0) != 0;
+    }
+
+    public int getTimerFlameColor() {
+        return getInt(KEY_TIMER_FLAME_COLOR, DEF_TIMER_FLAME_COLOR);
     }
 
     public float getTimerFlameSizeDp() {
