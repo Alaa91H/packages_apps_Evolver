@@ -419,9 +419,6 @@ public class CutoutProgressController implements CoreStartable {
                 if (mTimerTrackingEnabled) {
                     updateTimerFromNotification(entry);
                 }
-                if (mCallNotificationTrackingEnabled) {
-                    updateCallNotification(entry);
-                }
                 if (mNotificationAuroraTrackingEnabled) {
                     triggerNotificationAurora(entry);
                 }
@@ -432,6 +429,9 @@ public class CutoutProgressController implements CoreStartable {
                 if (!mSettings.isEnabled() || !isEntryForCurrentUser(entry)) return;
                 if (mDownloadTrackingEnabled) {
                     mTracker.onNotificationChanged(entry);
+                }
+                if (mCallNotificationTrackingEnabled) {
+                    updateCallNotification(entry);
                 }
                 if (mTimerTrackingEnabled) {
                     boolean wasCurrent = entry.getSbn().getKey().equals(mTimerKey);
