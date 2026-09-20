@@ -32,6 +32,12 @@ public final class CapsuleRingRenderer implements RingViewRenderer {
     @Override
     public void updateBounds(RectF bounds) {
         mOutline.reset();
+        mWorkPath.reset();
+        mTotalLength = 0f;
+        if (bounds == null || bounds.isEmpty()) {
+            mMeasure.setPath(null, false);
+            return;
+        }
         buildCapsule(bounds);
         mMeasure.setPath(mOutline, false);
         mTotalLength = mMeasure.getLength();
@@ -134,10 +140,13 @@ public final class CapsuleRingRenderer implements RingViewRenderer {
                               int segments, float gapDeg, float arcDeg,
                               int highlight,
                               Paint basePaint, Paint shinePaint, float alpha) {
-        if (mTotalLength == 0f) return;
-        float totalDeg = segments * (arcDeg + gapDeg);
-        float segLen = mTotalLength * (arcDeg / totalDeg);
-        float gapLen = mTotalLength * (gapDeg / totalDeg);
+        if (mTotalLength <= 0f || segments <= 0) return;
+        float safeArcDeg = Math.max(0f, arcDeg);
+        float safeGapDeg = Math.max(0f, gapDeg);
+        float totalDeg = segments * (safeArcDeg + safeGapDeg);
+        if (totalDeg <= 0f) return;
+        float segLen = mTotalLength * (safeArcDeg / totalDeg);
+        float gapLen = mTotalLength * (safeGapDeg / totalDeg);
 
         for (int i = 0; i < segments; i++) {
             float start = i * (segLen + gapLen);
@@ -146,7 +155,7 @@ public final class CapsuleRingRenderer implements RingViewRenderer {
 
             if (i == highlight || i == highlight - 1) {
                 Paint tmp = new Paint(shinePaint);
-                tmp.setAlpha((int)(255 * alpha));
+                tmp.setAlpha((int)(255 * Math.max(0f, Math.min(1f, alpha))));
                 canvas.drawPath(mWorkPath, tmp);
             } else {
                 canvas.drawPath(mWorkPath, basePaint);
