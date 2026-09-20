@@ -669,6 +669,26 @@
             android:defaultValue="0"
             android:dependency="cutout_progress_percent_enabled" />
 
+        <org.evolution.settings.preferences.SecureSettingSeekBarPreference
+            android:key="cutout_progress_percent_offset_x"
+            android:title="@string/cutout_progress_percent_offset_x_title"
+            android:max="200"
+            settings:min="-200"
+            settings:interval="5"
+            settings:units=" (×0.1 dp)"
+            android:defaultValue="0"
+            android:dependency="cutout_progress_percent_enabled" />
+
+        <org.evolution.settings.preferences.SecureSettingSeekBarPreference
+            android:key="cutout_progress_percent_offset_y"
+            android:title="@string/cutout_progress_percent_offset_y_title"
+            android:max="200"
+            settings:min="-200"
+            settings:interval="5"
+            settings:units=" (×0.1 dp)"
+            android:defaultValue="0"
+            android:dependency="cutout_progress_percent_enabled" />
+
         <org.evolution.settings.preferences.SecureSettingSwitchPreference
             android:key="cutout_progress_filename_enabled"
             android:title="@string/cutout_progress_filename_enabled_title"
@@ -698,6 +718,26 @@
             android:entries="@array/cutout_progress_position_entries"
             android:entryValues="@array/cutout_progress_position_values"
             android:defaultValue="4"
+            android:dependency="cutout_progress_filename_enabled" />
+
+        <org.evolution.settings.preferences.SecureSettingSeekBarPreference
+            android:key="cutout_progress_filename_offset_x"
+            android:title="@string/cutout_progress_filename_offset_x_title"
+            android:max="200"
+            settings:min="-200"
+            settings:interval="5"
+            settings:units=" (×0.1 dp)"
+            android:defaultValue="0"
+            android:dependency="cutout_progress_filename_enabled" />
+
+        <org.evolution.settings.preferences.SecureSettingSeekBarPreference
+            android:key="cutout_progress_filename_offset_y"
+            android:title="@string/cutout_progress_filename_offset_y_title"
+            android:max="200"
+            settings:min="-200"
+            settings:interval="5"
+            settings:units=" (×0.1 dp)"
+            android:defaultValue="0"
             android:dependency="cutout_progress_filename_enabled" />
 
         <org.evolution.settings.preferences.SecureSettingSeekBarPreference
