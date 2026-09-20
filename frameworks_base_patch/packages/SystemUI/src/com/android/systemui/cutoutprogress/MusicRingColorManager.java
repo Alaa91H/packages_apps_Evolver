@@ -32,6 +32,7 @@ import androidx.palette.graphics.Palette;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 
 public final class MusicRingColorManager {
 
@@ -69,10 +70,8 @@ public final class MusicRingColorManager {
     private int mCachedColor = DEFAULT_FALLBACK;
     private Drawable mLastArt = null;
     private Drawable mLastResolvedArt = null;
-    private int mResolveGeneration = 0;
-
-    private int mCachedAccent = DEFAULT_FALLBACK;
-    private int mLastUiMode = -1;
+    private volatile int mResolveGeneration = 0;
+    private volatile boolean mDestroyed = false;
 
     private int mCurrentColor = DEFAULT_FALLBACK;
 
@@ -81,9 +80,13 @@ public final class MusicRingColorManager {
         mMainHandler = mainHandler;
     }
 
-    public void setCallback(ColorCallback cb) { mCallback = cb; }
+    public void setCallback(ColorCallback cb) {
+        if (!mDestroyed) mCallback = cb;
+    }
 
     public void setMode(int mode) {
+        if (mDestroyed) return;
+        mode = Math.max(MODE_ALBUM_ICON, Math.min(MODE_CUSTOM, mode));
         if (mMode == mode) return;
         mMode = mode;
         invalidateCache();
@@ -91,6 +94,7 @@ public final class MusicRingColorManager {
     }
 
     public void setCustomColor(int argb) {
+        if (mDestroyed) return;
         mCustomColor = argb;
         if (mMode == MODE_CUSTOM) emit(argb);
     }
@@ -104,12 +108,15 @@ public final class MusicRingColorManager {
     }
 
     public void destroy() {
+        if (mDestroyed) return;
+        mDestroyed = true;
         mResolveGeneration++;
         mCallback = null;
         mBgExecutor.shutdownNow();
     }
 
     public void onTrackChanged(String trackId, Drawable art) {
+        if (mDestroyed) return;
         if (Objects.equals(trackId, mCachedTrackId) && art == mLastArt) return;
 
         if (!Objects.equals(trackId, mCachedTrackId)) {
@@ -128,6 +135,7 @@ public final class MusicRingColorManager {
     }
 
     public void onAlbumArtChanged(Drawable art) {
+        if (mDestroyed) return;
         if (art == mLastArt) return;
         mLastArt = art;
         mCachedColor = DEFAULT_FALLBACK;
@@ -136,6 +144,7 @@ public final class MusicRingColorManager {
     }
 
     private void resolve(Drawable art, String trackId) {
+        if (mDestroyed) return;
         final int generation = ++mResolveGeneration;
         switch (mMode) {
             case MODE_CUSTOM:
@@ -156,15 +165,22 @@ public final class MusicRingColorManager {
     private int resolveAccent() {
         int curMode = mContext.getResources().getConfiguration().uiMode
                 & Configuration.UI_MODE_NIGHT_MASK;
-        if (curMode == mLastUiMode) return mCachedAccent;
-        mLastUiMode = curMode;
         TypedValue tv = new TypedValue();
         boolean ok = mContext.getTheme()
                 .resolveAttribute(android.R.attr.colorAccent, tv, true);
-        int accent = ok ? tv.data : DEFAULT_FALLBACK;
-        mCachedAccent = ensureVisible(accent,
-                curMode == Configuration.UI_MODE_NIGHT_YES);
-        return mCachedAccent;
+        int accent = DEFAULT_FALLBACK;
+        if (ok) {
+            if (tv.resourceId != 0) {
+                try {
+                    accent = mContext.getColor(tv.resourceId);
+                } catch (android.content.res.Resources.NotFoundException ignored) {
+                    accent = tv.data;
+                }
+            } else {
+                accent = tv.data;
+            }
+        }
+        return ensureVisible(accent, curMode == Configuration.UI_MODE_NIGHT_YES);
     }
 
     private void resolveAlbumIcon(Drawable art, String trackId, int generation) {
@@ -218,33 +234,45 @@ public final class MusicRingColorManager {
         final Drawable capturedArt = art;
         final boolean dark = isDarkMode();
 
-        mBgExecutor.execute(() -> {
-            int color;
-            try {
-                Palette palette = Palette.from(sampled).maximumColorCount(16).generate();
-                color = pickBestSwatch(palette);
-            } finally {
-                sampled.recycle();
-            }
-            int finalColor = ensureVisible(color, dark);
-            mMainHandler.post(() -> {
-                if (generation != mResolveGeneration
-                        || !Objects.equals(capturedId, mCachedTrackId)
-                        || capturedArt != mLastArt) {
+        try {
+            mBgExecutor.execute(() -> {
+                if (mDestroyed || generation != mResolveGeneration) {
+                    sampled.recycle();
                     return;
                 }
-                mLastResolvedArt = capturedArt;
-                if (capturedId != null) mCachedColor = finalColor;
-                emit(finalColor);
+                int color = DEFAULT_FALLBACK;
+                try {
+                    Palette palette = Palette.from(sampled).maximumColorCount(16).generate();
+                    color = pickBestSwatch(palette);
+                } catch (RuntimeException ignored) {
+                    color = DEFAULT_FALLBACK;
+                } finally {
+                    sampled.recycle();
+                }
+                int finalColor = ensureVisible(color, dark);
+                mMainHandler.post(() -> {
+                    if (mDestroyed
+                            || generation != mResolveGeneration
+                            || !Objects.equals(capturedId, mCachedTrackId)
+                            || capturedArt != mLastArt) {
+                        return;
+                    }
+                    mLastResolvedArt = capturedArt;
+                    if (capturedId != null) mCachedColor = finalColor;
+                    emit(finalColor);
+                });
             });
-        });
+        } catch (RejectedExecutionException ignored) {
+            sampled.recycle();
+        }
     }
 
     private void emitIfCurrent(int generation, int argb) {
-        if (generation == mResolveGeneration) emit(argb);
+        if (!mDestroyed && generation == mResolveGeneration) emit(argb);
     }
 
     private void emit(int argb) {
+        if (mDestroyed) return;
         mCurrentColor = argb;
         if (mCallback != null) mCallback.onMusicRingColorChanged(argb);
     }
