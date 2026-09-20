@@ -94,7 +94,7 @@ final class CameraCutoutGeometryResolver {
     }
 
     ResolvedGeometry resolve(DisplayCutout cutout) {
-        if (cutout == null || cutout.isEmpty()) return null;
+        if (cutout == null) return null;
 
         final Display display = mContext.getDisplay();
         final DisplayInfo info = new DisplayInfo();
