@@ -30,6 +30,10 @@ declare -A EXPECTED=(
     ["packages/SystemUI/src/com/android/systemui/cutoutprogress/ring/CutoutRingView.java"]="bf86929ae363d2895421d65ed8fd50a79e62c70e"
 )
 
+NEW_FILES=(
+    "packages/SystemUI/src/com/android/systemui/cutoutprogress/ring/CameraCutoutGeometryResolver.java"
+)
+
 echo "Checking frameworks/base cutout-progress baseline..."
 for rel in "${!EXPECTED[@]}"; do
     if [[ ! -f "$TARGET/$rel" ]]; then
@@ -46,8 +50,19 @@ for rel in "${!EXPECTED[@]}"; do
     fi
 done
 
+for rel in "${NEW_FILES[@]}"; do
+    if [[ -e "$TARGET/$rel" && "$FORCE" -ne 1 ]]; then
+        echo "Error: new staged file already exists upstream: $rel" >&2
+        echo "Review/rebase the integration, or rerun with --force only after manual review." >&2
+        exit 1
+    fi
+done
+
 echo "Applying staged Cutout Progress Pro files..."
 for rel in "${!EXPECTED[@]}"; do
+    install -D -m 0644 "$SCRIPT_DIR/$rel" "$TARGET/$rel"
+done
+for rel in "${NEW_FILES[@]}"; do
     install -D -m 0644 "$SCRIPT_DIR/$rel" "$TARGET/$rel"
 done
 
