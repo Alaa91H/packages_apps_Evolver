@@ -48,7 +48,6 @@ public final class CutoutRingView extends View {
 
     private static final long BURN_IN_HIDE_MS = 10_000L;
 
-    private static final long CHARGING_PULSE_INTERVAL_MS = 1500L;
     private static final long CHARGING_PULSE_DURATION_MS = 900L;
 
     private static final int SOURCE_NONE = 0;
@@ -115,7 +114,8 @@ public final class CutoutRingView extends View {
     private int mBatteryPct = 0;
     private boolean mChargingPulseEnabled = true;
     private float mChargingPulsePhase = 0f;
-    private ValueAnimator mChargingPulseAnim = null;
+    private boolean mChargingPulseScheduled = false;
+    private long mChargingPulseEpochMs = 0L;
     private float mChargingDisplayPct = 0f;
     private ValueAnimator mChargingLevelAnim = null;
 
@@ -192,6 +192,36 @@ public final class CutoutRingView extends View {
     private int sCfgMusicWaveDensity = 48;
     private int sCfgMusicWaveSpeed = 100;
 
+    private final Runnable mChargingPulseTick = new Runnable() {
+        @Override
+        public void run() {
+            mChargingPulseScheduled = false;
+            if (!mIsCharging || !mChargingPulseEnabled || !sCfgChargingPulse
+                    || !isAttachedToWindow() || !mHasCutout) {
+                return;
+            }
+
+            boolean nonInteractive = isDisplayNonInteractive();
+            if (nonInteractive) {
+                // Keep a stable full charging indication on AOD/off states; do not animate a
+                // full-screen SystemUI overlay at frame rate while the device is idle.
+                if (mChargingPulsePhase != 1f) {
+                    mChargingPulsePhase = 1f;
+                    invalidate();
+                }
+            } else {
+                long cycle = CHARGING_PULSE_DURATION_MS * 2L;
+                long elapsed = Math.max(0L, SystemClock.elapsedRealtime() - mChargingPulseEpochMs);
+                float unit = (elapsed % cycle) / (float) CHARGING_PULSE_DURATION_MS;
+                mChargingPulsePhase = unit <= 1f ? unit : 2f - unit;
+                invalidate();
+            }
+
+            mChargingPulseScheduled = true;
+            postDelayed(this, nonInteractive ? 1000L : 33L);
+        }
+    };
+
     private final Runnable mMusicWaveTick = new Runnable() {
         @Override
         public void run() {
@@ -200,7 +230,7 @@ public final class CutoutRingView extends View {
                 return;
             }
 
-            boolean dozing = isDisplayDozing();
+            boolean dozing = isDisplayNonInteractive();
             if (!dozing || sCfgMusicShowOnAod) {
                 long duration = musicWaveDurationMs();
                 long elapsed = Math.max(0L, SystemClock.elapsedRealtime() - mMusicWaveEpochMs);
@@ -369,7 +399,7 @@ public final class CutoutRingView extends View {
 
     private boolean shouldDrawMusicNow() {
         return mMusicPlaying && mHasCutout
-                && (sCfgMusicShowOnAod || !isDisplayDozing());
+                && (sCfgMusicShowOnAod || !isDisplayNonInteractive());
     }
 
     private int resolveRingColor() {
@@ -461,7 +491,7 @@ public final class CutoutRingView extends View {
 
         animateChargingLevelTo(batteryPct);
 
-        if (mChargingPulseEnabled && sCfgChargingPulse && mChargingPulseAnim == null) {
+        if (mChargingPulseEnabled && sCfgChargingPulse && !mChargingPulseScheduled) {
             startChargingPulse();
         }
         invalidate();
@@ -491,7 +521,7 @@ public final class CutoutRingView extends View {
         sCfgChargingPulse = enabled;
         if (!enabled) {
             stopChargingPulse();
-        } else if (mIsCharging && mChargingPulseAnim == null) {
+        } else if (mIsCharging && !mChargingPulseScheduled) {
             startChargingPulse();
         }
     }
@@ -519,24 +549,19 @@ public final class CutoutRingView extends View {
 
     private void startChargingPulse() {
         stopChargingPulse();
-        mChargingPulseAnim = ValueAnimator.ofFloat(0f, 1f);
-        mChargingPulseAnim.setDuration(CHARGING_PULSE_DURATION_MS);
-        mChargingPulseAnim.setRepeatCount(ValueAnimator.INFINITE);
-        mChargingPulseAnim.setRepeatMode(ValueAnimator.REVERSE);
-        mChargingPulseAnim.setInterpolator(new LinearInterpolator());
-        mChargingPulseAnim.setStartDelay(0);
-        mChargingPulseAnim.addUpdateListener(a -> {
-            mChargingPulsePhase = (float) a.getAnimatedValue();
-            invalidate();
-        });
-        mChargingPulseAnim.start();
+        if (!mIsCharging || !mChargingPulseEnabled || !sCfgChargingPulse
+                || !isAttachedToWindow()) {
+            return;
+        }
+        mChargingPulseEpochMs = SystemClock.elapsedRealtime();
+        mChargingPulseScheduled = true;
+        post(mChargingPulseTick);
     }
 
     private void stopChargingPulse() {
-        if (mChargingPulseAnim != null) {
-            mChargingPulseAnim.cancel();
-            mChargingPulseAnim = null;
-        }
+        removeCallbacks(mChargingPulseTick);
+        mChargingPulseScheduled = false;
+        mChargingPulseEpochMs = 0L;
         mChargingPulsePhase = 0f;
     }
 
@@ -867,7 +892,7 @@ public final class CutoutRingView extends View {
         }
 
         boolean musicActive = mMusicPlaying
-                && (sCfgMusicShowOnAod || !isDisplayDozing())
+                && (sCfgMusicShowOnAod || !isDisplayNonInteractive())
                 && sCfgMusicPresentation != CutoutProgressSettings.PRESENTATION_DISABLED;
 
         boolean downloadPrimary = preview || (downloadActive
@@ -930,11 +955,14 @@ public final class CutoutRingView extends View {
         }
     }
 
-    private boolean isDisplayDozing() {
+    private boolean isDisplayNonInteractive() {
         Display display = getDisplay();
         if (display == null) return false;
         int state = display.getState();
-        return state == Display.STATE_DOZE || state == Display.STATE_DOZE_SUSPEND;
+        return state == Display.STATE_OFF
+                || state == Display.STATE_DOZE
+                || state == Display.STATE_DOZE_SUSPEND
+                || state == Display.STATE_ON_SUSPEND;
     }
 
     private void drawSource(Canvas canvas, int source, int effectivePct, float laneOffsetDp) {
@@ -1097,7 +1125,7 @@ public final class CutoutRingView extends View {
 
         int levelColor = chargingColor(mChargingDisplayPct);
         applyStroke(mChargingPaint, levelColor, sCfgStrokeDp * mDp, baseAlpha);
-        if (mChargingPulseEnabled && sCfgChargingPulse && mChargingPulseAnim != null) {
+        if (mChargingPulseEnabled && sCfgChargingPulse && mChargingPulseScheduled) {
             float drawFraction = mChargingPulsePhase * (mChargingDisplayPct / 100f);
             drawSymmetricArc(canvas, drawFraction, mChargingPaint);
         } else {
