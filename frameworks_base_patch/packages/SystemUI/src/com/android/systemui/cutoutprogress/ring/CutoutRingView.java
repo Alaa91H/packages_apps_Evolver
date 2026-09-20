@@ -617,9 +617,12 @@ public final class CutoutRingView extends View {
             postDelayed(mBurnInHide, BURN_IN_HIDE_MS);
         }
 
+        if (pct > 0 && pct < 100) {
+            // Any live progress supersedes a delayed completion from the previous transfer.
+            cancelPendingFinish();
+        }
         if (prev == 0 && pct > 0) {
             mDownloadStartMs = SystemClock.elapsedRealtime();
-            cancelPendingFinish();
         }
 
         if (pct == 100 && !mAnim.isFinishAnimating) {
