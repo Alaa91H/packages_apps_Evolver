@@ -67,7 +67,8 @@ public final class CutoutRingView extends View {
             0xFFFF0000,
     };
 
-    private final float mDp;
+    private float mDp;
+    private final CameraCutoutGeometryResolver mGeometryResolver;
 
     private final Path mCutoutPath = new Path();
     private final Path mScaledPath = new Path();
@@ -75,10 +76,13 @@ public final class CutoutRingView extends View {
     private final RectF mPathBounds = new RectF();
     private final RectF mArcBounds = new RectF();
     private boolean mHasCutout = false;
+    private boolean mAutoGeometryActive = false;
+    private boolean mResolvedPillLike = false;
+    private int mGeometryRotation = Surface.ROTATION_0;
 
     private final OverlayAnimationHelper mAnim;
     private RingViewRenderer mRenderer;
-    private final CountBadgePainter mBadge;
+    private CountBadgePainter mBadge;
 
     private final Paint mRingPaint = makePaint();
     private final Paint mShinePaint = makePaint();
@@ -135,6 +139,7 @@ public final class CutoutRingView extends View {
     private int sCfgFinishExitMs;
     private boolean sCfgFinishFlash;
     private boolean sCfgPulse;
+    private boolean sCfgAutoGeometry = true;
     private boolean sCfgPathMode;
     private float sCfgScaleX;
     private float sCfgScaleY;
@@ -186,6 +191,7 @@ public final class CutoutRingView extends View {
     public CutoutRingView(Context ctx) {
         super(ctx);
         mDp = ctx.getResources().getDisplayMetrics().density;
+        mGeometryResolver = new CameraCutoutGeometryResolver(ctx);
         mAnim = new OverlayAnimationHelper(this);
         mRenderer = new CircleRingRenderer();
         mBadge = new CountBadgePainter(mDp);
@@ -207,6 +213,7 @@ public final class CutoutRingView extends View {
         sCfgFinishExitMs = s.getFinishExitMs();
         sCfgFinishFlash = s.isFinishUseFlash();
         sCfgPulse = s.isCompletionPulse();
+        sCfgAutoGeometry = s.isAutoGeometryEnabled();
         sCfgPathMode = s.isPathMode();
         sCfgScaleX = s.getRingScaleX();
         sCfgScaleY = s.getRingScaleY();
@@ -250,12 +257,7 @@ public final class CutoutRingView extends View {
         sCfgMusicWaveSpeed = s.getMusicWaveSpeed();
         sCfgMusicShowOnAod = s.isMusicShowOnAod();
 
-        boolean needPath = sCfgPathMode;
-        if (needPath && !(mRenderer instanceof CapsuleRingRenderer)) {
-            mRenderer = new CapsuleRingRenderer();
-        } else if (!needPath && !(mRenderer instanceof CircleRingRenderer)) {
-            mRenderer = new CircleRingRenderer();
-        }
+        updateRendererForGeometry();
 
         if (!sCfgChargingRing && mIsCharging) {
             stopChargingAnimations();
@@ -275,6 +277,7 @@ public final class CutoutRingView extends View {
                 s.isMusicClockwise(),
                 sCfgMusicColor);
         restartMusicWaveAnimation();
+        requestApplyInsets();
         invalidate();
     }
 
@@ -589,15 +592,36 @@ public final class CutoutRingView extends View {
 
     @Override
     public WindowInsets onApplyWindowInsets(WindowInsets insets) {
+        refreshDensityIfNeeded();
         mCutoutPath.reset();
         mScaledPath.reset();
         mHasCutout = false;
+        mAutoGeometryActive = false;
+        mResolvedPillLike = false;
 
         DisplayCutout cutout = insets.getDisplayCutout();
         if (cutout != null) {
-            mHasCutout = extractPreferredCutout(cutout);
+            mGeometryRotation = resolveCutoutRotation(cutout);
+
+            if (sCfgAutoGeometry) {
+                CameraCutoutGeometryResolver.ResolvedGeometry geometry =
+                        mGeometryResolver.resolve(cutout);
+                if (geometry != null) {
+                    mCutoutPath.set(geometry.path);
+                    mHasCutout = true;
+                    mAutoGeometryActive = true;
+                    mResolvedPillLike = geometry.pillLike;
+                    mGeometryRotation = geometry.rotation;
+                }
+            }
+
+            if (!mHasCutout) {
+                mHasCutout = extractPreferredCutout(cutout);
+                mResolvedPillLike = sCfgPathMode;
+            }
         }
 
+        updateRendererForGeometry();
         mRainbowShader = null;
         mRainbowCx = Float.NaN;
         mRainbowCy = Float.NaN;
@@ -658,6 +682,50 @@ public final class CutoutRingView extends View {
             }
         }
         return best;
+    }
+
+    private int resolveCutoutRotation(DisplayCutout cutout) {
+        try {
+            return cutout.getCutoutPathParserInfo().getRotation();
+        } catch (Throwable ignored) {
+            Display display = getDisplay();
+            return display != null ? display.getRotation() : Surface.ROTATION_0;
+        }
+    }
+
+    private void updateRendererForGeometry() {
+        boolean needPath = mAutoGeometryActive ? mResolvedPillLike : sCfgPathMode;
+        if (needPath && !(mRenderer instanceof CapsuleRingRenderer)) {
+            mRenderer = new CapsuleRingRenderer();
+        } else if (!needPath && !(mRenderer instanceof CircleRingRenderer)) {
+            mRenderer = new CircleRingRenderer();
+        }
+    }
+
+    private void refreshDensityIfNeeded() {
+        float density = getResources().getDisplayMetrics().density;
+        if (!Float.isFinite(density) || density <= 0f) density = 1f;
+        if (Math.abs(density - mDp) < 0.001f) return;
+
+        mDp = density;
+        mBadge = new CountBadgePainter(mDp);
+        refreshPaints();
+        refreshMusicPaint();
+    }
+
+    @Override
+    protected void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        refreshDensityIfNeeded();
+        requestApplyInsets();
+    }
+
+    @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+        if (w != oldw || h != oldh) {
+            requestApplyInsets();
+        }
     }
 
     private void recalcScaledPath() {
@@ -1036,24 +1104,43 @@ public final class CutoutRingView extends View {
 
     private void computeArcBounds(float laneOffsetDp) {
         mScaledPath.computeBounds(mArcBounds, true);
-        float[] offRotated = rotateOffset(sCfgOffsetXDp, sCfgOffsetYDp);
-        float cx = mArcBounds.centerX() + offRotated[0];
-        float cy = mArcBounds.centerY() + offRotated[1];
-
+        float cx = mArcBounds.centerX();
+        float cy = mArcBounds.centerY();
         float halfW;
         float halfH;
-        if (sCfgPathMode) {
-            halfW = mArcBounds.width() / 2f * sCfgScaleX;
-            halfH = mArcBounds.height() / 2f * sCfgScaleY;
-        } else {
-            // Circle mode must use the minor axis. Using the major axis makes a rectangular
-            // safe-area cutout (common on Xiaomi devices) produce a massively oversized ring.
-            float halfBase = Math.min(mArcBounds.width(), mArcBounds.height()) / 2f;
-            halfW = halfBase * sCfgScaleX;
-            halfH = halfBase * sCfgScaleY;
-        }
-        mArcBounds.set(cx - halfW, cy - halfH, cx + halfW, cy + halfH);
 
+        if (mAutoGeometryActive) {
+            // Automatic geometry is already expressed in the current logical display coordinate
+            // space. Do not rotate, stretch or offset it again.
+            halfW = mArcBounds.width() / 2f;
+            halfH = mArcBounds.height() / 2f;
+        } else {
+            float[] offRotated = rotateOffset(sCfgOffsetXDp, sCfgOffsetYDp);
+            cx += offRotated[0];
+            cy += offRotated[1];
+
+            float scaleX = sCfgScaleX;
+            float scaleY = sCfgScaleY;
+            if (mGeometryRotation == Surface.ROTATION_90
+                    || mGeometryRotation == Surface.ROTATION_270) {
+                // User calibration is defined in natural display axes. Rotate the calibration
+                // with the hardware instead of re-applying portrait X/Y to landscape axes.
+                float tmp = scaleX;
+                scaleX = scaleY;
+                scaleY = tmp;
+            }
+
+            if (sCfgPathMode) {
+                halfW = mArcBounds.width() / 2f * scaleX;
+                halfH = mArcBounds.height() / 2f * scaleY;
+            } else {
+                float halfBase = Math.min(mArcBounds.width(), mArcBounds.height()) / 2f;
+                halfW = halfBase * scaleX;
+                halfH = halfBase * scaleY;
+            }
+        }
+
+        mArcBounds.set(cx - halfW, cy - halfH, cx + halfW, cy + halfH);
         if (laneOffsetDp > 0f) {
             float px = laneOffsetDp * mDp;
             mArcBounds.inset(-px, -px);
@@ -1061,12 +1148,15 @@ public final class CutoutRingView extends View {
     }
 
     private float[] rotateOffset(float dx, float dy) {
-        int rot = getDisplay() != null ? getDisplay().getRotation() : Surface.ROTATION_0;
-        switch (rot) {
-            case Surface.ROTATION_90: return new float[]{ dy * mDp, -dx * mDp};
-            case Surface.ROTATION_180: return new float[]{-dx * mDp, -dy * mDp};
-            case Surface.ROTATION_270: return new float[]{-dy * mDp,  dx * mDp};
-            default: return new float[]{ dx * mDp, dy * mDp};
+        switch (mGeometryRotation) {
+            case Surface.ROTATION_90:
+                return new float[]{dy * mDp, -dx * mDp};
+            case Surface.ROTATION_180:
+                return new float[]{-dx * mDp, -dy * mDp};
+            case Surface.ROTATION_270:
+                return new float[]{-dy * mDp, dx * mDp};
+            default:
+                return new float[]{dx * mDp, dy * mDp};
         }
     }
 
@@ -1091,6 +1181,7 @@ public final class CutoutRingView extends View {
         sCfgEasing = "linear";
         sCfgClockwise = true;
         sCfgFinishStyle= "pop";
+        sCfgAutoGeometry = true;
         sCfgScaleX = 1.05f;
         sCfgScaleY = 0.60f;
         sCfgOffsetXDp = 0f;
