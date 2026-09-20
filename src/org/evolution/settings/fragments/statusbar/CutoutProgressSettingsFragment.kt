@@ -37,6 +37,13 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
 
     companion object {
         private const val KEY_MUSIC_RING_ENABLED = "cutout_progress_music_enabled"
+        private const val KEY_TIMER_ENABLED = "cutout_progress_timer_enabled"
+        private const val KEY_TIMER_FLAME_ENABLED = "cutout_progress_timer_flame_enabled"
+        private const val KEY_TIMER_FLAME_SIZE = "cutout_progress_timer_flame_size_dp10"
+        private const val KEY_AURORA_ENABLED = "cutout_progress_aurora_enabled"
+        private const val KEY_AURORA_NOTIFICATIONS = "cutout_progress_aurora_notifications"
+        private const val KEY_AURORA_NOTIFICATION_DURATION =
+            "cutout_progress_aurora_notification_duration_ms"
         private const val KEY_MUSIC_COLOR_MODE = "cutout_progress_music_color_mode"
         private const val KEY_MUSIC_CUSTOM_COLOR = "cutout_progress_music_custom_color"
 
@@ -174,6 +181,17 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
     private lateinit var offsetXPref: Preference
     private lateinit var offsetYPref: Preference
     private lateinit var ringGapPref: Preference
+    private lateinit var timerEnabledPref: Preference
+    private lateinit var timerFlameEnabledPref: Preference
+    private lateinit var timerFlameSizePref: Preference
+    private lateinit var musicEnabledPref: Preference
+    private lateinit var musicWaveEnabledPref: Preference
+    private lateinit var musicWaveAmplitudePref: Preference
+    private lateinit var musicWaveDensityPref: Preference
+    private lateinit var musicWaveSpeedPref: Preference
+    private lateinit var auroraEnabledPref: Preference
+    private lateinit var auroraNotificationsPref: Preference
+    private lateinit var auroraNotificationDurationPref: Preference
 
     private lateinit var ringColorPref: Preference
     private lateinit var errorColorPref: Preference
@@ -211,6 +229,17 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
         offsetXPref = findPreference(KEY_RING_OFFSET_X)!!
         offsetYPref = findPreference(KEY_RING_OFFSET_Y)!!
         ringGapPref = findPreference(KEY_RING_GAP)!!
+        timerEnabledPref = findPreference(KEY_TIMER_ENABLED)!!
+        timerFlameEnabledPref = findPreference(KEY_TIMER_FLAME_ENABLED)!!
+        timerFlameSizePref = findPreference(KEY_TIMER_FLAME_SIZE)!!
+        musicEnabledPref = findPreference(KEY_MUSIC_RING_ENABLED)!!
+        musicWaveEnabledPref = findPreference(KEY_MUSIC_WAVE_ENABLED)!!
+        musicWaveAmplitudePref = findPreference(KEY_MUSIC_WAVE_AMPLITUDE)!!
+        musicWaveDensityPref = findPreference(KEY_MUSIC_WAVE_DENSITY)!!
+        musicWaveSpeedPref = findPreference(KEY_MUSIC_WAVE_SPEED)!!
+        auroraEnabledPref = findPreference(KEY_AURORA_ENABLED)!!
+        auroraNotificationsPref = findPreference(KEY_AURORA_NOTIFICATIONS)!!
+        auroraNotificationDurationPref = findPreference(KEY_AURORA_NOTIFICATION_DURATION)!!
 
         ringColorPref = findPreference(KEY_RING_COLOR)!!
         errorColorPref = findPreference(KEY_ERROR_COLOR)!!
@@ -254,6 +283,7 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
         updateManualGeometryVisibility(
             readSecureInt(KEY_AUTO_GEOMETRY, DEFAULT_AUTO_GEOMETRY) != 0
         )
+        updateNestedDependencyState()
 
         ringColorModePref.onPreferenceChangeListener = this
         musicColorModePref.onPreferenceChangeListener = this
@@ -267,6 +297,49 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
             updateManualGeometryVisibility(value as Boolean)
             true
         }
+
+        timerEnabledPref.onPreferenceChangeListener =
+            Preference.OnPreferenceChangeListener { _, value ->
+                updateTimerFlameDependency(
+                    value as Boolean, isSecureEnabled(KEY_TIMER_FLAME_ENABLED)
+                )
+                true
+            }
+        timerFlameEnabledPref.onPreferenceChangeListener =
+            Preference.OnPreferenceChangeListener { _, value ->
+                updateTimerFlameDependency(
+                    isSecureEnabled(KEY_TIMER_ENABLED), value as Boolean
+                )
+                true
+            }
+        musicEnabledPref.onPreferenceChangeListener =
+            Preference.OnPreferenceChangeListener { _, value ->
+                updateMusicWaveDependency(
+                    value as Boolean, isSecureEnabled(KEY_MUSIC_WAVE_ENABLED)
+                )
+                true
+            }
+        musicWaveEnabledPref.onPreferenceChangeListener =
+            Preference.OnPreferenceChangeListener { _, value ->
+                updateMusicWaveDependency(
+                    isSecureEnabled(KEY_MUSIC_RING_ENABLED), value as Boolean
+                )
+                true
+            }
+        auroraEnabledPref.onPreferenceChangeListener =
+            Preference.OnPreferenceChangeListener { _, value ->
+                updateAuroraNotificationDependency(
+                    value as Boolean, isSecureEnabled(KEY_AURORA_NOTIFICATIONS)
+                )
+                true
+            }
+        auroraNotificationsPref.onPreferenceChangeListener =
+            Preference.OnPreferenceChangeListener { _, value ->
+                updateAuroraNotificationDependency(
+                    isSecureEnabled(KEY_AURORA_ENABLED), value as Boolean
+                )
+                true
+            }
 
         ringColorPref.setOnPreferenceClickListener {
             showColorPicker(
@@ -368,6 +441,45 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
         // Writing it manually here would notify SystemUI twice for the same user action.
         return true
     }
+    private fun updateNestedDependencyState() {
+        updateTimerFlameDependency(
+            isSecureEnabled(KEY_TIMER_ENABLED),
+            isSecureEnabled(KEY_TIMER_FLAME_ENABLED)
+        )
+        updateMusicWaveDependency(
+            isSecureEnabled(KEY_MUSIC_RING_ENABLED),
+            isSecureEnabled(KEY_MUSIC_WAVE_ENABLED)
+        )
+        updateAuroraNotificationDependency(
+            isSecureEnabled(KEY_AURORA_ENABLED),
+            isSecureEnabled(KEY_AURORA_NOTIFICATIONS)
+        )
+    }
+
+    private fun updateTimerFlameDependency(timerEnabled: Boolean, flameEnabled: Boolean) {
+        val enabled = timerEnabled && flameEnabled
+        timerFlameColorPref.isEnabled = enabled
+        timerFlameSizePref.isEnabled = enabled
+    }
+
+    private fun updateMusicWaveDependency(musicEnabled: Boolean, waveEnabled: Boolean) {
+        val enabled = musicEnabled && waveEnabled
+        musicWaveAmplitudePref.isEnabled = enabled
+        musicWaveDensityPref.isEnabled = enabled
+        musicWaveSpeedPref.isEnabled = enabled
+    }
+
+    private fun updateAuroraNotificationDependency(
+        auroraEnabled: Boolean,
+        notificationsEnabled: Boolean
+    ) {
+        val enabled = auroraEnabled && notificationsEnabled
+        auroraNotificationColorModePref.isEnabled = enabled
+        auroraNotificationDurationPref.isEnabled = enabled
+    }
+
+    private fun isSecureEnabled(key: String): Boolean = readSecureInt(key, 0) != 0
+
 
     private fun updateColorPickerVisibility(mode: Int, key: String) {
         when (key) {
