@@ -94,9 +94,9 @@ public final class MusicProgressTracker {
     }
 
     public void start() {
+        // MediaSessionManagerHelper immediately dispatches the current metadata/playback state
+        // from addMediaMetadataListener(); do not process both snapshots twice.
         mHelper.addMediaMetadataListener(mListener);
-        handleMetadataChanged();
-        handlePlaybackStateChanged();
     }
 
     public void stop() {
@@ -116,8 +116,12 @@ public final class MusicProgressTracker {
         String title = strOrEmpty(md != null ? md.getString(MediaMetadata.METADATA_KEY_TITLE) : null);
         String artist = strOrEmpty(md != null ? md.getString(MediaMetadata.METADATA_KEY_ARTIST) : null);
         String newId = buildTrackId(md, title, artist, mDurationMs);
-        if (!Objects.equals(newId, mLastTrackId)) {
+        boolean trackChanged = !Objects.equals(newId, mLastTrackId);
+        if (trackChanged) {
             mLastTrackId = newId;
+            // Some media apps reuse the same mutable Bitmap object across tracks. Force artwork
+            // re-evaluation when track identity changes even if object identity does not.
+            mLastArtBitmap = null;
             mCallbacks.onTrackChanged(title, artist, mDurationMs);
         }
 
