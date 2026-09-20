@@ -23,6 +23,7 @@ import android.content.IntentFilter;
 import android.graphics.PixelFormat;
 import android.os.BatteryManager;
 import android.os.Handler;
+import android.os.Looper;
 import android.view.WindowManager;
 
 import com.android.systemui.CoreStartable;
@@ -38,8 +39,6 @@ import javax.inject.Inject;
 @SysUISingleton
 public class CutoutProgressController implements CoreStartable {
 
-    private static final int WINDOW_TYPE = 2024;
-
     private final Context mContext;
     private final NotifPipeline mPipeline;
     private final Handler mMainHandler;
@@ -51,9 +50,8 @@ public class CutoutProgressController implements CoreStartable {
     private MusicRingController mMusicController;
 
     private boolean mOverlayAttached = false;
-    private boolean mListenerRegistered = false;
     private boolean mBatteryReceiverRegistered = false;
-    private boolean mIsFullyCharged = false;
+    private NotifCollectionListener mNotifListener;
 
     private final BroadcastReceiver mBatteryReceiver = new BroadcastReceiver() {
         @Override
@@ -63,12 +61,13 @@ public class CutoutProgressController implements CoreStartable {
             int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0);
             int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, 100);
             int pct = scale > 0 ? level * 100 / scale : 0;
+            pct = Math.max(0, Math.min(100, pct));
 
             boolean charging = status == BatteryManager.BATTERY_STATUS_CHARGING
                             || status == BatteryManager.BATTERY_STATUS_FULL;
 
             if (!mSettings.isEnabled()) {
-                mMainHandler.post(() -> {
+                runOnMain(() -> {
                     mRingView.setChargingState(false, 0);
                     mRingView.setBatteryIndicatorState(false, 0);
                 });
@@ -79,7 +78,7 @@ public class CutoutProgressController implements CoreStartable {
             boolean batteryIndOn = mSettings.isBatteryIndicatorEnabled();
             boolean pulseEnabled = mSettings.isChargingPulseEnabled();
 
-            mMainHandler.post(() -> {
+            runOnMain(() -> {
                 mRingView.setChargingPulseEnabled(pulseEnabled);
                 if (charging) {
                     mRingView.setBatteryIndicatorState(false, 0);
@@ -155,13 +154,13 @@ public class CutoutProgressController implements CoreStartable {
     }
 
     private void disableFeature() {
+        unregisterPipelineListener();
         if (mMusicController != null) {
             mMusicController.stop();
         }
-
+        unregisterBatteryReceiver();
         mTracker.reset();
         detachOverlay();
-        unregisterBatteryReceiver();
     }
 
     private void attachOverlay() {
@@ -170,15 +169,23 @@ public class CutoutProgressController implements CoreStartable {
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.MATCH_PARENT,
-                WINDOW_TYPE,
+                WindowManager.LayoutParams.TYPE_NAVIGATION_BAR_PANEL,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                        | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
                         | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
-                        | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+                        | WindowManager.LayoutParams.FLAG_SLIPPERY
                         | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                 PixelFormat.TRANSLUCENT);
 
+        // Match ScreenDecorations window semantics. In particular, do not use LAYOUT_NO_LIMITS:
+        // it can make logical bounds/insets differ across OEM rotations and display modes.
+        params.privateFlags |= WindowManager.LayoutParams.SYSTEM_FLAG_SHOW_FOR_ALL_USERS
+                | WindowManager.LayoutParams.PRIVATE_FLAG_NO_MOVE_ANIMATION
+                | WindowManager.LayoutParams.PRIVATE_FLAG_TRUSTED_OVERLAY
+                | WindowManager.LayoutParams.PRIVATE_FLAG_COLOR_SPACE_AGNOSTIC;
         params.layoutInDisplayCutoutMode =
                 WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
+        params.setFitInsetsTypes(0);
         params.setTitle("CutoutProgressOverlay");
 
         WindowManager wm = mContext.getSystemService(WindowManager.class);
@@ -198,29 +205,37 @@ public class CutoutProgressController implements CoreStartable {
     }
 
     private void registerPipelineListener() {
-        if (mListenerRegistered) return;
-        mListenerRegistered = true;
+        if (mNotifListener != null) return;
 
-        mPipeline.addCollectionListener(new NotifCollectionListener() {
-
+        mNotifListener = new NotifCollectionListener() {
             @Override
             public void onEntryAdded(NotificationEntry entry) {
-                if (!mSettings.isEnabled()) return;
-                mTracker.onNotificationChanged(entry);
+                if (mSettings.isEnabled()) mTracker.onNotificationChanged(entry);
             }
 
             @Override
             public void onEntryUpdated(NotificationEntry entry) {
-                if (!mSettings.isEnabled()) return;
-                mTracker.onNotificationChanged(entry);
+                if (mSettings.isEnabled()) mTracker.onNotificationChanged(entry);
             }
 
             @Override
             public void onEntryRemoved(NotificationEntry entry, int reason) {
-                if (!mSettings.isEnabled()) return;
-                mTracker.onNotificationRemoved(entry, reason);
+                if (mSettings.isEnabled()) mTracker.onNotificationRemoved(entry, reason);
             }
-        });
+        };
+        mPipeline.addCollectionListener(mNotifListener);
+
+        // Collection listeners do not replay already-present notifications. Seed the tracker so
+        // enabling/re-enabling the feature during an active transfer works immediately.
+        for (NotificationEntry entry : mPipeline.getAllNotifs()) {
+            mTracker.onNotificationChanged(entry);
+        }
+    }
+
+    private void unregisterPipelineListener() {
+        if (mNotifListener == null) return;
+        mPipeline.removeCollectionListener(mNotifListener);
+        mNotifListener = null;
     }
 
     private void registerBatteryReceiver() {
@@ -241,26 +256,34 @@ public class CutoutProgressController implements CoreStartable {
         if (!mBatteryReceiverRegistered) return;
         mContext.unregisterReceiver(mBatteryReceiver);
         mBatteryReceiverRegistered = false;
-        mMainHandler.post(() -> {
+        runOnMain(() -> {
             mRingView.setChargingState(false, 0);
             mRingView.setBatteryIndicatorState(false, 0);
         });
     }
 
+    private void runOnMain(Runnable action) {
+        if (Looper.myLooper() == mMainHandler.getLooper()) {
+            action.run();
+        } else {
+            mMainHandler.post(action);
+        }
+    }
+
     private void bindTrackerToView() {
         mTracker.setOnProgress(progress ->
-                mMainHandler.post(() -> mRingView.setProgress(progress)));
+                runOnMain(() -> mRingView.setProgress(progress)));
 
         mTracker.setOnComplete(() ->
-                mMainHandler.post(() -> mRingView.setProgress(100)));
+                runOnMain(() -> mRingView.setProgress(100)));
 
         mTracker.setOnError(() ->
-                mMainHandler.post(() -> mRingView.showError()));
+                runOnMain(() -> mRingView.showError()));
 
         mTracker.setOnCountChanged(count ->
-                mMainHandler.post(() -> mRingView.setDownloadCount(count)));
+                runOnMain(() -> mRingView.setDownloadCount(count)));
 
         mTracker.setOnLabelChanged(label ->
-                mMainHandler.post(() -> mRingView.setFilenameHint(label)));
+                runOnMain(() -> mRingView.setFilenameHint(label)));
     }
 }
