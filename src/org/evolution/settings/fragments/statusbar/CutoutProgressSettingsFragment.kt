@@ -268,14 +268,12 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
         val intValue = (newValue as? String)?.toIntOrNull() ?: return false
 
         if (preference.key == KEY_RING_COLOR_MODE || preference.key == KEY_MUSIC_COLOR_MODE) {
-            writeSecureInt(preference.key, intValue)
             updateColorPickerVisibility(intValue, preference.key)
             return true
         }
 
         if (preference.key == KEY_DOWNLOAD_PRESENTATION
             || preference.key == KEY_MUSIC_PRESENTATION) {
-            writeSecureInt(preference.key, intValue)
             val downloadMode = if (preference.key == KEY_DOWNLOAD_PRESENTATION) intValue
                 else readSecureInt(KEY_DOWNLOAD_PRESENTATION, DEFAULT_DOWNLOAD_PRESENTATION)
             val musicMode = if (preference.key == KEY_MUSIC_PRESENTATION) intValue
@@ -284,7 +282,8 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
             return true
         }
 
-        writeSecureInt(preference.key, intValue)
+        // SecureSettingListPreference persists the accepted value through SecureSettingsStore.
+        // Writing it manually here would notify SystemUI twice for the same user action.
         return true
     }
 
