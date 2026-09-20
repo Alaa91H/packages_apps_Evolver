@@ -254,12 +254,21 @@ public class StatusBar extends SettingsPreferenceFragment implements
     public boolean onPreferenceChange(Preference preference, Object newValue) {
         ContentResolver resolver = getActivity().getContentResolver();
         if (preference == mQuickPulldown) {
-            int value = Integer.parseInt((String) newValue);
+            Integer value = parseIntegerValue(newValue);
+            if (value == null) {
+                return false;
+            }
             updateQuickPulldownSummary(value);
             return true;
         } else if (preference == mLogoColor) {
-            int logoColor = Integer.valueOf((String) newValue);
+            Integer logoColor = parseIntegerValue(newValue);
+            if (logoColor == null || !(newValue instanceof String)) {
+                return false;
+            }
             int index = mLogoColor.findIndexOfValue((String) newValue);
+            if (index < 0) {
+                return false;
+            }
             Settings.System.putIntForUser(resolver,
                     Settings.System.STATUS_BAR_LOGO_COLOR, logoColor, UserHandle.USER_CURRENT);
             mLogoColor.setSummary(mLogoColor.getEntries()[index]);
@@ -323,7 +332,10 @@ public class StatusBar extends SettingsPreferenceFragment implements
                     UserHandle.USER_CURRENT);
             return true;
         } else if (preference == mClockChipGradientMaskText) {
-            int value = Integer.parseInt((String) newValue);
+            Integer value = parseIntegerValue(newValue);
+            if (value == null) {
+                return false;
+            }
             Settings.System.putIntForUser(
                     resolver,
                     KEY_CLOCK_CHIP_GRADIENT_MASK_TEXT,
@@ -331,7 +343,10 @@ public class StatusBar extends SettingsPreferenceFragment implements
                     UserHandle.USER_CURRENT);
             return true;
         } else if (preference == mCarrierMode) {
-            int value = Integer.parseInt((String) newValue);
+            Integer value = parseIntegerValue(newValue);
+            if (value == null) {
+                return false;
+            }
             updateCustomCarrierTextPrefVisibility(value);
             return true;
 //        } else if (preference == mColoredIcons) {
@@ -419,8 +434,19 @@ public class StatusBar extends SettingsPreferenceFragment implements
     }
 
     private void updateColorPrefs(int logoColor) {
-        if (mLogoColor != null) {
+        if (mLogoColorPicker != null) {
             mLogoColorPicker.setEnabled(logoColor == 2);
+        }
+    }
+
+    private static Integer parseIntegerValue(Object value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(String.valueOf(value));
+        } catch (NumberFormatException e) {
+            return null;
         }
     }
 
