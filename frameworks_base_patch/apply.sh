@@ -21,6 +21,7 @@ if [[ ! -d "$TARGET/.git" ]]; then
 fi
 
 declare -A EXPECTED=(
+    ["packages/SystemUI/AndroidManifest.xml"]="2da0be7f4cbdd7cc192284e198c5f5b88d0fdc56"
     ["packages/SystemUI/src/com/android/systemui/cutoutprogress/CutoutProgressSettings.java"]="98068237026dd7b0c4a449f5a165f9208eb9262d"
     ["packages/SystemUI/src/com/android/systemui/cutoutprogress/DownloadStateTracker.java"]="be2e4af909329bb55616d9e9a377346c1344c4bc"
     ["packages/SystemUI/src/com/android/systemui/cutoutprogress/CutoutProgressController.java"]="53a7a81cc8866b167c4ddba2797188a2287cf70b"

@@ -31,7 +31,6 @@ import android.os.Looper;
 import android.os.UserHandle;
 import android.os.SystemClock;
 import android.telecom.TelecomManager;
-import android.telephony.TelephonyCallback;
 import android.telephony.TelephonyManager;
 import android.view.View;
 import android.view.ViewGroup;
@@ -75,8 +74,7 @@ public class CutoutProgressController implements CoreStartable {
     private boolean mBatteryReceiverRegistered = false;
     private NotifCollectionListener mNotifListener;
 
-    private TelephonyManager mTelephonyManager;
-    private boolean mCallCallbackRegistered = false;
+    private boolean mCallReceiverRegistered = false;
     private AudioManager mAudioManager;
     private boolean mRecordingCallbackRegistered = false;
 
@@ -118,16 +116,12 @@ public class CutoutProgressController implements CoreStartable {
         }
     };
 
-    private final class AuroraCallStateCallback extends TelephonyCallback
-            implements TelephonyCallback.CallStateListener {
+    private final BroadcastReceiver mCallStateReceiver = new BroadcastReceiver() {
         @Override
-        public void onCallStateChanged(int state) {
-            boolean active = state != TelephonyManager.CALL_STATE_IDLE;
-            runOnMain(() -> mRingView.setAuroraCallActive(active));
+        public void onReceive(Context context, Intent intent) {
+            seedCallState();
         }
-    }
-
-    private final AuroraCallStateCallback mCallStateCallback = new AuroraCallStateCallback();
+    };
 
     private final AudioManager.AudioRecordingCallback mRecordingCallback =
             new AudioManager.AudioRecordingCallback() {
@@ -269,9 +263,9 @@ public class CutoutProgressController implements CoreStartable {
         }
 
         if (mSettings.isAuroraEnabled() && mSettings.isAuroraCallsEnabled()) {
-            registerCallStateCallback();
+            registerCallStateReceiver();
         } else {
-            unregisterCallStateCallback();
+            unregisterCallStateReceiver();
         }
 
         if (mSettings.isAuroraEnabled() && mSettings.isAuroraRecordingEnabled()) {
@@ -287,7 +281,7 @@ public class CutoutProgressController implements CoreStartable {
             mMusicController.stop();
         }
         unregisterBatteryReceiver();
-        unregisterCallStateCallback();
+        unregisterCallStateReceiver();
         unregisterRecordingCallback();
         clearTimerState();
         if (mRingView != null) mRingView.clearTransientEffects();
@@ -568,20 +562,18 @@ public class CutoutProgressController implements CoreStartable {
         if (mRingView != null) mRingView.setTimerState(false, 0f);
     }
 
-    private void registerCallStateCallback() {
-        if (mCallCallbackRegistered) {
+    private void registerCallStateReceiver() {
+        if (mCallReceiverRegistered) {
             seedCallState();
             return;
         }
-        mTelephonyManager = mContext.getSystemService(TelephonyManager.class);
-        if (mTelephonyManager == null) return;
         try {
-            mTelephonyManager.registerTelephonyCallback(
-                    mContext.getMainExecutor(), mCallStateCallback);
-            mCallCallbackRegistered = true;
+            IntentFilter filter = new IntentFilter(TelephonyManager.ACTION_PHONE_STATE_CHANGED);
+            mContext.registerReceiver(mCallStateReceiver, filter);
+            mCallReceiverRegistered = true;
             seedCallState();
         } catch (RuntimeException ignored) {
-            mCallCallbackRegistered = false;
+            mCallReceiverRegistered = false;
         }
     }
 
@@ -596,15 +588,14 @@ public class CutoutProgressController implements CoreStartable {
         runOnMain(() -> mRingView.setAuroraCallActive(active));
     }
 
-    private void unregisterCallStateCallback() {
-        if (mCallCallbackRegistered && mTelephonyManager != null) {
+    private void unregisterCallStateReceiver() {
+        if (mCallReceiverRegistered) {
             try {
-                mTelephonyManager.unregisterTelephonyCallback(mCallStateCallback);
+                mContext.unregisterReceiver(mCallStateReceiver);
             } catch (RuntimeException ignored) {
             }
         }
-        mCallCallbackRegistered = false;
-        mTelephonyManager = null;
+        mCallReceiverRegistered = false;
         if (mRingView != null) mRingView.setAuroraCallActive(false);
     }
 
