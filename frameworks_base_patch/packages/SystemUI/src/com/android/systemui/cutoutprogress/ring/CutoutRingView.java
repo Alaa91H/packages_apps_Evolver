@@ -506,6 +506,25 @@ public final class CutoutRingView extends View {
         if (mHasCutout) invalidate();
     }
 
+    public void onDisplayStateChanged() {
+        if (isDisplayNonInteractive()) {
+            stopVisualEffectAnimation();
+            if (!sCfgMusicShowOnAod || !isDisplayAod()) {
+                stopMusicWaveAnimation();
+            } else {
+                restartMusicWaveAnimation();
+            }
+            if (mIsCharging) stopChargingPulse();
+        } else {
+            if (mIsCharging && mChargingPulseEnabled && sCfgChargingPulse) {
+                startChargingPulse();
+            }
+            restartMusicWaveAnimation();
+            restartVisualEffectAnimation();
+        }
+        invalidate();
+    }
+
     public void clearTransientEffects() {
         mAuroraCallActive = false;
         mAuroraRecordingActive = false;

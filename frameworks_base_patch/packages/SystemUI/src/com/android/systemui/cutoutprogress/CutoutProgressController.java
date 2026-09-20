@@ -29,6 +29,7 @@ import android.media.MediaRecorder;
 import android.os.BatteryManager;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.PowerManager;
 import android.os.UserHandle;
 import android.os.SystemClock;
 import android.telecom.TelecomManager;
@@ -64,6 +65,7 @@ public class CutoutProgressController implements CoreStartable {
     private final Handler mMainHandler;
     private final UserTracker mUserTracker;
     private final ConfigurationController mConfigurationController;
+    private final PowerManager mPowerManager;
 
     private final CutoutProgressSettings mSettings;
     private final DownloadStateTracker mTracker;
@@ -79,6 +81,7 @@ public class CutoutProgressController implements CoreStartable {
     private boolean mNotificationAuroraTrackingEnabled = false;
 
     private boolean mCallReceiverRegistered = false;
+    private boolean mScreenReceiverRegistered = false;
     private AudioManager mAudioManager;
     private boolean mRecordingCallbackRegistered = false;
 
@@ -124,6 +127,16 @@ public class CutoutProgressController implements CoreStartable {
         @Override
         public void onReceive(Context context, Intent intent) {
             seedCallState();
+        }
+    };
+
+    private final BroadcastReceiver mScreenStateReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            runOnMain(() -> {
+                if (mRingView != null) mRingView.onDisplayStateChanged();
+                if (mTimerTrackingEnabled && mTimerKey != null) updateTimerTick();
+            });
         }
     };
 
@@ -188,6 +201,7 @@ public class CutoutProgressController implements CoreStartable {
         mMainHandler = mainHandler;
         mUserTracker = userTracker;
         mConfigurationController = configurationController;
+        mPowerManager = context.getSystemService(PowerManager.class);
         mSettings = new CutoutProgressSettings(
                 context.getContentResolver(), mainHandler, userTracker.getUserId());
         mTracker = new DownloadStateTracker();
@@ -234,6 +248,7 @@ public class CutoutProgressController implements CoreStartable {
 
     private void enableFeature() {
         attachOverlay();
+        registerScreenStateReceiver();
 
         final boolean wantDownloadTracking = mSettings.getDownloadPresentation()
                 != CutoutProgressSettings.PRESENTATION_DISABLED;
@@ -308,6 +323,7 @@ public class CutoutProgressController implements CoreStartable {
 
     private void disableFeature() {
         unregisterPipelineListener();
+        unregisterScreenStateReceiver();
         mDownloadTrackingEnabled = false;
         mTimerTrackingEnabled = false;
         mNotificationAuroraTrackingEnabled = false;
@@ -391,8 +407,11 @@ public class CutoutProgressController implements CoreStartable {
                 if (mTimerTrackingEnabled) {
                     boolean wasCurrent = entry.getSbn().getKey().equals(mTimerKey);
                     long previousEnd = mTimerEndElapsedMs;
-                    updateTimerFromNotification(entry);
-                    if (wasCurrent && mTimerEndElapsedMs > previousEnd + 1000L) {
+                    boolean stillTimer = updateTimerFromNotification(entry);
+                    if (wasCurrent && !stillTimer) {
+                        clearTimerState();
+                        seedTimerFromPipeline();
+                    } else if (wasCurrent && mTimerEndElapsedMs > previousEnd + 1000L) {
                         seedTimerFromPipeline();
                     }
                 }
@@ -442,24 +461,24 @@ public class CutoutProgressController implements CoreStartable {
                 color, mSettings.getAuroraNotificationDurationMs()));
     }
 
-    private void updateTimerFromNotification(NotificationEntry entry) {
-        if (!mSettings.isTimerEnabled() || entry == null || entry.getSbn() == null) return;
+    private boolean updateTimerFromNotification(NotificationEntry entry) {
+        if (!mSettings.isTimerEnabled() || entry == null || entry.getSbn() == null) return false;
         Notification notification = entry.getSbn().getNotification();
-        if (notification == null || !isLikelyClockNotification(entry, notification)) return;
+        if (notification == null || !isLikelyClockNotification(entry, notification)) return false;
 
         CountdownInfo countdown = extractCountdownInfo(notification);
-        if (countdown == null) return;
+        if (countdown == null) return false;
 
         long nowElapsed = SystemClock.elapsedRealtime();
         long remaining = countdown.endElapsedMs - nowElapsed;
-        if (remaining <= 0L) return;
+        if (remaining <= 0L) return false;
 
         String key = entry.getSbn().getKey();
 
         // If several timers are active, visualize the one that expires first.
         if (mTimerKey != null && !mTimerKey.equals(key)
                 && mTimerEndElapsedMs > nowElapsed && mTimerEndElapsedMs <= countdown.endElapsedMs) {
-            return;
+            return true;
         }
 
         boolean newTimer = mTimerKey == null || !mTimerKey.equals(key);
@@ -482,6 +501,7 @@ public class CutoutProgressController implements CoreStartable {
 
         removeTimerTick();
         updateTimerTick();
+        return true;
     }
 
     private boolean isLikelyClockNotification(NotificationEntry entry,
@@ -586,7 +606,8 @@ public class CutoutProgressController implements CoreStartable {
         float fraction = Math.max(0f, Math.min(1f, remaining / (float) mTimerTotalMs));
         mRingView.setTimerState(true, fraction);
         if (mTimerRunning) {
-            mMainHandler.postDelayed(mTimerTick, 250L);
+            boolean interactive = mPowerManager == null || mPowerManager.isInteractive();
+            mMainHandler.postDelayed(mTimerTick, interactive ? 250L : 1000L);
         }
     }
 
@@ -601,6 +622,28 @@ public class CutoutProgressController implements CoreStartable {
         mTimerTotalMs = 0L;
         mTimerRunning = false;
         if (mRingView != null) mRingView.setTimerState(false, 0f);
+    }
+
+    private void registerScreenStateReceiver() {
+        if (mScreenReceiverRegistered) return;
+        try {
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(Intent.ACTION_SCREEN_ON);
+            filter.addAction(Intent.ACTION_SCREEN_OFF);
+            mContext.registerReceiver(mScreenStateReceiver, filter);
+            mScreenReceiverRegistered = true;
+        } catch (RuntimeException ignored) {
+            mScreenReceiverRegistered = false;
+        }
+    }
+
+    private void unregisterScreenStateReceiver() {
+        if (!mScreenReceiverRegistered) return;
+        try {
+            mContext.unregisterReceiver(mScreenStateReceiver);
+        } catch (RuntimeException ignored) {
+        }
+        mScreenReceiverRegistered = false;
     }
 
     private void registerCallStateReceiver() {
