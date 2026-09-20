@@ -65,6 +65,14 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
         private const val KEY_RING_SCALE_Y = "cutout_progress_ring_scale_y_x1000"
         private const val KEY_RING_OFFSET_X = "cutout_progress_ring_offset_x_dp10"
         private const val KEY_RING_OFFSET_Y = "cutout_progress_ring_offset_y_dp10"
+        private const val KEY_DOWNLOAD_PRESENTATION = "cutout_progress_download_presentation"
+        private const val KEY_MUSIC_PRESENTATION = "cutout_progress_music_presentation"
+        private const val KEY_PRIMARY_PRIORITY = "cutout_progress_primary_priority"
+        private const val KEY_MULTI_RING_SPACING = "cutout_progress_multi_ring_spacing_dp10"
+        private const val KEY_MUSIC_WAVE_ENABLED = "cutout_progress_music_wave_enabled"
+        private const val KEY_MUSIC_WAVE_AMPLITUDE = "cutout_progress_music_wave_amplitude_dp10"
+        private const val KEY_MUSIC_WAVE_DENSITY = "cutout_progress_music_wave_density"
+        private const val KEY_MUSIC_WAVE_SPEED = "cutout_progress_music_wave_speed"
 
         private const val DEFAULT_COMPLETION_PULSE = 1
         private const val DEFAULT_PATH_MODE = 1
@@ -72,6 +80,14 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
         private const val DEFAULT_RING_SCALE_Y = 600
         private const val DEFAULT_RING_OFFSET_X = 0
         private const val DEFAULT_RING_OFFSET_Y = 15
+        private const val DEFAULT_DOWNLOAD_PRESENTATION = 0
+        private const val DEFAULT_MUSIC_PRESENTATION = 0
+        private const val DEFAULT_PRIMARY_PRIORITY = 0
+        private const val DEFAULT_MULTI_RING_SPACING = 30
+        private const val DEFAULT_MUSIC_WAVE_ENABLED = 0
+        private const val DEFAULT_MUSIC_WAVE_AMPLITUDE = 25
+        private const val DEFAULT_MUSIC_WAVE_DENSITY = 48
+        private const val DEFAULT_MUSIC_WAVE_SPEED = 100
 
         private const val DEFAULT_RING_COLOR = 0xFF2196F3.toInt()
         private const val DEFAULT_ERROR_COLOR = 0xFFF44336.toInt()
@@ -87,7 +103,15 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
                 KEY_RING_SCALE_X to DEFAULT_RING_SCALE_X,
                 KEY_RING_SCALE_Y to DEFAULT_RING_SCALE_Y,
                 KEY_RING_OFFSET_X to DEFAULT_RING_OFFSET_X,
-                KEY_RING_OFFSET_Y to DEFAULT_RING_OFFSET_Y
+                KEY_RING_OFFSET_Y to DEFAULT_RING_OFFSET_Y,
+                KEY_DOWNLOAD_PRESENTATION to DEFAULT_DOWNLOAD_PRESENTATION,
+                KEY_MUSIC_PRESENTATION to DEFAULT_MUSIC_PRESENTATION,
+                KEY_PRIMARY_PRIORITY to DEFAULT_PRIMARY_PRIORITY,
+                KEY_MULTI_RING_SPACING to DEFAULT_MULTI_RING_SPACING,
+                KEY_MUSIC_WAVE_ENABLED to DEFAULT_MUSIC_WAVE_ENABLED,
+                KEY_MUSIC_WAVE_AMPLITUDE to DEFAULT_MUSIC_WAVE_AMPLITUDE,
+                KEY_MUSIC_WAVE_DENSITY to DEFAULT_MUSIC_WAVE_DENSITY,
+                KEY_MUSIC_WAVE_SPEED to DEFAULT_MUSIC_WAVE_SPEED
             )
 
             defaults.forEach { (key, value) ->
