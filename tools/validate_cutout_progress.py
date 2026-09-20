@@ -290,6 +290,99 @@ def fetch_upstream(rel: str) -> bytes:
         return response.read()
 
 
+def require_upstream_tokens(rel: str, tokens: list[str]) -> None:
+    text = fetch_upstream(rel).decode("utf-8")
+    missing = [token for token in tokens if token not in text]
+    if missing:
+        fail(f"Upstream API contract changed for {rel}: missing {missing}")
+
+
+def validate_upstream_api_contracts() -> None:
+    contracts: dict[str, list[str]] = {
+        "packages/SystemUI/Android.bp": [
+            'name: "SystemUI-core"',
+            '"src/**/*.java"',
+            '"src/**/*.kt"',
+        ],
+        "packages/SystemUI/src/com/android/systemui/cutoutprogress/dagger/CutoutProgressModule.java": [
+            "@ClassKey(CutoutProgressController.class)",
+            "CoreStartable bindCutoutProgressController",
+        ],
+        "packages/SystemUI/src/com/android/systemui/dagger/SystemUIModule.java": [
+            "import com.android.systemui.cutoutprogress.dagger.CutoutProgressModule;",
+            "CutoutProgressModule.class,",
+        ],
+        "packages/SystemUI/src/com/android/systemui/settings/UserTracker.kt": [
+            "val userId: Int",
+            "val userProfiles: List<UserInfo>",
+            "fun addCallback(callback: Callback, executor: Executor)",
+            "fun onUserChanged(newUser: Int, userContext: Context)",
+        ],
+        "packages/SystemUI/src/com/android/systemui/statusbar/notification/collection/NotifPipeline.kt": [
+            "override fun getAllNotifs(): Collection<NotificationEntry>",
+            "override fun addCollectionListener(listener: NotifCollectionListener)",
+            "override fun removeCollectionListener(listener: NotifCollectionListener)",
+        ],
+        "packages/SystemUI/src/com/android/systemui/statusbar/notification/collection/notifcollection/NotifCollectionListener.java": [
+            "default void onEntryAdded(@NonNull NotificationEntry entry)",
+            "default void onEntryUpdated(@NonNull NotificationEntry entry)",
+            "default void onEntryRemoved(@NonNull NotificationEntry entry, @CancellationReason int reason)",
+        ],
+        "packages/SystemUI/src/com/android/systemui/util/MediaSessionManagerHelper.kt": [
+            "fun addMediaMetadataListener(listener: MediaMetadataListener)",
+            "fun removeMediaMetadataListener(listener: MediaMetadataListener)",
+            "fun getMediaBitmap(): Bitmap?",
+            "fun getCurrentMediaMetadata(): MediaMetadata?",
+            "fun isMediaPlaying()",
+            "fun getMediaControllerPlaybackState(): PlaybackState?",
+            "fun getInstance(context: Context): MediaSessionManagerHelper",
+        ],
+        "packages/SystemUI/src/com/android/systemui/CameraProtectionLoader.kt": [
+            "R.string.config_frontBuiltInDisplayCutoutProtection",
+            "R.string.config_innerBuiltInDisplayCutoutProtection",
+            "R.string.config_protectedScreenUniqueId",
+            "R.string.config_protectedInnerScreenUniqueId",
+        ],
+        "core/java/android/view/Display.java": [
+            "public boolean getDisplayInfo(DisplayInfo outDisplayInfo)",
+            "public Mode getMode()",
+            "public @Nullable String getUniqueId()",
+            "public int getRotation()",
+        ],
+        "core/java/android/view/DisplayCutout.java": [
+            "public @Nullable Path getCutoutPath()",
+            "public CutoutPathParserInfo getCutoutPathParserInfo()",
+            "public float getPhysicalPixelDisplaySizeRatio()",
+            "public int getRotation()",
+        ],
+        "core/java/android/view/WindowManager.java": [
+            "TYPE_NAVIGATION_BAR_PANEL",
+            "SYSTEM_FLAG_SHOW_FOR_ALL_USERS",
+            "PRIVATE_FLAG_NO_MOVE_ANIMATION",
+            "PRIVATE_FLAG_TRUSTED_OVERLAY",
+            "PRIVATE_FLAG_COLOR_SPACE_AGNOSTIC",
+            "public void setFitInsetsTypes(@InsetsType int types)",
+        ],
+        "core/java/android/app/Notification.java": [
+            "EXTRA_CHRONOMETER_COUNT_DOWN",
+            "EXTRA_SHOW_CHRONOMETER",
+            "EXTRA_PROGRESS_INDETERMINATE",
+            "CATEGORY_CALL",
+            "CATEGORY_PROGRESS",
+        ],
+        "media/java/android/media/AudioManager.java": [
+            "registerAudioRecordingCallback(@NonNull AudioRecordingCallback cb,",
+            "getActiveRecordingConfigurations()",
+        ],
+        "media/java/android/media/AudioRecordingConfiguration.java": [
+            "getClientAudioSource()",
+        ],
+    }
+
+    for rel, tokens in contracts.items():
+        require_upstream_tokens(rel, tokens)
+
+
 def validate_upstream_and_installer() -> None:
     expected, new_files = parse_patch_manifest()
     baseline: dict[str, bytes] = {}
@@ -352,6 +445,7 @@ def main() -> int:
         validate_resources()
         validate_calibrated_defaults()
         validate_sources()
+        validate_upstream_api_contracts()
         validate_upstream_and_installer()
     except (ValidationError, OSError, subprocess.SubprocessError, urllib.error.URLError) as exc:
         print(f"VALIDATION FAILED: {exc}", file=sys.stderr)
@@ -362,6 +456,7 @@ def main() -> int:
     print("- Preference/SystemUI key parity: OK")
     print("- Calibrated defaults: OK")
     print("- Source structure/conflict checks: OK")
+    print("- Upstream Dagger/API contracts: OK")
     print("- frameworks/base baseline hashes: OK")
     print("- Patch install + idempotency + guard behavior: OK")
     return 0
