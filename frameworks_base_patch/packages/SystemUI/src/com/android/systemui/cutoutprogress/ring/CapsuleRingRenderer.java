@@ -113,6 +113,23 @@ public final class CapsuleRingRenderer implements RingViewRenderer {
     }
 
     @Override
+    public boolean getPointAndOutwardNormal(float fraction, float[] position, float[] normal) {
+        if (position == null || position.length < 2 || normal == null || normal.length < 2
+                || mTotalLength <= 0f) return false;
+        float f = fraction - (float) Math.floor(fraction);
+        float[] tangent = new float[2];
+        if (!mMeasure.getPosTan(mTotalLength * f, position, tangent)) return false;
+        float len = (float) Math.hypot(tangent[0], tangent[1]);
+        if (len <= 0f) return false;
+        // CapsuleRingRenderer builds its contour visually clockwise from the top.
+        float tx = tangent[0] / len;
+        float ty = tangent[1] / len;
+        normal[0] = ty;
+        normal[1] = -tx;
+        return true;
+    }
+
+    @Override
     public void drawSegmented(Canvas canvas,
                               int segments, float gapDeg, float arcDeg,
                               int highlight,
