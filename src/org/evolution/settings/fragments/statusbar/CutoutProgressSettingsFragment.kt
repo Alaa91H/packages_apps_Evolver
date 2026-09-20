@@ -273,8 +273,9 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
         val hasIndependentRing = downloadMode == PRESENTATION_INDEPENDENT
             || musicMode == PRESENTATION_INDEPENDENT
         multiRingSpacingPref.isVisible = hasIndependentRing
-        primaryPriorityPref.isVisible = downloadMode == PRESENTATION_PRIMARY
-            && musicMode == PRESENTATION_PRIMARY
+        primaryPriorityPref.isVisible = downloadMode == musicMode
+            && (downloadMode == PRESENTATION_PRIMARY
+                || downloadMode == PRESENTATION_INDEPENDENT)
     }
 
     private fun syncListPreferences() {
