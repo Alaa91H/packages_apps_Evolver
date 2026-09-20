@@ -52,6 +52,7 @@ public class WallpaperPreviewPreference extends Preference {
     
     private Bitmap mLockWallpaper;
     private Bitmap mHomeWallpaper;
+    private boolean mAttached;
     
     public WallpaperPreviewPreference(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -61,6 +62,12 @@ public class WallpaperPreviewPreference extends Preference {
         mWallpaperManager = WallpaperManager.getInstance(context);
     }
     
+    @Override
+    public void onAttached() {
+        super.onAttached();
+        mAttached = true;
+    }
+
     @Override
     public void onBindViewHolder(PreferenceViewHolder holder) {
         super.onBindViewHolder(holder);
@@ -81,6 +88,7 @@ public class WallpaperPreviewPreference extends Preference {
     }
     
     private void loadWallpaperPreviews() {
+        if (!mAttached) return;
         if (mExecutor == null || mExecutor.isShutdown()) {
             mExecutor = Executors.newSingleThreadExecutor();
         }
@@ -102,7 +110,11 @@ public class WallpaperPreviewPreference extends Preference {
                     mHomeWallpaper = ((BitmapDrawable) homeDrawable).getBitmap();
                 }
                 
-                mHandler.post(() -> updatePreviewImages());
+                mHandler.post(() -> {
+                    if (mAttached) {
+                        updatePreviewImages();
+                    }
+                });
                 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -152,16 +164,23 @@ public class WallpaperPreviewPreference extends Preference {
     
     @Override
     public void onDetached() {
-        super.onDetached();
+        mAttached = false;
+        mHandler.removeCallbacksAndMessages(null);
         if (mExecutor != null && !mExecutor.isShutdown()) {
-            mExecutor.shutdown();
-            mExecutor = null;
+            mExecutor.shutdownNow();
         }
-        if (mLockWallpaper != null && !mLockWallpaper.isRecycled()) {
-            mLockWallpaper = null;
-        }
-        if (mHomeWallpaper != null && !mHomeWallpaper.isRecycled()) {
-            mHomeWallpaper = null;
-        }
+        mExecutor = null;
+
+        mLockPreview = null;
+        mHomePreview = null;
+        mLockLabel = null;
+        mHomeLabel = null;
+        mApplyButton = null;
+        mLockCard = null;
+        mHomeCard = null;
+        mLockWallpaper = null;
+        mHomeWallpaper = null;
+
+        super.onDetached();
     }
 }
