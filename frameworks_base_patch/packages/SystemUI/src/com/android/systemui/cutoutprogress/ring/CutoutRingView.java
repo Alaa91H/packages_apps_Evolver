@@ -177,7 +177,7 @@ public final class CutoutRingView extends View {
     private int sCfgDownloadPresentation = CutoutProgressSettings.PRESENTATION_PRIMARY;
     private int sCfgMusicPresentation = CutoutProgressSettings.PRESENTATION_PRIMARY;
     private int sCfgPrimaryPriority = CutoutProgressSettings.PRIMARY_PRIORITY_DOWNLOAD;
-    private float sCfgMultiRingSpacingDp = 3f;
+    private float sCfgMultiRingSpacingDp = 5f;
     private boolean sCfgMusicWaveEnabled = false;
     private float sCfgMusicWaveAmplitudeDp = 2.5f;
     private int sCfgMusicWaveDensity = 48;
