@@ -235,11 +235,12 @@ final class CameraCutoutGeometryResolver {
                 Path clip = new Path();
                 clip.addRect(rectF, Path.Direction.CW);
                 if (clipped.op(clip, Path.Op.INTERSECT) && isUsable(clipped)) {
-                    RectF clippedBounds = boundsOf(clipped);
-                    if (!clippedBounds.isEmpty()) {
-                        candidatePath = clipped;
-                        candidateBounds = clippedBounds;
-                        source = SOURCE_DISPLAY_CUTOUT_PATH;
+                    Candidate contour = chooseBestContour(
+                            clipped, logicalWidth, logicalHeight, SOURCE_DISPLAY_CUTOUT_PATH);
+                    if (contour != null) {
+                        candidatePath = contour.path;
+                        candidateBounds = contour.bounds;
+                        source = contour.source;
                     }
                 }
             }
@@ -259,12 +260,36 @@ final class CameraCutoutGeometryResolver {
 
         // Some implementations may expose a path while bounding rects are absent.
         if (best == null && isUsable(allPath)) {
-            RectF bounds = boundsOf(allPath);
-            if (!bounds.isEmpty()) {
-                best = new Candidate(
-                        new Path(allPath), bounds, SOURCE_DISPLAY_CUTOUT_PATH);
-            }
+            best = chooseBestContour(
+                    allPath, logicalWidth, logicalHeight, SOURCE_DISPLAY_CUTOUT_PATH);
         }
+        return best;
+    }
+
+    private static Candidate chooseBestContour(
+            Path path, int logicalWidth, int logicalHeight, int source) {
+        if (!isUsable(path)) return null;
+
+        PathMeasure measure = new PathMeasure(path, true);
+        Candidate best = null;
+        double bestScore = Double.MAX_VALUE;
+        do {
+            float length = measure.getLength();
+            if (length <= 0f) continue;
+
+            Path contour = new Path();
+            if (!measure.getSegment(0f, length, contour, true) || contour.isEmpty()) continue;
+            contour.close();
+            RectF bounds = boundsOf(contour);
+            if (bounds.isEmpty()) continue;
+
+            double score = candidateScore(bounds, logicalWidth, logicalHeight);
+            if (score < bestScore) {
+                bestScore = score;
+                best = new Candidate(contour, bounds, source);
+            }
+        } while (measure.nextContour());
+
         return best;
     }
 
