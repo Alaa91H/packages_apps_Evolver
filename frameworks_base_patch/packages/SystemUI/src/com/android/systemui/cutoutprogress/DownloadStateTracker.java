@@ -103,6 +103,24 @@ public final class DownloadStateTracker {
         final boolean progressCategory =
                 Notification.CATEGORY_PROGRESS.equals(notification.category);
 
+        final boolean determinate = hasProgressPayload && !indeterminate
+                && rawProgress >= 0 && rawMax > 0;
+        final int pct = determinate
+                ? clamp((int) (((long) rawProgress * 100L) / rawMax), 0, 100)
+                : -1;
+
+        // A completion update may clear FLAG_ONGOING before SystemUI receives it. Complete only
+        // a transfer that we actually tracked; a newly posted 100% notification should not flash.
+        if (pct >= 100) {
+            if (existing != null) {
+                mActive.remove(id);
+                notifyCountChanged();
+                publishAggregated();
+                fireComplete();
+            }
+            return;
+        }
+
         // Ignore unrelated transient progress payloads. If a transfer that we were already
         // tracking changes shape, remove it quietly rather than pretending it completed.
         if (!hasProgressPayload || (!ongoing && !progressCategory)) {
@@ -113,7 +131,7 @@ public final class DownloadStateTracker {
         // A tracked download can temporarily switch to indeterminate progress while reconnecting
         // or preparing the next stage. Keep its last known percentage alive instead of firing a
         // completion animation.
-        if (indeterminate || rawProgress < 0 || rawMax <= 0) {
+        if (!determinate) {
             if (existing != null) {
                 existing.updatedAt = now;
                 String label = title(extras);
@@ -123,18 +141,7 @@ public final class DownloadStateTracker {
             return;
         }
 
-        final int pct = clamp((int) (((long) rawProgress * 100L) / rawMax), 0, 100);
         final String label = title(extras);
-
-        if (pct >= 100) {
-            if (existing != null) {
-                mActive.remove(id);
-                notifyCountChanged();
-                publishAggregated();
-            }
-            fireComplete();
-            return;
-        }
 
         if (existing == null) {
             mActive.put(id, new DownloadSnapshot(label, pct, now));
