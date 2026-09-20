@@ -48,6 +48,8 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
         private const val MUSIC_COLOR_MODE_ACCENT = 1
         private const val MUSIC_COLOR_MODE_ALBUM_ART = 2
         private const val MUSIC_COLOR_MODE_CUSTOM = 3
+        private const val PRESENTATION_PRIMARY = 0
+        private const val PRESENTATION_INDEPENDENT = 1
 
         private const val KEY_RING_COLOR = "cutout_progress_ring_color"
         private const val KEY_ERROR_COLOR = "cutout_progress_error_color"
@@ -128,6 +130,10 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
 
     private lateinit var ringColorModePref: ListPreference
     private lateinit var musicColorModePref: ListPreference
+    private lateinit var downloadPresentationPref: ListPreference
+    private lateinit var musicPresentationPref: ListPreference
+    private lateinit var primaryPriorityPref: ListPreference
+    private lateinit var multiRingSpacingPref: Preference
 
     private lateinit var ringColorPref: Preference
     private lateinit var errorColorPref: Preference
@@ -147,6 +153,10 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
 
         ringColorModePref = findPreference(KEY_RING_COLOR_MODE)!!
         musicColorModePref = findPreference(KEY_MUSIC_COLOR_MODE)!!
+        downloadPresentationPref = findPreference(KEY_DOWNLOAD_PRESENTATION)!!
+        musicPresentationPref = findPreference(KEY_MUSIC_PRESENTATION)!!
+        primaryPriorityPref = findPreference(KEY_PRIMARY_PRIORITY)!!
+        multiRingSpacingPref = findPreference(KEY_MULTI_RING_SPACING)!!
 
         ringColorPref = findPreference(KEY_RING_COLOR)!!
         errorColorPref = findPreference(KEY_ERROR_COLOR)!!
@@ -170,9 +180,15 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
         val storedMusicMode = readSecureInt(KEY_MUSIC_COLOR_MODE, MUSIC_COLOR_MODE_ALBUM_ICON)
         musicColorModePref.value = storedMusicMode.toString()
         updateColorPickerVisibility(storedMusicMode, KEY_MUSIC_COLOR_MODE)
+        updateLayerPreferenceVisibility(
+            readSecureInt(KEY_DOWNLOAD_PRESENTATION, DEFAULT_DOWNLOAD_PRESENTATION),
+            readSecureInt(KEY_MUSIC_PRESENTATION, DEFAULT_MUSIC_PRESENTATION)
+        )
 
         ringColorModePref.onPreferenceChangeListener = this
         musicColorModePref.onPreferenceChangeListener = this
+        downloadPresentationPref.onPreferenceChangeListener = this
+        musicPresentationPref.onPreferenceChangeListener = this
 
         ringColorPref.setOnPreferenceClickListener {
             showColorPicker(
@@ -231,6 +247,17 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
             return true
         }
 
+        if (preference.key == KEY_DOWNLOAD_PRESENTATION
+            || preference.key == KEY_MUSIC_PRESENTATION) {
+            writeSecureInt(preference.key, intValue)
+            val downloadMode = if (preference.key == KEY_DOWNLOAD_PRESENTATION) intValue
+                else readSecureInt(KEY_DOWNLOAD_PRESENTATION, DEFAULT_DOWNLOAD_PRESENTATION)
+            val musicMode = if (preference.key == KEY_MUSIC_PRESENTATION) intValue
+                else readSecureInt(KEY_MUSIC_PRESENTATION, DEFAULT_MUSIC_PRESENTATION)
+            updateLayerPreferenceVisibility(downloadMode, musicMode)
+            return true
+        }
+
         writeSecureInt(preference.key, intValue)
         return true
     }
@@ -242,13 +269,24 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
         }
     }
 
+    private fun updateLayerPreferenceVisibility(downloadMode: Int, musicMode: Int) {
+        val hasIndependentRing = downloadMode == PRESENTATION_INDEPENDENT
+            || musicMode == PRESENTATION_INDEPENDENT
+        multiRingSpacingPref.isVisible = hasIndependentRing
+        primaryPriorityPref.isVisible = downloadMode == PRESENTATION_PRIMARY
+            && musicMode == PRESENTATION_PRIMARY
+    }
+
     private fun syncListPreferences() {
         listOf(
             finishStylePref to 0,
             easingPref to 0,
             pctPosPref to 0,
             fnamePosPref to 4,
-            fnameTruncPref to 0
+            fnameTruncPref to 0,
+            downloadPresentationPref to DEFAULT_DOWNLOAD_PRESENTATION,
+            musicPresentationPref to DEFAULT_MUSIC_PRESENTATION,
+            primaryPriorityPref to DEFAULT_PRIMARY_PRIORITY
         ).forEach { (pref, default) ->
             pref.value = readSecureInt(pref.key, default).toString()
         }
