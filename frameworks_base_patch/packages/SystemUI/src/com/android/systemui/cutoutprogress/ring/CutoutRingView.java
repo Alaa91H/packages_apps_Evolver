@@ -1204,42 +1204,80 @@ public final class CutoutRingView extends View {
             drawSource(canvas, primarySource, effectivePct, 0f);
         }
 
-        int lane = 1;
         float outermostLaneDp = 0f;
+        float outermostStrokeDp = primarySource != SOURCE_NONE
+                ? sourceStrokeWidthDp(primarySource) : 0f;
         int preferred = priorityToSource();
 
         if (preferred == SOURCE_DOWNLOAD && downloadIndependent) {
-            outermostLaneDp = lane * sCfgMultiRingSpacingDp;
+            float stroke = sourceStrokeWidthDp(SOURCE_DOWNLOAD);
+            outermostLaneDp = nextLaneOffsetDp(
+                    outermostLaneDp, outermostStrokeDp, stroke);
+            outermostStrokeDp = stroke;
             drawSource(canvas, SOURCE_DOWNLOAD, effectivePct, outermostLaneDp);
-            lane++;
         } else if (preferred == SOURCE_MUSIC && musicIndependent) {
-            outermostLaneDp = lane * sCfgMultiRingSpacingDp;
+            float stroke = sourceStrokeWidthDp(SOURCE_MUSIC);
+            outermostLaneDp = nextLaneOffsetDp(
+                    outermostLaneDp, outermostStrokeDp, stroke);
+            outermostStrokeDp = stroke;
             drawSource(canvas, SOURCE_MUSIC, effectivePct, outermostLaneDp);
-            lane++;
         } else if (preferred == SOURCE_TIMER && timerIndependent) {
-            outermostLaneDp = lane * sCfgMultiRingSpacingDp;
+            float stroke = sourceStrokeWidthDp(SOURCE_TIMER);
+            outermostLaneDp = nextLaneOffsetDp(
+                    outermostLaneDp, outermostStrokeDp, stroke);
+            outermostStrokeDp = stroke;
             drawSource(canvas, SOURCE_TIMER, effectivePct, outermostLaneDp);
-            lane++;
         }
 
         if (preferred != SOURCE_DOWNLOAD && downloadIndependent) {
-            outermostLaneDp = lane * sCfgMultiRingSpacingDp;
+            float stroke = sourceStrokeWidthDp(SOURCE_DOWNLOAD);
+            outermostLaneDp = nextLaneOffsetDp(
+                    outermostLaneDp, outermostStrokeDp, stroke);
+            outermostStrokeDp = stroke;
             drawSource(canvas, SOURCE_DOWNLOAD, effectivePct, outermostLaneDp);
-            lane++;
         }
         if (preferred != SOURCE_MUSIC && musicIndependent) {
-            outermostLaneDp = lane * sCfgMultiRingSpacingDp;
+            float stroke = sourceStrokeWidthDp(SOURCE_MUSIC);
+            outermostLaneDp = nextLaneOffsetDp(
+                    outermostLaneDp, outermostStrokeDp, stroke);
+            outermostStrokeDp = stroke;
             drawSource(canvas, SOURCE_MUSIC, effectivePct, outermostLaneDp);
-            lane++;
         }
         if (preferred != SOURCE_TIMER && timerIndependent) {
-            outermostLaneDp = lane * sCfgMultiRingSpacingDp;
+            float stroke = sourceStrokeWidthDp(SOURCE_TIMER);
+            outermostLaneDp = nextLaneOffsetDp(
+                    outermostLaneDp, outermostStrokeDp, stroke);
+            outermostStrokeDp = stroke;
             drawSource(canvas, SOURCE_TIMER, effectivePct, outermostLaneDp);
         }
 
         if (auroraActive) {
-            drawAurora(canvas, outermostLaneDp);
+            drawAurora(canvas, outermostLaneDp, outermostStrokeDp);
         }
+    }
+
+    private float sourceStrokeWidthDp(int source) {
+        switch (source) {
+            case SOURCE_MUSIC:
+                return Math.max(0f, sCfgMusicStrokeDp);
+            case SOURCE_TIMER:
+                return Math.max(0f, sCfgTimerStrokeDp);
+            case SOURCE_DOWNLOAD:
+            case SOURCE_CHARGING:
+            case SOURCE_BATTERY:
+                return Math.max(0f, sCfgStrokeDp);
+            default:
+                return 0f;
+        }
+    }
+
+    private float nextLaneOffsetDp(
+            float previousOffsetDp, float previousStrokeDp, float currentStrokeDp) {
+        // Treat the configured spacing as the preferred center-line distance, but never allow
+        // thick rings to intersect. Keep a small optical clearance between their painted edges.
+        float nonOverlapStep = (Math.max(0f, previousStrokeDp)
+                + Math.max(0f, currentStrokeDp)) * 0.5f + 0.75f;
+        return previousOffsetDp + Math.max(sCfgMultiRingSpacingDp, nonOverlapStep);
     }
 
     private int priorityToSource() {
@@ -1489,7 +1527,8 @@ public final class CutoutRingView extends View {
                 flameSize * 0.13f, mFlamePaint);
     }
 
-    private void drawAurora(Canvas canvas, float outermostLaneDp) {
+    private void drawAurora(
+            Canvas canvas, float outermostLaneDp, float outermostStrokeDp) {
         boolean notificationActive = isNotificationAuroraActive();
         boolean useNotificationColor = notificationActive
                 && sCfgAuroraNotificationColorMode
@@ -1514,7 +1553,11 @@ public final class CutoutRingView extends View {
         float spread = Math.max(2f, sCfgAuroraSpreadDp);
         for (int i = 0; i < layers; i++) {
             float t = i / (float) (layers - 1);
-            float offset = outermostLaneDp + 0.8f + t * spread;
+            float widthDp = Math.max(0.65f, 1.65f - 0.8f * t);
+            // Position the Aurora center-line beyond the painted edge of the outermost ring.
+            // This keeps the effect outside thick music/timer rings instead of overlapping them.
+            float offset = outermostLaneDp + Math.max(0f, outermostStrokeDp) * 0.5f
+                    + 0.8f + widthDp * 0.5f + t * spread;
             computeArcBounds(offset);
             mRenderer.updateBounds(mArcBounds);
 
@@ -1524,7 +1567,7 @@ public final class CutoutRingView extends View {
             falloff *= falloff;
             int alpha = (int) (sCfgAuroraOpacity * 255f / 100f
                     * (0.18f + 0.82f * falloff) * shimmer);
-            float width = Math.max(0.65f, 1.65f - 0.8f * t) * mDp;
+            float width = widthDp * mDp;
             int layerColor = spectrum ? Color.WHITE
                     : blendColors(baseColor, Color.WHITE, 0.20f * (1f - t));
 
