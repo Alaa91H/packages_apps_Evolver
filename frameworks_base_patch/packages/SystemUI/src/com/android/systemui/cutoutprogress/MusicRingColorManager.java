@@ -286,13 +286,19 @@ public final class MusicRingColorManager {
         @Override
         public void run() {
             final Bitmap sample;
+            final boolean skip;
             synchronized (this) {
-                if (mCancelled || mSample == null) {
-                    clearPaletteTask(this);
-                    return;
+                skip = mCancelled || mSample == null;
+                if (!skip) {
+                    mStarted = true;
                 }
-                mStarted = true;
                 sample = mSample;
+            }
+            // Never acquire mPaletteTaskLock while holding this task's monitor; cancellation
+            // takes the locks in the opposite direction.
+            if (skip) {
+                clearPaletteTask(this);
+                return;
             }
 
             int color = DEFAULT_FALLBACK;
