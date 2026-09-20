@@ -610,7 +610,7 @@ public final class CutoutRingView extends View {
 
         int prev = mProgress;
         mProgress = pct;
-        mLastProgressMs = System.currentTimeMillis();
+        mLastProgressMs = SystemClock.elapsedRealtime();
 
         removeCallbacks(mBurnInHide);
         if (pct > 0 && pct < 100) {
@@ -618,12 +618,12 @@ public final class CutoutRingView extends View {
         }
 
         if (prev == 0 && pct > 0) {
-            mDownloadStartMs = System.currentTimeMillis();
+            mDownloadStartMs = SystemClock.elapsedRealtime();
             cancelPendingFinish();
         }
 
         if (pct == 100 && !mAnim.isFinishAnimating) {
-            long elapsed = System.currentTimeMillis() - mDownloadStartMs;
+            long elapsed = SystemClock.elapsedRealtime() - mDownloadStartMs;
             long remaining = (sCfgMinVis ? sCfgMinVisMs : 0) - elapsed;
             if (remaining > 0 && mDownloadStartMs > 0) {
                 mPendingFinish = () -> { mPendingFinish = null; beginFinishAnim(); };
@@ -887,7 +887,7 @@ public final class CutoutRingView extends View {
                 && mDownloadCount == 0
                 && effectivePct > 0 && effectivePct < 100
                 && mLastProgressMs > 0
-                && System.currentTimeMillis() - mLastProgressMs >= BURN_IN_HIDE_MS;
+                && SystemClock.elapsedRealtime() - mLastProgressMs >= BURN_IN_HIDE_MS;
 
         boolean downloadActive = preview
                 || mAnim.isErrorAnimating
