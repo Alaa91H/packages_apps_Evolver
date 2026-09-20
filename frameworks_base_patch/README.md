@@ -27,7 +27,12 @@ Do not use `--force` unless every upstream mismatch has been reviewed manually.
 
 ## What is implemented
 
+- Automatic camera fit uses SystemUI camera-protection geometry first, then DisplayCutout geometry, then a compact safe fallback.
+- Camera-protection paths are transformed with Android's physical-pixel ratio and current display rotation, matching ScreenDecorations.
 - Correct camera-cutout selection instead of blindly using the aggregate DisplayCutout path.
+- Manual X/Y calibration rotates with the hardware axes, so 90°/270° no longer stretch the ring.
+- Runtime density is refreshed after configuration/resolution changes instead of being frozen at view construction.
+- Size changes request fresh insets/geometry so resolution and rotation changes re-resolve the camera position.
 - No synthetic/fake cutout on devices that report no physical cutout.
 - Circle geometry uses the minor cutout axis, fixing oversized rings on rectangular safe-area paths.
 - Calibrated default geometry: pill mode, X 1.050, Y 0.600, X offset 0, Y offset 1.5dp.
@@ -71,4 +76,4 @@ privacy concerns, and continuous audio-analysis overhead inside SystemUI.
 ## Files
 
 The directory layout under `frameworks_base_patch/` mirrors `frameworks/base/`. The installer
-copies only the seven Cutout Progress files staged here.
+copies the seven modified Cutout Progress files plus the new adaptive camera-geometry resolver.
