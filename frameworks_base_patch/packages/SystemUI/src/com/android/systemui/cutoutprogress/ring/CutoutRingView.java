@@ -1748,7 +1748,7 @@ public final class CutoutRingView extends View {
         sCfgErrorColor = 0xFFF44336;
         sCfgFlashColor = Color.WHITE;
         sCfgStrokeDp = 2f;
-        sCfgRingGap = 1.155f;
+        sCfgRingGap = 1.160f;
         sCfgOpacity = 90;
         sCfgBgColor = 0xFF808080;
         sCfgBgOpacity = 30;
@@ -1771,7 +1771,7 @@ public final class CutoutRingView extends View {
         sCfgDownloadPresentation = CutoutProgressSettings.PRESENTATION_PRIMARY;
         sCfgMusicPresentation = CutoutProgressSettings.PRESENTATION_PRIMARY;
         sCfgPrimaryPriority = CutoutProgressSettings.PRIMARY_PRIORITY_DOWNLOAD;
-        sCfgMultiRingSpacingDp = 3f;
+        sCfgMultiRingSpacingDp = 5f;
         sCfgMusicRingEnabled = false;
         sCfgMusicWaveEnabled = false;
         sCfgMusicWaveAmplitudeDp = 2.5f;

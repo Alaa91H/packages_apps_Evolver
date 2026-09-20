@@ -97,6 +97,7 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
         private const val DEFAULT_RING_SCALE_Y = 600
         private const val DEFAULT_RING_OFFSET_X = 0
         private const val DEFAULT_RING_OFFSET_Y = 15
+        private const val DEFAULT_RING_GAP = 1160
         private const val DEFAULT_DOWNLOAD_PRESENTATION = 0
         private const val DEFAULT_MUSIC_PRESENTATION = 0
         private const val DEFAULT_PRIMARY_PRIORITY = 0
@@ -129,6 +130,7 @@ class CutoutProgressSettingsFragment : SettingsPreferenceFragment(),
                 KEY_RING_SCALE_Y to DEFAULT_RING_SCALE_Y,
                 KEY_RING_OFFSET_X to DEFAULT_RING_OFFSET_X,
                 KEY_RING_OFFSET_Y to DEFAULT_RING_OFFSET_Y,
+                KEY_RING_GAP to DEFAULT_RING_GAP,
                 KEY_DOWNLOAD_PRESENTATION to DEFAULT_DOWNLOAD_PRESENTATION,
                 KEY_MUSIC_PRESENTATION to DEFAULT_MUSIC_PRESENTATION,
                 KEY_PRIMARY_PRIORITY to DEFAULT_PRIMARY_PRIORITY,
