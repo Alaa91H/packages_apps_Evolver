@@ -133,7 +133,13 @@ public class CutoutProgressController implements CoreStartable {
 
     private void enableFeature() {
         attachOverlay();
-        registerPipelineListener();
+        if (mSettings.getDownloadPresentation()
+                != CutoutProgressSettings.PRESENTATION_DISABLED) {
+            registerPipelineListener();
+        } else {
+            unregisterPipelineListener();
+            mTracker.reset();
+        }
 
         if (mSettings.isChargingRingEnabled() || mSettings.isBatteryIndicatorEnabled()) {
             registerBatteryReceiver();
