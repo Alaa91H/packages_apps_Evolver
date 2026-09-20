@@ -36,7 +36,7 @@ public final class MusicProgressTracker {
     public interface Callbacks {
         void onMusicProgress(float fraction);
         void onMusicPlayingChanged(boolean isPlaying);
-        void onTrackChanged(String title, String artist, long durationMs);
+        void onTrackChanged(String trackId, String title, String artist, long durationMs);
         void onAlbumArtChanged(Drawable art);
     }
 
@@ -122,7 +122,7 @@ public final class MusicProgressTracker {
             // Some media apps reuse the same mutable Bitmap object across tracks. Force artwork
             // re-evaluation when track identity changes even if object identity does not.
             mLastArtBitmap = null;
-            mCallbacks.onTrackChanged(title, artist, mDurationMs);
+            mCallbacks.onTrackChanged(newId, title, artist, mDurationMs);
         }
 
         // Playback state may arrive before metadata/duration. If the duration becomes known later,
