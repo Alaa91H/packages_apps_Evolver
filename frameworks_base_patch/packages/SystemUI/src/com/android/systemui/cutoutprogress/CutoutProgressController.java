@@ -93,6 +93,7 @@ public class CutoutProgressController implements CoreStartable {
     private String mTimerKey;
     private long mTimerEndElapsedMs = 0L;
     private long mTimerTotalMs = 0L;
+    private long mTimerPausedRemainingMs = 0L;
     private boolean mTimerRunning = false;
 
     private static final class CountdownInfo {
@@ -546,35 +547,59 @@ public class CutoutProgressController implements CoreStartable {
         CountdownInfo countdown = extractCountdownInfo(notification);
         if (countdown == null) return false;
 
-        long nowElapsed = SystemClock.elapsedRealtime();
+        final long nowElapsed = SystemClock.elapsedRealtime();
+        final String key = entry.getSbn().getKey();
+        final boolean sameTimer = mTimerKey != null && mTimerKey.equals(key);
+        final boolean wasRunning = mTimerRunning;
+        final long previousEndElapsedMs = mTimerEndElapsedMs;
+        final long previousRemaining = sameTimer
+                ? (wasRunning
+                    ? Math.max(0L, previousEndElapsedMs - nowElapsed)
+                    : mTimerPausedRemainingMs)
+                : 0L;
+
         long remaining = countdown.endElapsedMs - nowElapsed;
+
+        // A paused RemoteViews Chronometer keeps the elapsed-realtime base it had when it was
+        // paused. If it remains paused longer than the displayed remaining time, that base can
+        // move into the past even though the notification still represents a valid paused timer.
+        // For the timer we are already tracking, keep our frozen remaining snapshot instead.
+        if (!countdown.running && sameTimer && !wasRunning
+                && mTimerPausedRemainingMs > 0L && remaining <= 0L) {
+            remaining = mTimerPausedRemainingMs;
+        }
         if (remaining <= 0L) return false;
 
-        String key = entry.getSbn().getKey();
-
-        // If several timers are active, visualize the one that expires first.
-        if (mTimerKey != null && !mTimerKey.equals(key)
-                && mTimerEndElapsedMs > nowElapsed && mTimerEndElapsedMs <= countdown.endElapsedMs) {
-            return true;
+        // If several timers are active, keep the one with the least remaining time. For a paused
+        // timer use its frozen remaining snapshot rather than its aging elapsed-realtime base.
+        if (!sameTimer && mTimerKey != null) {
+            long currentRemaining = mTimerRunning
+                    ? Math.max(0L, mTimerEndElapsedMs - nowElapsed)
+                    : mTimerPausedRemainingMs;
+            if (currentRemaining > 0L && currentRemaining <= remaining) {
+                return true;
+            }
         }
 
-        boolean newTimer = mTimerKey == null || !mTimerKey.equals(key);
-        boolean wasRunning = mTimerRunning;
-        long previousEndElapsedMs = mTimerEndElapsedMs;
-        long endDelta = newTimer ? 0L : countdown.endElapsedMs - previousEndElapsedMs;
-
+        final boolean newTimer = !sameTimer;
         mTimerKey = key;
         mTimerEndElapsedMs = countdown.endElapsedMs;
         mTimerRunning = countdown.running;
 
         if (newTimer || mTimerTotalMs <= 0L) {
             mTimerTotalMs = Math.max(1000L, remaining);
-        } else if (wasRunning && countdown.running && Math.abs(endDelta) > 1000L) {
-            // Preserve the user's progress across +time/-time edits. Pause/resume changes the
-            // absolute end base too, but must not reset the ring back to 100%.
-            mTimerTotalMs = Math.max(1000L, mTimerTotalMs + endDelta);
+        } else {
+            long remainingDelta = remaining - previousRemaining;
+            if (previousRemaining > 0L && Math.abs(remainingDelta) > 1000L) {
+                // A meaningful change in remaining time while keeping the same notification key
+                // represents +time/-time. Apply the same delta to the visual total so the ring
+                // keeps its proportional history instead of jumping back to a fresh 100%.
+                mTimerTotalMs = Math.max(1000L, mTimerTotalMs + remainingDelta);
+            }
             mTimerTotalMs = Math.max(mTimerTotalMs, remaining);
         }
+
+        mTimerPausedRemainingMs = countdown.running ? 0L : remaining;
 
         removeTimerTick();
         updateTimerTick();
@@ -631,7 +656,7 @@ public class CutoutProgressController implements CoreStartable {
                 long base = chronometer.getBase();
                 boolean started = readChronometerStarted(chronometer);
                 chronometer.stop();
-                if (base > SystemClock.elapsedRealtime()) {
+                if (!started || base > SystemClock.elapsedRealtime()) {
                     return new CountdownInfo(base, started);
                 }
             }
@@ -674,7 +699,9 @@ public class CutoutProgressController implements CoreStartable {
             return;
         }
 
-        long remaining = mTimerEndElapsedMs - SystemClock.elapsedRealtime();
+        long remaining = mTimerRunning
+                ? mTimerEndElapsedMs - SystemClock.elapsedRealtime()
+                : mTimerPausedRemainingMs;
         if (remaining <= 0L) {
             clearTimerState();
             return;
@@ -697,6 +724,7 @@ public class CutoutProgressController implements CoreStartable {
         mTimerKey = null;
         mTimerEndElapsedMs = 0L;
         mTimerTotalMs = 0L;
+        mTimerPausedRemainingMs = 0L;
         mTimerRunning = false;
         if (mRingView != null) mRingView.setTimerState(false, 0f);
     }
