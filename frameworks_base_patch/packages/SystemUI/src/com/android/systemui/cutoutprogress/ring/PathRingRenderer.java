@@ -143,6 +143,31 @@ public final class PathRingRenderer implements RingViewRenderer {
     }
 
     @Override
+    public boolean getPointAndOutwardNormal(float fraction, float[] position, float[] normal) {
+        if (position == null || position.length < 2 || normal == null || normal.length < 2
+                || mTotalLength <= EPSILON) return false;
+
+        float f = fraction - (float) Math.floor(fraction);
+        float sign = mPathOrderClockwise ? 1f : -1f;
+        float distance = normalizeDistance(mStartDistance + sign * mTotalLength * f);
+        float[] tangent = new float[2];
+        if (!mMeasure.getPosTan(distance, position, tangent)) return false;
+
+        float tx = tangent[0] * sign;
+        float ty = tangent[1] * sign;
+        float len = (float) Math.hypot(tx, ty);
+        if (len <= EPSILON) return false;
+        tx /= len;
+        ty /= len;
+
+        // Visual-clockwise contour in Android's +Y-down coordinate space: rotating the tangent
+        // by -90 degrees produces the outward normal.
+        normal[0] = ty;
+        normal[1] = -tx;
+        return true;
+    }
+
+    @Override
     public void drawSegmented(Canvas canvas,
                               int segments, float gapDeg, float arcDeg,
                               int highlight,
