@@ -400,17 +400,22 @@ public class CutoutProgressController implements CoreStartable {
         params.setTitle("CutoutProgressOverlay");
 
         WindowManager wm = mContext.getSystemService(WindowManager.class);
-        if (wm != null) {
+        if (wm == null) return;
+        try {
             wm.addView(mRingView, params);
             mOverlayAttached = true;
+        } catch (RuntimeException ignored) {
+            mOverlayAttached = false;
         }
     }
 
     private void detachOverlay() {
         if (!mOverlayAttached) return;
         WindowManager wm = mContext.getSystemService(WindowManager.class);
-        if (wm != null) {
-            wm.removeView(mRingView);
+        try {
+            if (wm != null) wm.removeView(mRingView);
+        } catch (RuntimeException ignored) {
+        } finally {
             mOverlayAttached = false;
         }
     }
@@ -886,26 +891,36 @@ public class CutoutProgressController implements CoreStartable {
     }
 
     private void registerBatteryReceiver() {
-        if (mBatteryReceiverRegistered) {
-            // Re-evaluate immediately when settings change; ACTION_BATTERY_CHANGED is sticky.
-            Intent sticky = mContext.registerReceiver(null,
-                    new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        try {
+            if (mBatteryReceiverRegistered) {
+                // Re-evaluate immediately when settings change; ACTION_BATTERY_CHANGED is sticky.
+                Intent sticky = mContext.registerReceiver(null,
+                        new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+                if (sticky != null) mBatteryReceiver.onReceive(mContext, sticky);
+                return;
+            }
+            IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+            Intent sticky = mContext.registerReceiver(mBatteryReceiver, filter);
+            mBatteryReceiverRegistered = true;
             if (sticky != null) mBatteryReceiver.onReceive(mContext, sticky);
-            return;
+        } catch (RuntimeException ignored) {
+            mBatteryReceiverRegistered = false;
         }
-        IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-        Intent sticky = mContext.registerReceiver(mBatteryReceiver, filter);
-        mBatteryReceiverRegistered = true;
-        if (sticky != null) mBatteryReceiver.onReceive(mContext, sticky);
     }
 
     private void unregisterBatteryReceiver() {
-        if (!mBatteryReceiverRegistered) return;
-        mContext.unregisterReceiver(mBatteryReceiver);
+        if (mBatteryReceiverRegistered) {
+            try {
+                mContext.unregisterReceiver(mBatteryReceiver);
+            } catch (RuntimeException ignored) {
+            }
+        }
         mBatteryReceiverRegistered = false;
         runOnMain(() -> {
-            mRingView.setChargingState(false, 0);
-            mRingView.setBatteryIndicatorState(false, 0);
+            if (mRingView != null) {
+                mRingView.setChargingState(false, 0);
+                mRingView.setBatteryIndicatorState(false, 0);
+            }
         });
     }
 
