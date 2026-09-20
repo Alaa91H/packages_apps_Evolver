@@ -25,6 +25,7 @@ import android.content.pm.UserInfo;
 import android.graphics.PixelFormat;
 import android.media.AudioManager;
 import android.media.AudioRecordingConfiguration;
+import android.media.MediaRecorder;
 import android.os.BatteryManager;
 import android.os.Handler;
 import android.os.Looper;
@@ -73,6 +74,9 @@ public class CutoutProgressController implements CoreStartable {
     private boolean mOverlayAttached = false;
     private boolean mBatteryReceiverRegistered = false;
     private NotifCollectionListener mNotifListener;
+    private boolean mDownloadTrackingEnabled = false;
+    private boolean mTimerTrackingEnabled = false;
+    private boolean mNotificationAuroraTrackingEnabled = false;
 
     private boolean mCallReceiverRegistered = false;
     private AudioManager mAudioManager;
@@ -127,7 +131,7 @@ public class CutoutProgressController implements CoreStartable {
             new AudioManager.AudioRecordingCallback() {
         @Override
         public void onRecordingConfigChanged(List<AudioRecordingConfiguration> configs) {
-            boolean active = configs != null && !configs.isEmpty();
+            boolean active = hasUserVisibleRecording(configs);
             runOnMain(() -> mRingView.setAuroraRecordingActive(active));
         }
     };
@@ -230,17 +234,44 @@ public class CutoutProgressController implements CoreStartable {
 
     private void enableFeature() {
         attachOverlay();
-        boolean needsPipeline =
-                mSettings.getDownloadPresentation()
-                        != CutoutProgressSettings.PRESENTATION_DISABLED
-                || mSettings.isTimerEnabled()
-                || (mSettings.isAuroraEnabled() && mSettings.isAuroraNotificationsEnabled());
-        if (needsPipeline) {
+
+        final boolean wantDownloadTracking = mSettings.getDownloadPresentation()
+                != CutoutProgressSettings.PRESENTATION_DISABLED;
+        final boolean wantTimerTracking = mSettings.isTimerEnabled();
+        final boolean wantNotificationAurora = mSettings.isAuroraEnabled()
+                && mSettings.isAuroraNotificationsEnabled();
+
+        final boolean startDownloadTracking =
+                wantDownloadTracking && !mDownloadTrackingEnabled;
+        final boolean stopDownloadTracking =
+                !wantDownloadTracking && mDownloadTrackingEnabled;
+        final boolean startTimerTracking =
+                wantTimerTracking && !mTimerTrackingEnabled;
+        final boolean stopTimerTracking =
+                !wantTimerTracking && mTimerTrackingEnabled;
+
+        mDownloadTrackingEnabled = wantDownloadTracking;
+        mTimerTrackingEnabled = wantTimerTracking;
+        mNotificationAuroraTrackingEnabled = wantNotificationAurora;
+
+        if (wantDownloadTracking || wantTimerTracking || wantNotificationAurora) {
             registerPipelineListener();
         } else {
             unregisterPipelineListener();
+        }
+
+        if (stopDownloadTracking) {
             mTracker.reset();
+        } else if (startDownloadTracking) {
+            mTracker.reset();
+            seedDownloadsFromPipeline();
+        }
+
+        if (stopTimerTracking) {
             clearTimerState();
+        } else if (startTimerTracking) {
+            clearTimerState();
+            seedTimerFromPipeline();
         }
 
         if (mSettings.isChargingRingEnabled() || mSettings.isBatteryIndicatorEnabled()) {
@@ -277,6 +308,9 @@ public class CutoutProgressController implements CoreStartable {
 
     private void disableFeature() {
         unregisterPipelineListener();
+        mDownloadTrackingEnabled = false;
+        mTimerTrackingEnabled = false;
+        mNotificationAuroraTrackingEnabled = false;
         if (mMusicController != null) {
             mMusicController.stop();
         }
@@ -337,32 +371,40 @@ public class CutoutProgressController implements CoreStartable {
             @Override
             public void onEntryAdded(NotificationEntry entry) {
                 if (!mSettings.isEnabled() || !isEntryForCurrentUser(entry)) return;
-                if (mSettings.getDownloadPresentation()
-                        != CutoutProgressSettings.PRESENTATION_DISABLED) {
+                if (mDownloadTrackingEnabled) {
                     mTracker.onNotificationChanged(entry);
                 }
-                updateTimerFromNotification(entry);
-                triggerNotificationAurora(entry);
+                if (mTimerTrackingEnabled) {
+                    updateTimerFromNotification(entry);
+                }
+                if (mNotificationAuroraTrackingEnabled) {
+                    triggerNotificationAurora(entry);
+                }
             }
 
             @Override
             public void onEntryUpdated(NotificationEntry entry) {
                 if (!mSettings.isEnabled() || !isEntryForCurrentUser(entry)) return;
-                if (mSettings.getDownloadPresentation()
-                        != CutoutProgressSettings.PRESENTATION_DISABLED) {
+                if (mDownloadTrackingEnabled) {
                     mTracker.onNotificationChanged(entry);
                 }
-                updateTimerFromNotification(entry);
+                if (mTimerTrackingEnabled) {
+                    boolean wasCurrent = entry.getSbn().getKey().equals(mTimerKey);
+                    long previousEnd = mTimerEndElapsedMs;
+                    updateTimerFromNotification(entry);
+                    if (wasCurrent && mTimerEndElapsedMs > previousEnd + 1000L) {
+                        seedTimerFromPipeline();
+                    }
+                }
             }
 
             @Override
             public void onEntryRemoved(NotificationEntry entry, int reason) {
                 if (!mSettings.isEnabled() || !isEntryForCurrentUser(entry)) return;
-                if (mSettings.getDownloadPresentation()
-                        != CutoutProgressSettings.PRESENTATION_DISABLED) {
+                if (mDownloadTrackingEnabled) {
                     mTracker.onNotificationRemoved(entry, reason);
                 }
-                if (entry != null && entry.getSbn() != null
+                if (mTimerTrackingEnabled && entry != null && entry.getSbn() != null
                         && entry.getSbn().getKey().equals(mTimerKey)) {
                     clearTimerState();
                     mMainHandler.post(CutoutProgressController.this::seedTimerFromPipeline);
@@ -371,22 +413,21 @@ public class CutoutProgressController implements CoreStartable {
         };
         mPipeline.addCollectionListener(mNotifListener);
 
-        // Collection listeners do not replay already-present notifications. Seed the tracker so
-        // enabling/re-enabling the feature during an active transfer works immediately.
-        for (NotificationEntry entry : mPipeline.getAllNotifs()) {
-            if (!isEntryForCurrentUser(entry)) continue;
-            if (mSettings.getDownloadPresentation()
-                    != CutoutProgressSettings.PRESENTATION_DISABLED) {
-                mTracker.onNotificationChanged(entry);
-            }
-            updateTimerFromNotification(entry);
-        }
     }
 
     private void unregisterPipelineListener() {
         if (mNotifListener == null) return;
         mPipeline.removeCollectionListener(mNotifListener);
         mNotifListener = null;
+    }
+
+    private void seedDownloadsFromPipeline() {
+        if (!mSettings.isEnabled() || !mDownloadTrackingEnabled) return;
+        for (NotificationEntry entry : mPipeline.getAllNotifs()) {
+            if (isEntryForCurrentUser(entry)) {
+                mTracker.onNotificationChanged(entry);
+            }
+        }
     }
 
     private void triggerNotificationAurora(NotificationEntry entry) {
@@ -620,11 +661,21 @@ public class CutoutProgressController implements CoreStartable {
         try {
             List<AudioRecordingConfiguration> configs =
                     mAudioManager != null ? mAudioManager.getActiveRecordingConfigurations() : null;
-            active = configs != null && !configs.isEmpty();
+            active = hasUserVisibleRecording(configs);
         } catch (RuntimeException ignored) {
         }
         final boolean recording = active;
         runOnMain(() -> mRingView.setAuroraRecordingActive(recording));
+    }
+
+    private boolean hasUserVisibleRecording(List<AudioRecordingConfiguration> configs) {
+        if (configs == null || configs.isEmpty()) return false;
+        for (AudioRecordingConfiguration config : configs) {
+            if (config == null || config.isClientSilenced()) continue;
+            if (config.getClientAudioSource() == MediaRecorder.AudioSource.HOTWORD) continue;
+            return true;
+        }
+        return false;
     }
 
     private void unregisterRecordingCallback() {

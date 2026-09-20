@@ -15,8 +15,13 @@ if [[ -z "$TARGET" ]]; then
     exit 2
 fi
 
-if [[ ! -d "$TARGET/.git" ]]; then
-    echo "Error: '$TARGET' is not a frameworks/base Git checkout." >&2
+if ! git -C "$TARGET" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "Error: '$TARGET' is not a Git worktree." >&2
+    exit 2
+fi
+
+if [[ "$(git -C "$TARGET" rev-parse --show-toplevel)" != "$(cd "$TARGET" && pwd -P)" ]]; then
+    echo "Error: '$TARGET' is not the root of the frameworks/base Git worktree." >&2
     exit 2
 fi
 

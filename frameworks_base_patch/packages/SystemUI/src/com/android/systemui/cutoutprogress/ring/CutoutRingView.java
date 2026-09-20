@@ -196,6 +196,7 @@ public final class CutoutRingView extends View {
     private boolean sCfgGlowEnabled;
     private float sCfgGlowRadiusDp;
 
+    private boolean sCfgMusicRingEnabled = false;
     private int sCfgMusicOpacity = 85;
     private float sCfgMusicStrokeDp = 2f;
     private boolean sCfgMusicClockwise = true;
@@ -268,8 +269,8 @@ public final class CutoutRingView extends View {
         @Override
         public void run() {
             mMusicWaveScheduled = false;
-            if (!mMusicPlaying || !sCfgMusicWaveEnabled || isMusicAuroraActive()
-                    || !isAttachedToWindow() || !mHasCutout) {
+            if (!mMusicPlaying || !sCfgMusicRingEnabled || !sCfgMusicWaveEnabled
+                    || isAuroraActiveNow() || !isAttachedToWindow() || !mHasCutout) {
                 return;
             }
 
@@ -295,6 +296,7 @@ public final class CutoutRingView extends View {
             long now = SystemClock.elapsedRealtime();
             if (mNotificationAuroraUntilMs > 0L && now >= mNotificationAuroraUntilMs) {
                 mNotificationAuroraUntilMs = 0L;
+                updateMusicWaveAnimation();
                 invalidate();
             }
 
@@ -310,7 +312,8 @@ public final class CutoutRingView extends View {
             invalidate();
 
             mVisualEffectScheduled = true;
-            postDelayed(this, nonInteractive ? 1000L : 33L);
+            long delay = nonInteractive ? 1000L : (isAuroraActiveNow() ? 33L : 83L);
+            postDelayed(this, delay);
         }
     };
 
@@ -377,6 +380,7 @@ public final class CutoutRingView extends View {
         sCfgMusicPresentation = s.getMusicPresentation();
         sCfgPrimaryPriority = s.getPrimaryPriority();
         sCfgMultiRingSpacingDp = s.getMultiRingSpacingDp();
+        sCfgMusicRingEnabled = s.isMusicRingEnabled();
         sCfgMusicWaveEnabled = s.isMusicWaveEnabled();
         sCfgMusicWaveAmplitudeDp = s.getMusicWaveAmplitudeDp();
         sCfgMusicWaveDensity = s.getMusicWaveDensity();
@@ -479,6 +483,7 @@ public final class CutoutRingView extends View {
     public void setAuroraCallActive(boolean active) {
         if (mAuroraCallActive == active) return;
         mAuroraCallActive = active;
+        updateMusicWaveAnimation();
         updateVisualEffectAnimation();
         if (mHasCutout) invalidate();
     }
@@ -486,6 +491,7 @@ public final class CutoutRingView extends View {
     public void setAuroraRecordingActive(boolean active) {
         if (mAuroraRecordingActive == active) return;
         mAuroraRecordingActive = active;
+        updateMusicWaveAnimation();
         updateVisualEffectAnimation();
         if (mHasCutout) invalidate();
     }
@@ -495,6 +501,7 @@ public final class CutoutRingView extends View {
         mNotificationAuroraColor = color;
         mNotificationAuroraUntilMs = SystemClock.elapsedRealtime()
                 + Math.max(250L, durationMs);
+        updateMusicWaveAnimation();
         updateVisualEffectAnimation();
         if (mHasCutout) invalidate();
     }
@@ -516,8 +523,8 @@ public final class CutoutRingView extends View {
     }
 
     private void updateMusicWaveAnimation() {
-        if (!mMusicPlaying || !sCfgMusicWaveEnabled || isMusicAuroraActive()
-                || !isAttachedToWindow() || !mHasCutout) {
+        if (!mMusicPlaying || !sCfgMusicRingEnabled || !sCfgMusicWaveEnabled
+                || isAuroraActiveNow() || !isAttachedToWindow() || !mHasCutout) {
             stopMusicWaveAnimation();
             return;
         }
@@ -537,11 +544,6 @@ public final class CutoutRingView extends View {
     private long musicWaveDurationMs() {
         long duration = (long) (2600f * 100f / Math.max(25, sCfgMusicWaveSpeed));
         return Math.max(700L, Math.min(8000L, duration));
-    }
-
-    private boolean isMusicAuroraActive() {
-        return sCfgAuroraEnabled && sCfgAuroraMusic && mMusicPlaying
-                && !isDisplayNonInteractive();
     }
 
     private boolean isNotificationAuroraActive() {
@@ -593,7 +595,7 @@ public final class CutoutRingView extends View {
     }
 
     private boolean shouldDrawMusicNow() {
-        return mMusicPlaying && mHasCutout
+        return sCfgMusicRingEnabled && mMusicPlaying && mHasCutout
                 && (!isDisplayNonInteractive()
                         || (sCfgMusicShowOnAod && isDisplayAod()));
     }
@@ -1115,7 +1117,7 @@ public final class CutoutRingView extends View {
             downloadActive = false;
         }
 
-        boolean musicActive = mMusicPlaying
+        boolean musicActive = sCfgMusicRingEnabled && mMusicPlaying
                 && (!isDisplayNonInteractive()
                         || (sCfgMusicShowOnAod && isDisplayAod()))
                 && sCfgMusicPresentation != CutoutProgressSettings.PRESENTATION_DISABLED;
@@ -1350,7 +1352,7 @@ public final class CutoutRingView extends View {
 
         mMusicPaint.setAlpha(sCfgMusicOpacity * 255 / 100);
         mRenderer.drawProgress(canvas, mMusicFraction, sCfgMusicClockwise, mMusicPaint);
-        if (sCfgMusicWaveEnabled && !isMusicAuroraActive()) {
+        if (sCfgMusicWaveEnabled && !isAuroraActiveNow()) {
             drawMusicWave(canvas);
         }
     }
@@ -1745,6 +1747,7 @@ public final class CutoutRingView extends View {
         sCfgMusicPresentation = CutoutProgressSettings.PRESENTATION_PRIMARY;
         sCfgPrimaryPriority = CutoutProgressSettings.PRIMARY_PRIORITY_DOWNLOAD;
         sCfgMultiRingSpacingDp = 3f;
+        sCfgMusicRingEnabled = false;
         sCfgMusicWaveEnabled = false;
         sCfgMusicWaveAmplitudeDp = 2.5f;
         sCfgMusicWaveDensity = 48;
