@@ -696,6 +696,12 @@ public final class CutoutRingView extends View {
 
         if (mHasCutout) {
             recalcScaledPath();
+            if (mIsCharging && mChargingPulseEnabled && sCfgChargingPulse
+                    && !mChargingPulseScheduled) {
+                startChargingPulse();
+            }
+        } else {
+            stopChargingPulse();
         }
         updateMusicWaveAnimation();
         invalidate();
