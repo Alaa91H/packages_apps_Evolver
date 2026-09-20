@@ -197,7 +197,7 @@ public final class MusicProgressTracker {
     }
 
     private void scheduleFrame() {
-        if (!mFrameScheduled && mIsPlaying && mDurationMs > 0) {
+        if (!mFrameScheduled && mStarted && mIsPlaying && mDurationMs > 0) {
             mFrameScheduled = true;
             long delay = mPowerManager != null && !mPowerManager.isInteractive()
                     ? UPDATE_INTERVAL_AMBIENT_MS
