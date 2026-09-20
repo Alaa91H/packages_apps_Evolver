@@ -18,10 +18,12 @@ package com.android.systemui.cutoutprogress;
 
 import android.app.Notification;
 import android.os.Bundle;
+import android.service.notification.NotificationListenerService;
+
+import java.util.Locale;
 
 import com.android.systemui.statusbar.notification.collection.NotificationEntry;
 
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -35,25 +37,15 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class DownloadStateTracker {
 
-    private static final long STALE_TIMEOUT_MS = 10 * 60 * 1000L;
     private static final int COMPLETE_THRESHOLD_PCT = 99;
     private static final int APP_CANCEL_COMPLETE_THRESHOLD_PCT = 90;
-
-    // NotificationListenerService cancellation reasons. Kept local to avoid depending on listener
-    // implementation details from SystemUI.
-    private static final int REASON_ERROR = 4;
-    private static final int REASON_APP_CANCEL = 8;
-    private static final int REASON_APP_CANCEL_ALL = 9;
 
     private static final class DownloadSnapshot {
         String label;
         int progress;
-        long updatedAt;
-
-        DownloadSnapshot(String label, int progress, long updatedAt) {
+        DownloadSnapshot(String label, int progress) {
             this.label = label;
             this.progress = progress;
-            this.updatedAt = updatedAt;
         }
     }
 
@@ -84,9 +76,6 @@ public final class DownloadStateTracker {
         final Bundle extras = notification.extras;
         if (extras == null) return;
 
-        final long now = System.currentTimeMillis();
-        pruneStale(now);
-
         final String id = entryKey(entry);
         final DownloadSnapshot existing = mActive.get(id);
 
@@ -95,15 +84,20 @@ public final class DownloadStateTracker {
         final boolean indeterminate =
                 extras.getBoolean(Notification.EXTRA_PROGRESS_INDETERMINATE, false);
 
-        final boolean hasProgressPayload =
+        final boolean hasAnyProgressPayload =
+                extras.containsKey(Notification.EXTRA_PROGRESS)
+                        || extras.containsKey(Notification.EXTRA_PROGRESS_MAX)
+                        || extras.containsKey(Notification.EXTRA_PROGRESS_INDETERMINATE);
+        final boolean hasDeterminatePayload =
                 extras.containsKey(Notification.EXTRA_PROGRESS)
                         && extras.containsKey(Notification.EXTRA_PROGRESS_MAX);
         final boolean ongoing =
                 (notification.flags & Notification.FLAG_ONGOING_EVENT) != 0;
         final boolean progressCategory =
                 Notification.CATEGORY_PROGRESS.equals(notification.category);
+        final boolean looksLikeProgress = ongoing || progressCategory;
 
-        final boolean determinate = hasProgressPayload && !indeterminate
+        final boolean determinate = hasDeterminatePayload && !indeterminate
                 && rawProgress >= 0 && rawMax > 0;
         final int pct = determinate
                 ? clamp((int) (((long) rawProgress * 100L) / rawMax), 0, 100)
@@ -116,24 +110,25 @@ public final class DownloadStateTracker {
                 mActive.remove(id);
                 notifyCountChanged();
                 publishAggregated();
-                fireComplete();
+                // A shared ring represents the aggregate transfer state. Do not play a global
+                // completion animation while another tracked transfer is still active.
+                if (mActive.isEmpty()) fireComplete();
             }
             return;
         }
 
-        // Ignore unrelated transient progress payloads. If a transfer that we were already
-        // tracking changes shape, remove it quietly rather than pretending it completed.
-        if (!hasProgressPayload || (!ongoing && !progressCategory)) {
+        // Ignore unrelated transient payloads. If a notification we tracked stops looking like a
+        // progress operation altogether, remove it quietly rather than pretending it completed.
+        if (!hasAnyProgressPayload || !looksLikeProgress) {
             removeQuietly(id);
             return;
         }
 
-        // A tracked download can temporarily switch to indeterminate progress while reconnecting
-        // or preparing the next stage. Keep its last known percentage alive instead of firing a
-        // completion animation.
+        // A tracked transfer may legitimately drop EXTRA_PROGRESS_MAX while switching to an
+        // indeterminate/reconnecting stage. Preserve its last determinate percentage until the
+        // notification becomes determinate again or is actually removed.
         if (!determinate) {
             if (existing != null) {
-                existing.updatedAt = now;
                 String label = title(extras);
                 if (label != null) existing.label = label;
                 publishAggregated();
@@ -144,11 +139,10 @@ public final class DownloadStateTracker {
         final String label = title(extras);
 
         if (existing == null) {
-            mActive.put(id, new DownloadSnapshot(label, pct, now));
+            mActive.put(id, new DownloadSnapshot(label, pct));
             notifyCountChanged();
         } else {
             existing.progress = pct;
-            existing.updatedAt = now;
             if (label != null && !Objects.equals(label, existing.label)) {
                 existing.label = label;
             }
@@ -166,11 +160,14 @@ public final class DownloadStateTracker {
         notifyCountChanged();
         publishAggregated();
 
+        if (!mActive.isEmpty()) return;
+
         if (snap.progress >= COMPLETE_THRESHOLD_PCT
-                || ((reason == REASON_APP_CANCEL || reason == REASON_APP_CANCEL_ALL)
+                || ((reason == NotificationListenerService.REASON_APP_CANCEL
+                        || reason == NotificationListenerService.REASON_APP_CANCEL_ALL)
                         && snap.progress >= APP_CANCEL_COMPLETE_THRESHOLD_PCT)) {
             fireComplete();
-        } else if (reason == REASON_ERROR) {
+        } else if (reason == NotificationListenerService.REASON_ERROR) {
             fireError();
         }
     }
@@ -188,21 +185,6 @@ public final class DownloadStateTracker {
 
     private void removeQuietly(String id) {
         if (mActive.remove(id) != null) {
-            notifyCountChanged();
-            publishAggregated();
-        }
-    }
-
-    private void pruneStale(long now) {
-        boolean changed = false;
-        for (Map.Entry<String, DownloadSnapshot> e : mActive.entrySet()) {
-            DownloadSnapshot snap = e.getValue();
-            if (now - snap.updatedAt > STALE_TIMEOUT_MS
-                    && mActive.remove(e.getKey(), snap)) {
-                changed = true;
-            }
-        }
-        if (changed) {
             notifyCountChanged();
             publishAggregated();
         }
@@ -229,7 +211,7 @@ public final class DownloadStateTracker {
 
         String label = null;
         if (best != null && best.label != null
-                && !best.label.toLowerCase().contains("untitled")) {
+                && !best.label.toLowerCase(Locale.ROOT).contains("untitled")) {
             label = best.label;
         }
         fire(mOnLabelChanged, label);
