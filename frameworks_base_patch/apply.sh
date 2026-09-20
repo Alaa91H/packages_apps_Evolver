@@ -29,10 +29,14 @@ declare -A EXPECTED=(
     ["packages/SystemUI/src/com/android/systemui/cutoutprogress/MusicProgressTracker.java"]="e7d0f4889476f8be9ae8cbd44dffb3e98e5ba860"
     ["packages/SystemUI/src/com/android/systemui/cutoutprogress/ring/CutoutRingView.java"]="bf86929ae363d2895421d65ed8fd50a79e62c70e"
     ["packages/SystemUI/src/com/android/systemui/cutoutprogress/ring/OverlayAnimationHelper.java"]="f20b562ba6f4ee449cffd9af3af39529b0e47762"
+    ["packages/SystemUI/src/com/android/systemui/cutoutprogress/ring/RingViewRenderer.java"]="26ef233598b088413ca4e25118fce1cea0e7cb93"
+    ["packages/SystemUI/src/com/android/systemui/cutoutprogress/ring/CircleRingRenderer.java"]="1cda0ec70db67d068ca1848a27a86384d59cc7e8"
+    ["packages/SystemUI/src/com/android/systemui/cutoutprogress/ring/CapsuleRingRenderer.java"]="e100dde1ba48a124a378dbba34c5bd3ad577e368"
 )
 
 NEW_FILES=(
     "packages/SystemUI/src/com/android/systemui/cutoutprogress/ring/CameraCutoutGeometryResolver.java"
+    "packages/SystemUI/src/com/android/systemui/cutoutprogress/ring/PathRingRenderer.java"
 )
 
 echo "Checking frameworks/base cutout-progress baseline..."
