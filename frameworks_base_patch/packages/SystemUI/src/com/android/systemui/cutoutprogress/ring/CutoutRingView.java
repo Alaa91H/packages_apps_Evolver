@@ -34,6 +34,7 @@ import android.text.TextPaint;
 import android.util.TypedValue;
 import android.view.Display;
 import android.view.DisplayCutout;
+import android.os.SystemClock;
 import android.view.Surface;
 import android.view.View;
 import android.view.WindowInsets;
@@ -126,7 +127,8 @@ public final class CutoutRingView extends View {
     private boolean mMusicPlaying = false;
     private float mMusicFraction = 0f;
     private float mMusicWavePhase = 0f;
-    private ValueAnimator mMusicWaveAnim = null;
+    private boolean mMusicWaveScheduled = false;
+    private long mMusicWaveEpochMs = 0L;
 
     private int sCfgRingColorMode;
     private int sCfgRingColor;
@@ -189,6 +191,29 @@ public final class CutoutRingView extends View {
     private float sCfgMusicWaveAmplitudeDp = 2.5f;
     private int sCfgMusicWaveDensity = 48;
     private int sCfgMusicWaveSpeed = 100;
+
+    private final Runnable mMusicWaveTick = new Runnable() {
+        @Override
+        public void run() {
+            mMusicWaveScheduled = false;
+            if (!mMusicPlaying || !sCfgMusicWaveEnabled || !isAttachedToWindow() || !mHasCutout) {
+                return;
+            }
+
+            boolean dozing = isDisplayDozing();
+            if (!dozing || sCfgMusicShowOnAod) {
+                long duration = musicWaveDurationMs();
+                long elapsed = Math.max(0L, SystemClock.elapsedRealtime() - mMusicWaveEpochMs);
+                mMusicWavePhase = (float) ((elapsed % duration)
+                        * (Math.PI * 2.0) / duration);
+                invalidate();
+            }
+
+            long delay = dozing ? 1000L : 33L;
+            mMusicWaveScheduled = true;
+            postDelayed(this, delay);
+        }
+    };
 
     public CutoutRingView(Context ctx) {
         super(ctx);
@@ -297,21 +322,21 @@ public final class CutoutRingView extends View {
         if (sCfgMusicColor == argb) return;
         sCfgMusicColor = argb;
         refreshMusicPaint();
-        if (mMusicPlaying) invalidate();
+        if (shouldDrawMusicNow()) invalidate();
     }
 
     public void setMusicProgress(float fraction) {
         fraction = Math.max(0f, Math.min(1f, fraction));
         if (mMusicFraction == fraction) return;
         mMusicFraction = fraction;
-        if (mMusicPlaying) invalidate();
+        if (shouldDrawMusicNow()) invalidate();
     }
 
     public void setMusicPlaying(boolean playing) {
         if (mMusicPlaying == playing) return;
         mMusicPlaying = playing;
         updateMusicWaveAnimation();
-        invalidate();
+        if (mHasCutout) invalidate();
     }
 
     private void restartMusicWaveAnimation() {
@@ -320,32 +345,31 @@ public final class CutoutRingView extends View {
     }
 
     private void updateMusicWaveAnimation() {
-        if (!mMusicPlaying || !sCfgMusicWaveEnabled) {
+        if (!mMusicPlaying || !sCfgMusicWaveEnabled || !isAttachedToWindow() || !mHasCutout) {
             stopMusicWaveAnimation();
             return;
         }
-        if (mMusicWaveAnim != null) return;
-
-        long duration = (long) (2600f * 100f / Math.max(25, sCfgMusicWaveSpeed));
-        duration = Math.max(700L, Math.min(8000L, duration));
-        mMusicWaveAnim = ValueAnimator.ofFloat(0f, (float) (Math.PI * 2.0));
-        mMusicWaveAnim.setDuration(duration);
-        mMusicWaveAnim.setRepeatCount(ValueAnimator.INFINITE);
-        mMusicWaveAnim.setRepeatMode(ValueAnimator.RESTART);
-        mMusicWaveAnim.setInterpolator(new LinearInterpolator());
-        mMusicWaveAnim.addUpdateListener(a -> {
-            mMusicWavePhase = (float) a.getAnimatedValue();
-            invalidate();
-        });
-        mMusicWaveAnim.start();
+        if (mMusicWaveScheduled) return;
+        if (mMusicWaveEpochMs <= 0L) mMusicWaveEpochMs = SystemClock.elapsedRealtime();
+        mMusicWaveScheduled = true;
+        post(mMusicWaveTick);
     }
 
     private void stopMusicWaveAnimation() {
-        if (mMusicWaveAnim != null) {
-            mMusicWaveAnim.cancel();
-            mMusicWaveAnim = null;
-        }
+        removeCallbacks(mMusicWaveTick);
+        mMusicWaveScheduled = false;
+        mMusicWaveEpochMs = 0L;
         mMusicWavePhase = 0f;
+    }
+
+    private long musicWaveDurationMs() {
+        long duration = (long) (2600f * 100f / Math.max(25, sCfgMusicWaveSpeed));
+        return Math.max(700L, Math.min(8000L, duration));
+    }
+
+    private boolean shouldDrawMusicNow() {
+        return mMusicPlaying && mHasCutout
+                && (sCfgMusicShowOnAod || !isDisplayDozing());
     }
 
     private int resolveRingColor() {
@@ -645,6 +669,7 @@ public final class CutoutRingView extends View {
         if (mHasCutout) {
             recalcScaledPath();
         }
+        updateMusicWaveAnimation();
         invalidate();
         return super.onApplyWindowInsets(insets);
     }
