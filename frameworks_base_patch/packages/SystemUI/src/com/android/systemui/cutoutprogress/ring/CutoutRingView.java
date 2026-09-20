@@ -761,6 +761,11 @@ public final class CutoutRingView extends View {
         if (mChargingLevelAnim != null) mChargingLevelAnim.cancel();
         float start = mChargingDisplayPct;
         float end = Math.max(0f, Math.min(100f, targetPct));
+        if (isDisplayNonInteractive()) {
+            mChargingDisplayPct = end;
+            invalidate();
+            return;
+        }
         if (Math.abs(end - start) < 0.5f) {
             mChargingDisplayPct = end;
             invalidate();
@@ -809,6 +814,11 @@ public final class CutoutRingView extends View {
         if (mBatteryLevelAnim != null) mBatteryLevelAnim.cancel();
         float start = mBatteryDisplayPct;
         float end   = Math.max(0f, Math.min(100f, targetPct));
+        if (isDisplayNonInteractive()) {
+            mBatteryDisplayPct = end;
+            invalidate();
+            return;
+        }
         if (Math.abs(end - start) < 0.5f) {
             mBatteryDisplayPct = end;
             invalidate();
