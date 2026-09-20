@@ -75,7 +75,7 @@ public final class MusicRingController {
             mColorManager.setCustomColor(mSettings.getMusicCustomColor());
         }
 
-        mTracker = new MusicProgressTracker(mHelper, new MusicProgressTracker.Callbacks() {
+        mTracker = new MusicProgressTracker(mContext, mHelper, new MusicProgressTracker.Callbacks() {
 
             @Override
             public void onMusicProgress(float fraction) {
