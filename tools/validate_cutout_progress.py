@@ -236,7 +236,7 @@ def normalize_default(value: str) -> int:
 
 def validate_calibrated_defaults() -> None:
     text = EVOLVER_FRAGMENT.read_text(encoding="utf-8")
-    key_constants = dict(re.findall(r'private const val (KEY_[A-Z0-9_]+)\\s*=\\s*"([^"]+)"', text))
+    key_constants = dict(re.findall(r'private const val (KEY_[A-Z0-9_]+)\s*=\s*"([^"]+)"', text))
     default_constants = dict(re.findall(r"private const val (DEFAULT_[A-Z0-9_]+) = ([^\r\n]+)", text))
 
     pairs = {
