@@ -151,7 +151,17 @@ public class CutoutProgressController implements CoreStartable {
         @Override
         public void onRecordingConfigChanged(List<AudioRecordingConfiguration> configs) {
             boolean active = hasUserVisibleRecording(configs);
-            runOnMain(() -> mRingView.setAuroraRecordingActive(active));
+            runOnMain(() -> {
+                // A callback already queued on the main handler can outlive unregistering the
+                // AudioRecordingCallback during a settings change/user switch. Never let that
+                // stale callback reactivate Aurora after recording tracking has been disabled.
+                if (mRecordingCallbackRegistered && mSettings.isEnabled()
+                        && mSettings.isAuroraEnabled()
+                        && mSettings.isAuroraRecordingEnabled()
+                        && mRingView != null) {
+                    mRingView.setAuroraRecordingActive(active);
+                }
+            });
         }
     };
 
@@ -820,7 +830,14 @@ public class CutoutProgressController implements CoreStartable {
         } catch (RuntimeException ignored) {
         }
         final boolean recording = active;
-        runOnMain(() -> mRingView.setAuroraRecordingActive(recording));
+        runOnMain(() -> {
+            if (mRecordingCallbackRegistered && mSettings.isEnabled()
+                    && mSettings.isAuroraEnabled()
+                    && mSettings.isAuroraRecordingEnabled()
+                    && mRingView != null) {
+                mRingView.setAuroraRecordingActive(recording);
+            }
+        });
     }
 
     private boolean hasUserVisibleRecording(List<AudioRecordingConfiguration> configs) {
