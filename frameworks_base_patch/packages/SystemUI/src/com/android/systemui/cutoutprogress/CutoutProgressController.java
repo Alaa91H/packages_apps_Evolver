@@ -20,10 +20,12 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.UserInfo;
 import android.graphics.PixelFormat;
 import android.os.BatteryManager;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.UserHandle;
 import android.view.WindowManager;
 
 import com.android.systemui.CoreStartable;
@@ -255,7 +257,9 @@ public class CutoutProgressController implements CoreStartable {
         mNotifListener = new NotifCollectionListener() {
             @Override
             public void onEntryAdded(NotificationEntry entry) {
-                if (mSettings.isEnabled()) mTracker.onNotificationChanged(entry);
+                if (mSettings.isEnabled() && isEntryForCurrentUser(entry)) {
+                    mTracker.onNotificationChanged(entry);
+                }
             }
 
             @Override
@@ -265,7 +269,9 @@ public class CutoutProgressController implements CoreStartable {
 
             @Override
             public void onEntryRemoved(NotificationEntry entry, int reason) {
-                if (mSettings.isEnabled()) mTracker.onNotificationRemoved(entry, reason);
+                if (mSettings.isEnabled() && isEntryForCurrentUser(entry)) {
+                    mTracker.onNotificationRemoved(entry, reason);
+                }
             }
         };
         mPipeline.addCollectionListener(mNotifListener);
@@ -273,7 +279,9 @@ public class CutoutProgressController implements CoreStartable {
         // Collection listeners do not replay already-present notifications. Seed the tracker so
         // enabling/re-enabling the feature during an active transfer works immediately.
         for (NotificationEntry entry : mPipeline.getAllNotifs()) {
-            mTracker.onNotificationChanged(entry);
+            if (isEntryForCurrentUser(entry)) {
+                mTracker.onNotificationChanged(entry);
+            }
         }
     }
 
@@ -281,6 +289,20 @@ public class CutoutProgressController implements CoreStartable {
         if (mNotifListener == null) return;
         mPipeline.removeCollectionListener(mNotifListener);
         mNotifListener = null;
+    }
+
+    private boolean isEntryForCurrentUser(NotificationEntry entry) {
+        if (entry == null || entry.getSbn() == null || entry.getSbn().getUser() == null) {
+            return false;
+        }
+        int entryUser = entry.getSbn().getUser().getIdentifier();
+        if (entryUser == UserHandle.USER_ALL || entryUser == mUserTracker.getUserId()) {
+            return true;
+        }
+        for (UserInfo profile : mUserTracker.getUserProfiles()) {
+            if (profile != null && profile.id == entryUser) return true;
+        }
+        return false;
     }
 
     private void registerBatteryReceiver() {
