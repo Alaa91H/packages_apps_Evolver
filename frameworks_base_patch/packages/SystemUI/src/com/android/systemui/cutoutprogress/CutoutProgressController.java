@@ -894,20 +894,35 @@ public class CutoutProgressController implements CoreStartable {
     }
 
     private void registerBatteryReceiver() {
-        try {
-            if (mBatteryReceiverRegistered) {
-                // Re-evaluate immediately when settings change; ACTION_BATTERY_CHANGED is sticky.
+        if (mBatteryReceiverRegistered) {
+            // Re-evaluate immediately when settings change; ACTION_BATTERY_CHANGED is sticky.
+            try {
                 Intent sticky = mContext.registerReceiver(null,
                         new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
                 if (sticky != null) mBatteryReceiver.onReceive(mContext, sticky);
-                return;
+            } catch (RuntimeException ignored) {
+                // The real receiver is still registered; do not desynchronize the lifecycle flag.
             }
-            IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-            Intent sticky = mContext.registerReceiver(mBatteryReceiver, filter);
+            return;
+        }
+
+        final Intent sticky;
+        try {
+            sticky = mContext.registerReceiver(
+                    mBatteryReceiver, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
             mBatteryReceiverRegistered = true;
-            if (sticky != null) mBatteryReceiver.onReceive(mContext, sticky);
         } catch (RuntimeException ignored) {
             mBatteryReceiverRegistered = false;
+            return;
+        }
+
+        if (sticky != null) {
+            try {
+                mBatteryReceiver.onReceive(mContext, sticky);
+            } catch (RuntimeException ignored) {
+                // Keep the successfully registered receiver. A future battery broadcast can
+                // recover the visual state without requiring a duplicate registration.
+            }
         }
     }
 
