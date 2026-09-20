@@ -271,6 +271,7 @@ public final class CutoutRingView extends View {
         public void run() {
             mMusicWaveScheduled = false;
             if (!mMusicPlaying || !sCfgMusicRingEnabled || !sCfgMusicWaveEnabled
+                    || sCfgMusicPresentation == CutoutProgressSettings.PRESENTATION_DISABLED
                     || isAuroraActiveNow() || !isAttachedToWindow() || !mHasCutout) {
                 return;
             }
@@ -341,6 +342,37 @@ public final class CutoutRingView extends View {
     }
 
     public void applySettings(CutoutProgressSettings s) {
+        final boolean geometryChanged =
+                sCfgAutoGeometry != s.isAutoGeometryEnabled()
+                || sCfgPathMode != s.isPathMode()
+                || Float.compare(sCfgRingGap, s.getRingGap()) != 0
+                || Float.compare(sCfgStrokeDp, s.getStrokeWidthDp()) != 0
+                || Float.compare(sCfgScaleX, s.getRingScaleX()) != 0
+                || Float.compare(sCfgScaleY, s.getRingScaleY()) != 0
+                || Float.compare(sCfgOffsetXDp, s.getRingOffsetXDp()) != 0
+                || Float.compare(sCfgOffsetYDp, s.getRingOffsetYDp()) != 0;
+        final boolean musicAnimationPolicyChanged =
+                sCfgMusicRingEnabled != s.isMusicRingEnabled()
+                || sCfgMusicWaveEnabled != s.isMusicWaveEnabled()
+                || Float.compare(sCfgMusicWaveAmplitudeDp, s.getMusicWaveAmplitudeDp()) != 0
+                || sCfgMusicWaveDensity != s.getMusicWaveDensity()
+                || sCfgMusicWaveSpeed != s.getMusicWaveSpeed()
+                || sCfgMusicShowOnAod != s.isMusicShowOnAod()
+                || sCfgMusicPresentation != s.getMusicPresentation();
+        final boolean visualAnimationPolicyChanged =
+                sCfgTimerEnabled != s.isTimerEnabled()
+                || sCfgTimerPresentation != s.getTimerPresentation()
+                || sCfgTimerFlameEnabled != s.isTimerFlameEnabled()
+                || sCfgAuroraEnabled != s.isAuroraEnabled()
+                || sCfgAuroraCalls != s.isAuroraCallsEnabled()
+                || sCfgAuroraMusic != s.isAuroraMusicEnabled()
+                || sCfgAuroraRecording != s.isAuroraRecordingEnabled()
+                || sCfgAuroraNotifications != s.isAuroraNotificationsEnabled()
+                || sCfgAuroraSpeed != s.getAuroraSpeed();
+        final boolean chargingAnimationPolicyChanged =
+                sCfgChargingRing != s.isChargingRingEnabled()
+                || sCfgChargingPulse != s.isChargingPulseEnabled();
+
         sCfgRingColorMode = s.getRingColorMode();
         sCfgRingColor = s.getRingColor();
         sCfgErrorColor = s.getErrorColor();
@@ -422,12 +454,21 @@ public final class CutoutRingView extends View {
         sCfgAuroraOpacity = s.getAuroraOpacity();
         sCfgAuroraSpeed = s.getAuroraSpeed();
 
-        updateRendererForGeometry();
+        if (geometryChanged) {
+            updateRendererForGeometry();
+        }
 
         if (!sCfgChargingRing && mIsCharging) {
             stopChargingAnimations();
         }
         mChargingPulseEnabled = sCfgChargingPulse;
+        if (chargingAnimationPolicyChanged) {
+            if (!sCfgChargingRing || !sCfgChargingPulse || isDisplayNonInteractive()) {
+                stopChargingPulse();
+            } else if (mIsCharging && !mChargingPulseScheduled) {
+                startChargingPulse();
+            }
+        }
 
         if (sCfgRingColorMode != CutoutProgressSettings.RING_COLOR_MODE_RAINBOW) {
             mRainbowShader = null;
@@ -435,15 +476,23 @@ public final class CutoutRingView extends View {
         }
 
         refreshPaints();
-        recalcScaledPath();
+        if (geometryChanged) {
+            recalcScaledPath();
+        }
         applyMusicSettings(
                 s.getMusicOpacity(),
                 s.getMusicStrokeWidthDp(),
                 s.isMusicClockwise(),
                 sCfgMusicColor);
-        restartMusicWaveAnimation();
-        restartVisualEffectAnimation();
-        requestApplyInsets();
+        if (musicAnimationPolicyChanged) {
+            restartMusicWaveAnimation();
+        }
+        if (visualAnimationPolicyChanged) {
+            restartVisualEffectAnimation();
+        }
+        if (geometryChanged) {
+            requestApplyInsets();
+        }
         invalidate();
     }
 
@@ -557,6 +606,7 @@ public final class CutoutRingView extends View {
         boolean nonInteractive = isDisplayNonInteractive();
         boolean visibleWhileIdle = sCfgMusicShowOnAod && isDisplayAod();
         if (!mMusicPlaying || !sCfgMusicRingEnabled || !sCfgMusicWaveEnabled
+                || sCfgMusicPresentation == CutoutProgressSettings.PRESENTATION_DISABLED
                 || isAuroraActiveNow() || !isAttachedToWindow() || !mHasCutout
                 || (nonInteractive && !visibleWhileIdle)) {
             stopMusicWaveAnimation();
@@ -630,6 +680,7 @@ public final class CutoutRingView extends View {
 
     private boolean shouldDrawMusicNow() {
         return sCfgMusicRingEnabled && mMusicPlaying && mHasCutout
+                && sCfgMusicPresentation != CutoutProgressSettings.PRESENTATION_DISABLED
                 && (!isDisplayNonInteractive()
                         || (sCfgMusicShowOnAod && isDisplayAod()));
     }
