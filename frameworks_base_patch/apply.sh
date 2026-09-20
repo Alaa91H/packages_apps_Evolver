@@ -28,6 +28,7 @@ declare -A EXPECTED=(
     ["packages/SystemUI/src/com/android/systemui/cutoutprogress/MusicRingColorManager.java"]="8f4a35dc22a2ae4f876d17308f6d83e8e99775e7"
     ["packages/SystemUI/src/com/android/systemui/cutoutprogress/MusicProgressTracker.java"]="e7d0f4889476f8be9ae8cbd44dffb3e98e5ba860"
     ["packages/SystemUI/src/com/android/systemui/cutoutprogress/ring/CutoutRingView.java"]="bf86929ae363d2895421d65ed8fd50a79e62c70e"
+    ["packages/SystemUI/src/com/android/systemui/cutoutprogress/ring/OverlayAnimationHelper.java"]="f20b562ba6f4ee449cffd9af3af39529b0e47762"
 )
 
 NEW_FILES=(
