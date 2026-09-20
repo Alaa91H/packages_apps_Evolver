@@ -1799,7 +1799,6 @@ public final class CutoutRingView extends View {
                 break;
         }
     }
-    }
 
     private void initPaints() {
         sCfgRingColorMode = CutoutProgressSettings.RING_COLOR_MODE_ACCENT;
