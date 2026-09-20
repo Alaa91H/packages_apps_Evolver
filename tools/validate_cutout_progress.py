@@ -18,6 +18,7 @@ APPLY_SCRIPT = PATCH_ROOT / "apply.sh"
 CUTOUT_XML = ROOT / "res/xml/cutout_progress_settings.xml"
 EVOLVER_FRAGMENT = ROOT / "src/org/evolution/settings/fragments/statusbar/CutoutProgressSettingsFragment.kt"
 SYSUI_SETTINGS = PATCH_ROOT / "packages/SystemUI/src/com/android/systemui/cutoutprogress/CutoutProgressSettings.java"
+RING_ROUTER = PATCH_ROOT / "packages/SystemUI/src/com/android/systemui/cutoutprogress/ring/RingRouter.java"
 SYSUI_MANIFEST = PATCH_ROOT / "packages/SystemUI/AndroidManifest.xml"
 UPSTREAM_RAW = "https://raw.githubusercontent.com/Evolution-X/frameworks_base/cnb/"
 ANDROID_NS = "http://schemas.android.com/apk/res/android"
@@ -316,6 +317,174 @@ def validate_sources() -> None:
     run(["git", "diff", "--check", "refs/remotes/evolution-upstream/cnb", "HEAD"], cwd=ROOT)
 
 
+def validate_ring_router_behavior() -> None:
+    """Compile and execute the pure Java ring-routing policy with deterministic scenarios."""
+    router_text = RING_ROUTER.read_text(encoding="utf-8")
+    settings_stub = """package com.android.systemui.cutoutprogress;
+
+public final class CutoutProgressSettings {
+    public static final int PRESENTATION_PRIMARY = 0;
+    public static final int PRESENTATION_INDEPENDENT = 1;
+    public static final int PRESENTATION_DISABLED = 2;
+    public static final int PRIMARY_PRIORITY_DOWNLOAD = 0;
+    public static final int PRIMARY_PRIORITY_MUSIC = 1;
+    public static final int PRIMARY_PRIORITY_TIMER = 2;
+}
+"""
+
+    harness = """package com.android.systemui.cutoutprogress.ring;
+
+import com.android.systemui.cutoutprogress.CutoutProgressSettings;
+
+public final class RingRouterHarness {
+    private static void check(boolean condition, String message) {
+        if (!condition) throw new AssertionError(message);
+    }
+
+    private static RingRouter.Result resolve(
+            boolean preview,
+            boolean download,
+            boolean music,
+            boolean timer,
+            boolean forceDownload,
+            int downloadPresentation,
+            int musicPresentation,
+            int timerPresentation,
+            int priority,
+            boolean charging,
+            boolean chargingRing,
+            boolean battery) {
+        RingRouter.Result out = new RingRouter.Result();
+        RingRouter.resolve(
+                out,
+                preview,
+                download,
+                music,
+                timer,
+                forceDownload,
+                downloadPresentation,
+                musicPresentation,
+                timerPresentation,
+                priority,
+                charging,
+                chargingRing,
+                battery);
+        return out;
+    }
+
+    public static void main(String[] args) {
+        RingRouter.Result result = resolve(
+                false, true, true, false, false,
+                CutoutProgressSettings.PRESENTATION_PRIMARY,
+                CutoutProgressSettings.PRESENTATION_PRIMARY,
+                CutoutProgressSettings.PRESENTATION_DISABLED,
+                CutoutProgressSettings.PRIMARY_PRIORITY_MUSIC,
+                false, false, false);
+        check(result.primarySource == RingRouter.SOURCE_MUSIC,
+                "preferred active primary source must win");
+
+        result = resolve(
+                false, true, true, true, true,
+                CutoutProgressSettings.PRESENTATION_PRIMARY,
+                CutoutProgressSettings.PRESENTATION_PRIMARY,
+                CutoutProgressSettings.PRESENTATION_PRIMARY,
+                CutoutProgressSettings.PRIMARY_PRIORITY_TIMER,
+                false, false, false);
+        check(result.primarySource == RingRouter.SOURCE_DOWNLOAD,
+                "download completion/error must force the primary lane");
+
+        result = resolve(
+                false, true, true, true, false,
+                CutoutProgressSettings.PRESENTATION_INDEPENDENT,
+                CutoutProgressSettings.PRESENTATION_INDEPENDENT,
+                CutoutProgressSettings.PRESENTATION_INDEPENDENT,
+                CutoutProgressSettings.PRIMARY_PRIORITY_TIMER,
+                false, false, false);
+        check(result.primarySource == RingRouter.SOURCE_NONE,
+                "independent-only sources must not claim the primary lane");
+        check(result.independentCount == 3,
+                "three independent sources must produce three lanes");
+        check(result.independentSourceAt(0) == RingRouter.SOURCE_TIMER,
+                "preferred independent source must be outer-lane ordering anchor");
+        check(result.independentSourceAt(1) == RingRouter.SOURCE_DOWNLOAD,
+                "remaining independent sources must keep deterministic ordering");
+        check(result.independentSourceAt(2) == RingRouter.SOURCE_MUSIC,
+                "remaining independent sources must keep deterministic ordering");
+
+        result = resolve(
+                true, true, true, true, false,
+                CutoutProgressSettings.PRESENTATION_INDEPENDENT,
+                CutoutProgressSettings.PRESENTATION_INDEPENDENT,
+                CutoutProgressSettings.PRESENTATION_INDEPENDENT,
+                CutoutProgressSettings.PRIMARY_PRIORITY_MUSIC,
+                false, false, false);
+        check(result.primarySource == RingRouter.SOURCE_DOWNLOAD,
+                "preview must own the primary ring");
+        check(result.independentCount == 2,
+                "preview suppresses only the download independent lane");
+
+        result = resolve(
+                false, false, false, false, false,
+                CutoutProgressSettings.PRESENTATION_DISABLED,
+                CutoutProgressSettings.PRESENTATION_DISABLED,
+                CutoutProgressSettings.PRESENTATION_DISABLED,
+                CutoutProgressSettings.PRIMARY_PRIORITY_DOWNLOAD,
+                true, true, true);
+        check(result.primarySource == RingRouter.SOURCE_CHARGING,
+                "charging must be the first idle primary fallback");
+
+        result = resolve(
+                false, false, false, false, false,
+                CutoutProgressSettings.PRESENTATION_DISABLED,
+                CutoutProgressSettings.PRESENTATION_DISABLED,
+                CutoutProgressSettings.PRESENTATION_DISABLED,
+                CutoutProgressSettings.PRIMARY_PRIORITY_DOWNLOAD,
+                false, false, true);
+        check(result.primarySource == RingRouter.SOURCE_BATTERY,
+                "battery indicator must be the idle fallback when not charging");
+
+        result = resolve(
+                false, false, false, false, false,
+                CutoutProgressSettings.PRESENTATION_DISABLED,
+                CutoutProgressSettings.PRESENTATION_DISABLED,
+                CutoutProgressSettings.PRESENTATION_DISABLED,
+                CutoutProgressSettings.PRIMARY_PRIORITY_DOWNLOAD,
+                false, false, false);
+        check(!result.hasRings(), "fully inactive routing must stay empty");
+
+        float nonOverlap = RingRouter.nextLaneOffsetDp(0f, 8f, 6f, 2f);
+        check(Math.abs(nonOverlap - 7.75f) < 0.001f,
+                "lane spacing must prevent thick ring overlap");
+        float configured = RingRouter.nextLaneOffsetDp(0f, 2f, 2f, 10f);
+        check(Math.abs(configured - 10f) < 0.001f,
+                "configured spacing must win when it is larger");
+    }
+}
+"""
+
+    with tempfile.TemporaryDirectory(prefix="evolver-ring-router-") as tmp:
+        root = Path(tmp)
+        settings_path = root / "com/android/systemui/cutoutprogress/CutoutProgressSettings.java"
+        router_path = root / "com/android/systemui/cutoutprogress/ring/RingRouter.java"
+        harness_path = root / "com/android/systemui/cutoutprogress/ring/RingRouterHarness.java"
+        classes = root / "classes"
+        for source in (settings_path, router_path, harness_path):
+            source.parent.mkdir(parents=True, exist_ok=True)
+        settings_path.write_text(settings_stub, encoding="utf-8")
+        router_path.write_text(router_text, encoding="utf-8")
+        harness_path.write_text(harness, encoding="utf-8")
+        classes.mkdir()
+
+        run([
+            "javac", "-d", str(classes),
+            str(settings_path), str(router_path), str(harness_path),
+        ])
+        run([
+            "java", "-cp", str(classes),
+            "com.android.systemui.cutoutprogress.ring.RingRouterHarness",
+        ])
+
+
 def git_blob_sha(data: bytes) -> str:
     header = f"blob {len(data)}\0".encode("ascii")
     return hashlib.sha1(header + data).hexdigest()
@@ -483,6 +652,7 @@ def main() -> int:
         validate_resources()
         validate_calibrated_defaults()
         validate_sources()
+        validate_ring_router_behavior()
         validate_upstream_api_contracts()
         validate_upstream_and_installer()
     except (ValidationError, OSError, subprocess.SubprocessError, urllib.error.URLError) as exc:
@@ -494,6 +664,7 @@ def main() -> int:
     print("- Preference/SystemUI key parity: OK")
     print("- Calibrated defaults: OK")
     print("- Source structure/conflict checks: OK")
+    print("- Ring routing behavior: OK")
     print("- Upstream Dagger/API contracts: OK")
     print("- frameworks/base baseline hashes: OK")
     print("- Patch install + idempotency + guard behavior: OK")
