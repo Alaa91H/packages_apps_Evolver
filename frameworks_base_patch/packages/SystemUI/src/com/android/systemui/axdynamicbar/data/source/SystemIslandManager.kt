@@ -8,12 +8,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Bitmap
-import android.graphics.ImageDecoder
 import android.media.AudioManager
 import android.net.Uri
 import android.os.Handler
-import android.os.SystemClock
+import android.os.PersistableBundle
 import android.util.Log
+import android.util.Size
 import androidx.core.content.FileProvider
 import com.android.systemui.axdynamicbar.model.IslandEvent
 import com.android.systemui.res.R
@@ -55,7 +55,12 @@ constructor(
         private const val KEY_CLIPBOARD_STASH = "clipboard_stash"
         private const val CLIPBOARD_CACHE_DIR = "clipboard_cache"
         private const val FILE_PROVIDER_AUTHORITY = "com.android.systemui.fileprovider"
-        private const val DUPLICATE_CLIP_WINDOW_MS = 750L
+        private const val EXTRA_DYNAMIC_BAR_SELF_COPY =
+            "com.android.systemui.axdynamicbar.SELF_COPY"
+        private const val EXTRA_SUPPRESS_CLIPBOARD_OVERLAY =
+            "com.android.systemui.SUPPRESS_CLIPBOARD_OVERLAY"
+        private const val MAX_CLIPBOARD_IMAGE_WIDTH_PX = 512
+        private const val MAX_CLIPBOARD_IMAGE_HEIGHT_PX = 2048
     }
 
     private val _chargingEvent = MutableStateFlow<IslandEvent.Charging?>(null)
@@ -83,8 +88,8 @@ constructor(
     private var batteryJob: Job? = null
 
     private var listening = false
-    @Volatile private var lastClipboardFingerprint: String? = null
-    @Volatile private var lastClipboardEventAtMs = 0L
+    @Volatile private var lastClipboardToken: String? = null
+    @Volatile private var clipboardGeneration = 0L
 
     private val clipboardHistory = mutableListOf<IslandEvent.ClipboardItem>()
 
@@ -119,23 +124,7 @@ constructor(
 
     private val clipboardListener =
         ClipboardManager.OnPrimaryClipChangedListener {
-            // Dynamic Bar is a passive observer. Never suppress the next callback globally:
-            // Gboard/default-IME clipboard callbacks may arrive after a SystemUI-originated copy.
             if (!clipboardManager.hasPrimaryClip()) return@OnPrimaryClipChangedListener
-
-            val clipSource =
-                try {
-                    clipboardManager.primaryClipSource
-                } catch (e: SecurityException) {
-                    Log.w(TAG, "Unable to resolve clipboard source", e)
-                    null
-                }
-
-            // A copy initiated from Dynamic Bar itself is already represented in our history.
-            // Ignore only that exact source instead of consuming an arbitrary future callback.
-            if (clipSource == context.packageName) {
-                return@OnPrimaryClipChangedListener
-            }
 
             val clip =
                 try {
@@ -149,86 +138,103 @@ constructor(
             val item = clip.getItemAt(0)
             val desc = clip.description
 
-            // Respect the platform rendering hint. Sensitive clipboard entries must remain
-            // available to Gboard/the default IME, but must not be persisted by Dynamic Bar.
-            if (desc.extras?.getBoolean(ClipDescription.EXTRA_IS_SENSITIVE, false) == true) {
-                Log.d(TAG, "Skipping sensitive clipboard item")
+            // Only suppress copies explicitly authored by Dynamic Bar. Other SystemUI producers
+            // (notably screenshot-to-clipboard) must remain observable.
+            if (desc.extras?.getBoolean(EXTRA_DYNAMIC_BAR_SELF_COPY, false) == true) {
+                invalidatePendingClipboardWork()
                 return@OnPrimaryClipChangedListener
             }
 
-            val rawText =
-                try {
-                    item.coerceToText(context)?.toString() ?: ""
-                } catch (_: Exception) {
-                    ""
-                }
-            val isUrl =
-                rawText.startsWith("http://") ||
-                    rawText.startsWith("https://") ||
-                    rawText.startsWith("www.")
-            val isImage = desc.hasMimeType("image/*")
-            val preview = rawText.trim()
-            val sourceUri =
-                if (isImage)
-                    try {
-                        item.uri
-                    } catch (_: Exception) {
-                        null
-                    }
-                else null
+            // Sensitive clips remain available to the platform/default IME but are never rendered
+            // or persisted by Dynamic Bar.
+            if (desc.extras?.getBoolean(ClipDescription.EXTRA_IS_SENSITIVE, false) == true) {
+                invalidatePendingClipboardWork()
+                _clipboardEvent.value = null
+                return@OnPrimaryClipChangedListener
+            }
 
+            // Avoid coerceToText(): it can synchronously dereference arbitrary content URIs.
+            val rawText = item.text?.toString() ?: ""
+            val preview = rawText.trim()
+            val isUrl =
+                preview.startsWith("http://") ||
+                    preview.startsWith("https://") ||
+                    preview.startsWith("www.")
+            val isImage = desc.hasMimeType("image/*") && item.uri != null
+            val sourceUri = if (isImage) item.uri else null
             val label = desc.label?.toString() ?: ""
+
             if (preview.isEmpty() && !isImage && label.isEmpty()) {
                 return@OnPrimaryClipChangedListener
             }
 
-            // Some IMEs/framework paths can fan out the same clipboard mutation more than once.
-            // Coalesce only an identical callback in a very small window; a later user copy is kept.
-            val fingerprint =
-                buildString {
-                    append(clipSource ?: "")
-                    append('\u0000')
-                    append(preview)
-                    append('\u0000')
-                    append(label)
-                    append('\u0000')
-                    append(isImage)
-                    append('\u0000')
-                    append(sourceUri?.toString() ?: "")
+            // ClipboardService can rebroadcast the same clip after text classification. Android
+            // keeps ClipDescription.timestamp stable for that mutation, so use it instead of a
+            // timing heuristic that can swallow legitimate rapid repeated copies.
+            val clipTimestamp = desc.timestamp
+            val token =
+                if (clipTimestamp > 0L) {
+                    buildString {
+                        append(clipTimestamp)
+                        append('\u0000')
+                        append(preview)
+                        append('\u0000')
+                        append(label)
+                        append('\u0000')
+                        append(sourceUri?.toString() ?: "")
+                    }
+                } else {
+                    null
                 }
-            val elapsed = SystemClock.elapsedRealtime()
-            if (
-                fingerprint == lastClipboardFingerprint &&
-                    elapsed - lastClipboardEventAtMs in 0L..DUPLICATE_CLIP_WINDOW_MS
-            ) {
+            if (token != null && token == lastClipboardToken) {
                 return@OnPrimaryClipChangedListener
             }
-            lastClipboardFingerprint = fingerprint
-            lastClipboardEventAtMs = elapsed
+            lastClipboardToken = token
 
-            val itemId = System.currentTimeMillis()
+            val generation = nextClipboardGeneration()
+            val itemId =
+                if (clipTimestamp > 0L) clipTimestamp
+                else System.currentTimeMillis()
+
             if (isImage && sourceUri != null) {
                 applicationScope.launch(backgroundDispatcher) {
                     val cachedUri = cacheClipboardImage(sourceUri, itemId)
-                    val (event, _) =
-                        buildClipboardEvent(itemId, preview, label, isUrl, true, cachedUri)
-                    _clipboardEvent.value = event
-                    mainHandler.post { onClipboardCopied?.invoke(event) }
+                    if (
+                        !commitClipboardEvent(
+                            itemId,
+                            preview,
+                            label,
+                            isUrl,
+                            true,
+                            cachedUri,
+                            generation,
+                            callbackOnMainThread = true,
+                        )
+                    ) {
+                        cleanupCachedImage(itemId)
+                    }
                 }
             } else {
-                val (event, _) =
-                    buildClipboardEvent(itemId, preview, label, isUrl, false, null)
-                _clipboardEvent.value = event
-                onClipboardCopied?.invoke(event)
+                commitClipboardEvent(
+                    itemId,
+                    preview,
+                    label,
+                    isUrl,
+                    false,
+                    null,
+                    generation,
+                )
             }
         }
 
     private fun cacheClipboardImage(sourceUri: Uri, itemId: Long): Uri? {
         return try {
-            val source = ImageDecoder.createSource(context.contentResolver, sourceUri)
-            val bitmap = ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
-                decoder.setTargetSampleSize(2)
-            }
+            val bitmap =
+                context.contentResolver.loadThumbnail(
+                    sourceUri,
+                    Size(MAX_CLIPBOARD_IMAGE_WIDTH_PX, MAX_CLIPBOARD_IMAGE_HEIGHT_PX),
+                    null,
+                )
             val file = File(clipboardCacheDir, "clip_$itemId.webp")
             file.outputStream().use { out ->
                 bitmap.compress(Bitmap.CompressFormat.WEBP_LOSSY, 85, out)
@@ -241,14 +247,16 @@ constructor(
         }
     }
 
-    private fun buildClipboardEvent(
+    private fun commitClipboardEvent(
         itemId: Long,
         preview: String,
         label: String,
         isUrl: Boolean,
         isImage: Boolean,
         imageUri: Uri?,
-    ): Pair<IslandEvent.Clipboard, List<IslandEvent.ClipboardItem>> {
+        generation: Long,
+        callbackOnMainThread: Boolean = false,
+    ): Boolean {
         val clipItem =
             IslandEvent.ClipboardItem(
                 id = itemId,
@@ -259,28 +267,57 @@ constructor(
                 imageUri = imageUri,
                 timestamp = itemId,
             )
-        val items: List<IslandEvent.ClipboardItem>
+
+        val event: IslandEvent.Clipboard
+        val historySnapshot: List<IslandEvent.ClipboardItem>
         synchronized(clipboardHistory) {
+            if (generation != clipboardGeneration) return false
+
             clipboardHistory.removeAll { it.preview == preview && !isImage }
             clipboardHistory.add(0, clipItem)
             while (clipboardHistory.size > MAX_CLIPBOARD_HISTORY) {
                 val removed = clipboardHistory.removeLast()
                 cleanupCachedImage(removed.id)
             }
-            items = clipboardHistory.toList()
+            historySnapshot = clipboardHistory.toList()
+            event =
+                IslandEvent.Clipboard(
+                    label = label,
+                    preview = preview,
+                    isUrl = isUrl,
+                    isImage = isImage,
+                    imageUri = imageUri,
+                    items = historySnapshot,
+                )
         }
-        persistClipboardHistory()
 
-        val event =
-            IslandEvent.Clipboard(
-                label = label,
-                preview = preview,
-                isUrl = isUrl,
-                isImage = isImage,
-                imageUri = imageUri,
-                items = items,
-            )
-        return event to items
+        persistClipboardHistory(historySnapshot, generation)
+        _clipboardEvent.value = event
+
+        if (callbackOnMainThread) {
+            mainHandler.post {
+                synchronized(clipboardHistory) {
+                    if (generation == clipboardGeneration) {
+                        onClipboardCopied?.invoke(event)
+                    }
+                }
+            }
+        } else {
+            onClipboardCopied?.invoke(event)
+        }
+        return true
+    }
+
+    private fun nextClipboardGeneration(): Long =
+        synchronized(clipboardHistory) {
+            clipboardGeneration += 1L
+            clipboardGeneration
+        }
+
+    private fun invalidatePendingClipboardWork() {
+        synchronized(clipboardHistory) {
+            clipboardGeneration += 1L
+        }
     }
 
     private fun cleanupCachedImage(itemId: Long) {
@@ -378,8 +415,8 @@ constructor(
         if (!clipboardListening) return
         clipboardListening = false
         clipboardManager.removePrimaryClipChangedListener(clipboardListener)
-        lastClipboardFingerprint = null
-        lastClipboardEventAtMs = 0L
+        lastClipboardToken = null
+        invalidatePendingClipboardWork()
         _clipboardEvent.value = null
     }
 
@@ -426,12 +463,15 @@ constructor(
     }
 
     fun clearClipboard() {
-        _clipboardEvent.value = null
+        persistJob?.cancel()
         synchronized(clipboardHistory) {
+            clipboardGeneration += 1L
+            _clipboardEvent.value = null
             clipboardHistory.forEach { cleanupCachedImage(it.id) }
             clipboardHistory.clear()
+            clipboardCacheDir.listFiles()?.forEach { it.delete() }
+            prefs.edit().remove(KEY_CLIPBOARD_STASH).apply()
         }
-        persistClipboardHistory()
     }
 
     fun clearCharging() {
@@ -442,8 +482,12 @@ constructor(
     fun removeClipboardItem(id: Long) {
         cleanupCachedImage(id)
         val event: IslandEvent.Clipboard?
+        val historySnapshot: List<IslandEvent.ClipboardItem>
+        val generation: Long
         synchronized(clipboardHistory) {
             clipboardHistory.removeAll { it.id == id }
+            generation = clipboardGeneration
+            historySnapshot = clipboardHistory.toList()
             event =
                 if (clipboardHistory.isEmpty()) null
                 else {
@@ -454,27 +498,42 @@ constructor(
                         isUrl = latest.isUrl,
                         isImage = latest.isImage,
                         imageUri = latest.imageUri,
-                        items = clipboardHistory.toList(),
+                        items = historySnapshot,
                     )
                 }
         }
-        persistClipboardHistory()
+        persistClipboardHistory(historySnapshot, generation)
         _clipboardEvent.value = event
     }
 
     fun copyToClipboard(text: String) {
         if (text.isEmpty()) return
-        clipboardManager.setPrimaryClip(ClipData.newPlainText("Copied", text))
+        clipboardManager.setPrimaryClip(
+            markDynamicBarSelfCopy(ClipData.newPlainText("Copied", text))
+        )
     }
 
     fun copyUriToClipboard(uri: Uri, mimeType: String = "image/*") {
         try {
             clipboardManager.setPrimaryClip(
-                ClipData("Copied", arrayOf(mimeType), ClipData.Item(uri)))
+                markDynamicBarSelfCopy(
+                    ClipData("Copied", arrayOf(mimeType), ClipData.Item(uri))
+                )
+            )
         } catch (e: SecurityException) {
             Log.w(TAG, "Failed to copy URI to clipboard, trying plain text", e)
-            clipboardManager.setPrimaryClip(ClipData.newPlainText("Copied", uri.toString()))
+            clipboardManager.setPrimaryClip(
+                markDynamicBarSelfCopy(ClipData.newPlainText("Copied", uri.toString()))
+            )
         }
+    }
+
+    private fun markDynamicBarSelfCopy(clip: ClipData): ClipData {
+        val extras = clip.description.extras ?: PersistableBundle()
+        extras.putBoolean(EXTRA_DYNAMIC_BAR_SELF_COPY, true)
+        extras.putBoolean(EXTRA_SUPPRESS_CLIPBOARD_OVERLAY, true)
+        clip.description.extras = extras
+        return clip
     }
 
     fun openUrl(url: String) {
@@ -491,13 +550,16 @@ constructor(
         }
     }
 
-    private fun persistClipboardHistory() {
+    private fun persistClipboardHistory(
+        history: List<IslandEvent.ClipboardItem>,
+        generation: Long,
+    ) {
         persistJob?.cancel()
-        persistJob = applicationScope.launch(backgroundDispatcher) {
-            try {
-                val arr = JSONArray()
-                synchronized(clipboardHistory) {
-                    clipboardHistory.forEach { item ->
+        persistJob =
+            applicationScope.launch(backgroundDispatcher) {
+                try {
+                    val arr = JSONArray()
+                    history.forEach { item ->
                         arr.put(
                             JSONObject().apply {
                                 put("id", item.id)
@@ -510,12 +572,15 @@ constructor(
                             }
                         )
                     }
+                    synchronized(clipboardHistory) {
+                        if (generation == clipboardGeneration) {
+                            prefs.edit().putString(KEY_CLIPBOARD_STASH, arr.toString()).apply()
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to persist clipboard history", e)
                 }
-                prefs.edit().putString(KEY_CLIPBOARD_STASH, arr.toString()).apply()
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed to persist clipboard history", e)
             }
-        }
     }
 
     private fun loadClipboardHistory() {
