@@ -1189,7 +1189,7 @@
 
     <!-- Notifications/Edge light -->
     <string name="edge_light_title">Edge light</string>
-    <string name="edge_light_summary">Light up the edges of the screen on notification pulse</string>
+    <string name="edge_light_summary">Light up selected screen edges for notifications in the display states you choose</string>
     <string name="edge_light_display_state_category">Display conditions</string>
     <string name="edge_light_show_screen_on_title">Screen on</string>
     <string name="edge_light_show_screen_on_summary">Show edge lighting while the display is on and interactive</string>
