@@ -202,18 +202,29 @@ final class ProgressLabelPainter {
     }
 
     private static String truncate(String value, int maxChars, String mode) {
-        if (value == null || maxChars <= 0 || value.length() <= maxChars) return value;
-        if (maxChars <= 3) return value.substring(0, maxChars);
+        if (value == null || value.isEmpty() || maxChars <= 0) return "";
+        final int count = value.codePointCount(0, value.length());
+        if (count <= maxChars) return value;
 
-        final int keep = maxChars - 3;
-        if ("start".equals(mode)) {
-            return "..." + value.substring(value.length() - keep);
+        final String ellipsis = "\u2026";
+        final int available = maxChars - 1;
+        if (available <= 0) return ellipsis;
+
+        switch (mode) {
+            case "start": {
+                final int start = value.offsetByCodePoints(0, count - available);
+                return ellipsis + value.substring(start);
+            }
+            case "end": {
+                final int end = value.offsetByCodePoints(0, available);
+                return value.substring(0, end) + ellipsis;
+            }
+            default: {
+                final int head = (available + 1) / 2;
+                final int tail = available - head;
+                final int headEnd = value.offsetByCodePoints(0, head);
+                final int tailStart = value.offsetByCodePoints(0, count - tail);
+                return value.substring(0, headEnd) + ellipsis + value.substring(tailStart);
+            }
         }
-        if ("middle".equals(mode)) {
-            final int left = keep / 2;
-            final int right = keep - left;
-            return value.substring(0, left) + "..." + value.substring(value.length() - right);
-        }
-        return value.substring(0, keep) + "...";
-    }
-}
+    }}
