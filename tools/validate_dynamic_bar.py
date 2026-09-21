@@ -23,6 +23,8 @@ LEGACY_CHIP = SYSTEMUI / "axdynamicbar/ui/compose/AxDynamicBarChip.kt"
 HOST = SYSTEMUI / "axdynamicbar/ui/compose/DynamicBarCutoutHost.kt"
 LAYOUT = SYSTEMUI / "axdynamicbar/ui/layout/DynamicBarLayoutState.kt"
 KEYGUARD = SYSTEMUI / "keyguard/ui/view/layout/sections/AxDynamicBarKeyguardChipSection.kt"
+SWIPE_DEMO = ROOT / "src/org/evolution/settings/fragments/statusbar/DynamicBarChipSwipeDemoView.kt"
+KEYGUARD_DEMO = ROOT / "src/org/evolution/settings/fragments/statusbar/DynamicBarKeyguardDemoView.kt"
 RESOLVER = SYSTEMUI / "cutoutprogress/ring/CameraCutoutGeometryResolver.java"
 
 REQUIRED_KEYS = {
@@ -76,6 +78,8 @@ for path in (
     HOST,
     LAYOUT,
     KEYGUARD,
+    SWIPE_DEMO,
+    KEYGUARD_DEMO,
     RESOLVER,
 ):
     if not path.exists():
@@ -178,6 +182,16 @@ if "DynamicBarCutoutHost(" not in keyguard_text or "keyguardMode = true" not in 
 legacy_text = read(LEGACY_CHIP)
 if "val next = if (isRtl)" not in legacy_text:
     fail("legacy Dynamic Bar swipe behavior is not RTL semantic")
+
+swipe_demo_text = read(SWIPE_DEMO)
+for token in ("LAYOUT_DIRECTION_RTL", "swipeDirection", "arrowTipX"):
+    if token not in swipe_demo_text:
+        fail(f"Dynamic Bar swipe demo missing RTL behavior: {token}")
+
+keyguard_demo_text = read(KEYGUARD_DEMO)
+for token in ("LAYOUT_DIRECTION_RTL", "direction", "Paint.Align.RIGHT"):
+    if token not in keyguard_demo_text:
+        fail(f"Dynamic Bar keyguard demo missing RTL behavior: {token}")
 
 apply_text = read(APPLY)
 for relative in (
