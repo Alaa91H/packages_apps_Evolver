@@ -47,6 +47,7 @@ NEW_FILES=(
     "packages/SystemUI/src/com/android/systemui/cutoutprogress/ring/RingRouter.java"
     "packages/SystemUI/src/com/android/systemui/cutoutprogress/ring/MusicWavePainter.java"
     "packages/SystemUI/src/com/android/systemui/cutoutprogress/ring/TimerFlamePainter.java"
+    "packages/SystemUI/src/com/android/systemui/cutoutprogress/ring/ProgressLabelPainter.java"
 )
 
 echo "Checking frameworks/base cutout-progress baseline..."
