@@ -1965,4 +1965,10 @@
     <string name="lockscreen_battery_power_title">Charging power</string>
     <string name="lockscreen_battery_voltage_title">Charging voltage</string>
     <string name="lockscreen_battery_temperature_title">Battery temperature</string>
+
+    <!-- Lock screen notification layout -->
+    <string name="lockscreen_notifications_top_spacing_title">Notification top spacing</string>
+    <string name="lockscreen_notifications_top_spacing_summary">Adjust the distance between lock screen content and notifications</string>
+    <string name="lockscreen_notifications_horizontal_inset_title">Notification side inset</string>
+    <string name="lockscreen_notifications_horizontal_inset_summary">Add equal side margins to the lock screen notification area</string>
 </resources>
