@@ -1125,6 +1125,8 @@
     <string name="miscellaneous_block_wallpaper_dimming_summary">منع جميع التطبيقات من تعتيم الخلفية وإجبار مستوى التعتيم على 0</string>
     <string name="miscellaneous_ignore_window_secure_title">تجاهل علامات النوافذ الآمنة</string>
     <string name="miscellaneous_ignore_window_secure_summary">إزالة قيود لقطات الشاشة وتسجيل الشاشة لجميع التطبيقات. قد يكشف ذلك محتوى خاصًا</string>
+    <string name="miscellaneous_hide_clipboard_overlay_title">إخفاء واجهة الحافظة</string>
+    <string name="miscellaneous_hide_clipboard_overlay_summary">عدم إظهار معاينة الحافظة أو أيقونتها أو رسالة «تم النسخ» بعد نسخ المحتوى</string>
     <string name="miscellaneous_screenshot_flash_title">إظهار وميض لقطة الشاشة</string>
     <string name="miscellaneous_screenshot_flash_summary">إظهار وميض قصير على الشاشة عند التقاط لقطة شاشة</string>
     <string name="miscellaneous_block_screenshot_detection_title">حظر اكتشاف لقطات الشاشة</string>
