@@ -11,6 +11,8 @@ import android.os.Bundle
 import android.os.UserHandle
 import android.provider.Settings
 
+import androidx.preference.Preference
+
 import com.android.internal.logging.nano.MetricsProto
 import com.android.settings.R
 import com.android.settings.SettingsPreferenceFragment
@@ -21,6 +23,30 @@ class EdgeLightSettings : SettingsPreferenceFragment() {
         super.onCreate(savedInstanceState)
         ensureLocationDefaults()
         addPreferencesFromResource(R.xml.edge_light_settings)
+        configureAuroraPreference()
+    }
+
+    private fun configureAuroraPreference() {
+        val effectPreference = findPreference<Preference>("edge_light_animation_effect")
+        val auroraPreference = findPreference<Preference>("edge_light_aurora_color_mode")
+
+        fun updateVisibility(effect: String?) {
+            auroraPreference?.isVisible = effect == "aurora"
+        }
+
+        updateVisibility(
+            Settings.System.getStringForUser(
+                requireContext().contentResolver,
+                Settings.System.EDGE_LIGHT_ANIMATION_EFFECT,
+                UserHandle.USER_CURRENT
+            ) ?: "none"
+        )
+
+        effectPreference?.onPreferenceChangeListener =
+            Preference.OnPreferenceChangeListener { _, newValue ->
+                updateVisibility(newValue?.toString())
+                true
+            }
     }
 
     /**
