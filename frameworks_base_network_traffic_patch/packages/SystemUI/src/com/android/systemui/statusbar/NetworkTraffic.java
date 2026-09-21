@@ -562,7 +562,7 @@ public class NetworkTraffic extends TextView implements TunerService.Tunable,
             Dependency.get(DarkIconDispatcher.class).removeDarkReceiver(this);
             Dependency.get(TunerService.class).removeTunable(this);
             mDrawable = null;
-            setCompoundDrawables(null, null, null, null);
+            setCompoundDrawablesRelativeWithIntrinsicBounds(null, null, null, null);
             mAttached = false;
         }
     }
@@ -628,6 +628,7 @@ public class NetworkTraffic extends TextView implements TunerService.Tunable,
             case NETWORK_TRAFFIC_MODE:
                 mMode =
                         TunerService.parseInteger(newValue, 0);
+                setFixedWidth();
                 updateViews();
                 setTrafficDrawable();
                 break;
