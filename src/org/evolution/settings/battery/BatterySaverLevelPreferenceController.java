@@ -19,6 +19,8 @@ package org.evolution.settings.battery;
 import android.content.Context;
 import android.provider.Settings;
 
+import java.io.File;
+
 import androidx.preference.ListPreference;
 import androidx.preference.Preference;
 
@@ -29,7 +31,11 @@ import com.android.settings.core.BasePreferenceController;
 public class BatterySaverLevelPreferenceController extends BasePreferenceController
         implements Preference.OnPreferenceChangeListener {
 
+    public static final String KEY_CPU_LIMIT_PERCENT = "low_power_cpu_limit_percent";
     public static final String KEY_BRIGHTNESS_REDUCTION = "low_power_brightness_reduction";
+    public static final String KEY_SCREEN_TIMEOUT = "low_power_screen_timeout";
+
+    private static final String CPUFREQ_DIR = "/sys/devices/system/cpu/cpufreq";
 
     public BatterySaverLevelPreferenceController(Context context, String key) {
         super(context, key);
@@ -37,6 +43,10 @@ public class BatterySaverLevelPreferenceController extends BasePreferenceControl
 
     @Override
     public int getAvailabilityStatus() {
+        if (KEY_CPU_LIMIT_PERCENT.equals(getPreferenceKey())
+                && !new File(CPUFREQ_DIR).isDirectory()) {
+            return UNSUPPORTED_ON_DEVICE;
+        }
         return AVAILABLE;
     }
 
@@ -77,9 +87,14 @@ public class BatterySaverLevelPreferenceController extends BasePreferenceControl
                 mContext.getContentResolver(), getPreferenceKey());
         if (stored != null) {
             try {
-                return Integer.parseInt(stored);
+                final int value = Integer.parseInt(stored);
+                // Compatibility with the first implementation where timeout was a boolean.
+                if (KEY_SCREEN_TIMEOUT.equals(getPreferenceKey()) && value == 1) {
+                    return 30000;
+                }
+                return value;
             } catch (NumberFormatException ignored) {
-                // Treat malformed values as the platform default.
+                // Treat malformed values as no change/platform default.
             }
         }
         return -1;
