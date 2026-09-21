@@ -1923,4 +1923,14 @@
     <string name="screenshot_clipboard_only_summary">Copy screenshot to clipboard instead of saving in storage</string>
     <string name="hide_status_bar_in_screenshot_title">Hide status bar in screenshots</string>
     <string name="hide_status_bar_in_screenshot_summary">Crop the status bar area out of full screenshots</string>
+
+    <!-- Unified lock screen customization studio -->
+    <string name="lockscreen_customization_title">Lock screen studio</string>
+    <string name="lockscreen_customization_summary">Customize clock, widgets, wallpapers, information, media, effects, and secure interactions from one place</string>
+    <string name="lockscreen_customization_design_category">Design &amp; layout</string>
+    <string name="lockscreen_customization_information_category">Information &amp; at a glance</string>
+    <string name="lockscreen_customization_media_category">Media &amp; effects</string>
+    <string name="lockscreen_customization_interaction_category">Interaction &amp; security</string>
+    <string name="lockscreen_customization_glymps_summary">Rotate lock screen wallpapers from curated, custom URL, or folder sources</string>
+    <string name="lockscreen_customization_footer">This studio reuses the same system settings as the existing Evolver pages, so there are no duplicate or fake controls. Smartspace and weather changes may restart SystemUI when required.</string>
 </resources>
