@@ -1728,4 +1728,10 @@
     <string name="lockscreen_customization_interaction_category">التفاعل والأمان</string>
     <string name="lockscreen_customization_glymps_summary">بدّل خلفيات شاشة القفل من مصادر مختارة أو روابط مخصصة أو مجلدات</string>
     <string name="lockscreen_customization_footer">يستخدم هذا الاستوديو إعدادات النظام نفسها الموجودة في صفحات Evolver الحالية، لذلك لا توجد عناصر تحكم مكررة أو وهمية. قد تتطلب تغييرات Smartspace والطقس إعادة تشغيل واجهة النظام عند الحاجة.</string>
+
+    <!-- ضبط مواضع عناصر شاشة القفل -->
+    <string name="lockscreen_layout_title">ضبط المواضع</string>
+    <string name="lockscreen_layout_summary">اضبط موضع الطقس والأدوات بدقة وبشكل مستقل</string>
+    <string name="lockscreen_layout_horizontal_offset_title">الإزاحة الأفقية</string>
+    <string name="lockscreen_layout_vertical_offset_title">الإزاحة العمودية</string>
 </resources>
