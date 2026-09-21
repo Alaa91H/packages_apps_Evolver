@@ -134,9 +134,17 @@ for token in (
     "occupiedBounds",
     "leftContentEdge",
     "rightContentEdge",
+    "physicalCutoutEligible",
 ):
     if token not in layout_text:
         fail(f"layout calculator missing {token}")
+
+if not re.search(
+    r"if\s*\(isLandscape\)\s*\{\s*landscapeMode\s*==\s*LANDSCAPE_ALWAYS\s*\|\|\s*topCutout\s*\}\s*else\s*\{\s*topCutout\s*\}",
+    layout_text,
+    re.S,
+):
+    fail("portrait Dynamic Bar may anchor to a non-status-bar cutout")
 
 resolver_text = read(RESOLVER)
 for token in (
