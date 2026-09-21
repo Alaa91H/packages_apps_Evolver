@@ -29,9 +29,6 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.SweepGradient;
-import android.graphics.Typeface;
-import android.text.TextPaint;
-import android.util.TypedValue;
 import android.view.Display;
 import android.view.DisplayCutout;
 import android.os.SystemClock;
@@ -91,6 +88,7 @@ public final class CutoutRingView extends View {
     private CountBadgePainter mBadge;
     private final MusicWavePainter mMusicWavePainter = new MusicWavePainter();
     private final TimerFlamePainter mTimerFlamePainter = new TimerFlamePainter();
+    private final ProgressLabelPainter mLabelPainter;
 
     private final Paint mRingPaint = makePaint();
     private final Paint mShinePaint = makePaint();
@@ -98,8 +96,6 @@ public final class CutoutRingView extends View {
     private final Paint mAnimPaint = makePaint();
     private final Paint mBgPaint = makePaint();
     private final Paint mChargingPaint = makePaint();
-    private final TextPaint mPercentPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-    private final TextPaint mFilenamePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
 
     private final Paint mRainbowPaint = makePaint();
     private SweepGradient mRainbowShader = null;
@@ -179,20 +175,6 @@ public final class CutoutRingView extends View {
     private float sCfgBadgeOffXDp;
     private float sCfgBadgeOffYDp;
     private float sCfgBadgeSp;
-    private boolean sCfgPct;
-    private float sCfgPctSp;
-    private boolean sCfgPctBold;
-    private String sCfgPctPos;
-    private float sCfgPctOffXDp;
-    private float sCfgPctOffYDp;
-    private boolean sCfgFname;
-    private float sCfgFnameSp;
-    private boolean sCfgFnameBold;
-    private String sCfgFnamePos;
-    private float sCfgFnameOffXDp;
-    private float sCfgFnameOffYDp;
-    private int sCfgFnameMaxChars;
-    private String sCfgFnameTruncate;
     private String sCfgEasing;
     private boolean sCfgChargingRing;
     private boolean sCfgChargingPulse;
@@ -336,6 +318,7 @@ public final class CutoutRingView extends View {
         mAnim = new OverlayAnimationHelper(this);
         mRenderer = new CircleRingRenderer();
         mBadge = new CountBadgePainter(mDp);
+        mLabelPainter = new ProgressLabelPainter(mDp, mScaledDensity);
         initPaints();
     }
 
@@ -399,20 +382,21 @@ public final class CutoutRingView extends View {
         sCfgBadgeOffXDp = s.getBadgeOffsetXDp();
         sCfgBadgeOffYDp = s.getBadgeOffsetYDp();
         sCfgBadgeSp = s.getBadgeTextSizeSp();
-        sCfgPct = s.isPercentEnabled();
-        sCfgPctSp = s.getPercentTextSizeSp();
-        sCfgPctBold = s.isPercentBold();
-        sCfgPctPos = s.getPercentPosition();
-        sCfgPctOffXDp = s.getPercentOffsetXDp();
-        sCfgPctOffYDp = s.getPercentOffsetYDp();
-        sCfgFname = s.isFilenameEnabled();
-        sCfgFnameSp = s.getFilenameTextSizeSp();
-        sCfgFnameBold = s.isFilenameBold();
-        sCfgFnamePos = s.getFilenamePosition();
-        sCfgFnameOffXDp = s.getFilenameOffsetXDp();
-        sCfgFnameOffYDp = s.getFilenameOffsetYDp();
-        sCfgFnameMaxChars= s.getFilenameMaxChars();
-        sCfgFnameTruncate= s.getFilenameTruncateMode();
+        mLabelPainter.applyConfig(
+                s.isPercentEnabled(),
+                s.getPercentTextSizeSp(),
+                s.isPercentBold(),
+                s.getPercentPosition(),
+                s.getPercentOffsetXDp(),
+                s.getPercentOffsetYDp(),
+                s.isFilenameEnabled(),
+                s.getFilenameTextSizeSp(),
+                s.isFilenameBold(),
+                s.getFilenamePosition(),
+                s.getFilenameOffsetXDp(),
+                s.getFilenameOffsetYDp(),
+                s.getFilenameMaxChars(),
+                s.getFilenameTruncateMode());
         sCfgEasing = s.getProgressEasing();
         sCfgChargingRing = s.isChargingRingEnabled();
         sCfgChargingPulse = s.isChargingPulseEnabled();
@@ -1103,6 +1087,7 @@ public final class CutoutRingView extends View {
         if (densityChanged) {
             mBadge = new CountBadgePainter(mDp);
         }
+        mLabelPainter.setDensity(mDp, mScaledDensity);
         refreshPaints();
         refreshMusicPaint();
     }
@@ -1621,61 +1606,16 @@ public final class CutoutRingView extends View {
     }
 
     private void drawLabels(Canvas canvas, int pct, int ringColor) {
-        float pad = 4f * mDp;
-        int alpha = sCfgOpacity * 255 / 100;
-
-        if (sCfgPct) {
-            String text = pct + "%";
-            float tw = mPercentPaint.measureText(text);
-            float[] pos = labelXY(sCfgPctPos, pad, mPercentPaint.getTextSize(), tw);
-            mPercentPaint.setColor(ringColor);
-            mPercentPaint.setAlpha(alpha);
-            canvas.drawText(text, pos[0] + sCfgPctOffXDp * mDp,
-                    pos[1] + sCfgPctOffYDp * mDp, mPercentPaint);
-        }
-
-        boolean geoPreview = mAnim.isGeometryPreviewActive();
-        String fname = mFilenameHint != null ? mFilenameHint
-                : geoPreview ? "EvolutionX-16.0-arm64.zip" : null;
-
-        if (sCfgFname && fname != null && (mDownloadCount <= 1 || geoPreview)) {
-            String display = truncate(fname, sCfgFnameMaxChars, sCfgFnameTruncate);
-            float[] pos = labelXY(sCfgFnamePos, pad, mFilenamePaint.getTextSize(), null);
-            mFilenamePaint.setColor(ringColor);
-            mFilenamePaint.setAlpha(alpha);
-            canvas.drawText(display, pos[0] + sCfgFnameOffXDp * mDp,
-                    pos[1] + sCfgFnameOffYDp * mDp, mFilenamePaint);
-        }
-    }
-
-    private float[] labelXY(String position, float pad, float textHeight, Float textW) {
-        switch (position) {
-            case "left":
-                return new float[]{
-                        textW != null ? mArcBounds.left - textW / 2f - pad
-                                      : mArcBounds.left - pad,
-                        mArcBounds.centerY() + textHeight / 3f};
-            case "top":
-                return new float[]{mArcBounds.centerX(), mArcBounds.top - pad};
-            case "bottom":
-                return new float[]{mArcBounds.centerX(),
-                        mArcBounds.bottom + textHeight + pad};
-            case "top_left":
-                return new float[]{mArcBounds.left - pad, mArcBounds.top - pad};
-            case "top_right":
-                return new float[]{mArcBounds.right + pad, mArcBounds.top - pad};
-            case "bottom_left":
-                return new float[]{mArcBounds.left - pad,
-                        mArcBounds.bottom + textHeight + pad};
-            case "bottom_right":
-                return new float[]{mArcBounds.right + pad,
-                        mArcBounds.bottom + textHeight + pad};
-            default:
-                return new float[]{
-                        textW != null ? mArcBounds.right + textW / 2f + pad
-                                      : mArcBounds.right + pad,
-                        mArcBounds.centerY() + textHeight / 3f};
-        }
+        mLabelPainter.draw(
+                canvas,
+                mArcBounds,
+                pct,
+                ringColor,
+                sCfgOpacity,
+                mFilenameHint,
+                mDownloadCount,
+                mAnim.isGeometryPreviewActive(),
+                true);
     }
 
     private void computeArcBounds(float laneOffsetDp) {
@@ -1754,14 +1694,7 @@ public final class CutoutRingView extends View {
         sCfgOpacity = 90;
         sCfgBgColor = 0xFF808080;
         sCfgBgOpacity = 30;
-        sCfgPctSp = 8f;
-        sCfgPctBold = true;
-        sCfgFnameSp = 7f;
         sCfgBadgeSp = 10f;
-        sCfgPctPos = "right";
-        sCfgFnamePos = "top_right";
-        sCfgFnameTruncate = "middle";
-        sCfgFnameMaxChars = 20;
         sCfgEasing = "linear";
         sCfgClockwise = true;
         sCfgFinishStyle= "pop";
@@ -1833,16 +1766,6 @@ public final class CutoutRingView extends View {
         mRainbowPaint.setStrokeCap(Paint.Cap.BUTT);
         mRainbowPaint.setAlpha(sCfgOpacity * 255 / 100);
 
-        mPercentPaint.setTypeface(sCfgPctBold
-                ? Typeface.DEFAULT_BOLD : Typeface.DEFAULT);
-        mPercentPaint.setTextSize(spToPx(sCfgPctSp));
-        mPercentPaint.setTextAlign(Paint.Align.CENTER);
-
-        mFilenamePaint.setTypeface(sCfgFnameBold
-                ? Typeface.DEFAULT_BOLD : Typeface.DEFAULT);
-        mFilenamePaint.setTextSize(spToPx(sCfgFnameSp));
-        mFilenamePaint.setTextAlign(Paint.Align.LEFT);
-
         mBadge.applyConfig(baseColor, sCfgBadgeSp, mScaledDensity);
     }
 
@@ -1897,37 +1820,6 @@ public final class CutoutRingView extends View {
                 (int)(Color.red(c1)*inv + Color.red(c2)*ratio),
                 (int)(Color.green(c1)*inv + Color.green(c2)*ratio),
                 (int)(Color.blue(c1)*inv + Color.blue(c2)*ratio));
-    }
-
-    private static String truncate(String s, int max, String mode) {
-        if (s == null || s.isEmpty() || max <= 0) return "";
-        int count = s.codePointCount(0, s.length());
-        if (count <= max) return s;
-        String e = "\u2026";
-        int avail = max - 1;
-        if (avail <= 0) return e;
-        switch (mode) {
-            case "start": {
-                int start = s.offsetByCodePoints(0, count - avail);
-                return e + s.substring(start);
-            }
-            case "end": {
-                int end = s.offsetByCodePoints(0, avail);
-                return s.substring(0, end) + e;
-            }
-            default: {
-                int head = (avail + 1) / 2;
-                int tail = avail - head;
-                int headEnd = s.offsetByCodePoints(0, head);
-                int tailStart = s.offsetByCodePoints(0, count - tail);
-                return s.substring(0, headEnd) + e + s.substring(tailStart);
-            }
-        }
-    }
-
-    private float spToPx(float sp) {
-        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp,
-                getResources().getDisplayMetrics());
     }
 
     private static Paint makePaint() {
