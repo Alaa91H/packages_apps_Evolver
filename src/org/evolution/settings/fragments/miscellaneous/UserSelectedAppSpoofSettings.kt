@@ -12,6 +12,9 @@ import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.provider.Settings
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandVertically
@@ -93,8 +96,6 @@ import com.android.settingslib.spa.framework.theme.SettingsTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.json.JSONArray
-import org.json.JSONObject
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -135,17 +136,6 @@ private data class AppItem(
     val isSystem: Boolean
 )
 
-private data class CustomSpoofProfile(
-    val id: String,
-    val name: String,
-    val brand: String,
-    val manufacturer: String,
-    val device: String,
-    val model: String,
-    val fingerprint: String,
-    val product: String
-)
-
 private fun brandColorForProfile(profileKey: String, brand: String): Color {
     val b = brand.lowercase()
     return when {
@@ -170,6 +160,9 @@ private fun AppSpoofingContent(context: Context) {
     val activityManager = context.getSystemService(ActivityManager::class.java)
     val profileValues = context.resources.getStringArray(R.array.perapp_spoof_profile_values)
     val profileLabels = context.resources.getStringArray(R.array.perapp_spoof_profile_labels)
+    val builtInProfileIds = remember(profileValues.contentToString()) {
+        profileValues.filter { it != "None" }.toSet()
+    }
     val profileLabelMap = remember(profileValues.contentToString(), profileLabels.contentToString()) {
         profileValues.indices.associate { idx ->
             profileValues[idx] to profileLabels.getOrElse(idx) { profileValues[idx] }
@@ -189,6 +182,7 @@ private fun AppSpoofingContent(context: Context) {
     var customProfileToEdit by remember { mutableStateOf<CustomSpoofProfile?>(null) }
     var editTarget by remember { mutableStateOf<AppItem?>(null) }
     var customProfiles by remember { mutableStateOf(listOf<CustomSpoofProfile>()) }
+    var pendingRestore by remember { mutableStateOf<SpoofingBackupData?>(null) }
 
     fun loadState() {
         spoofEnabled = readEnabled(context)
@@ -266,6 +260,77 @@ private fun AppSpoofingContent(context: Context) {
         writeMapSetting(context, SPOOFED_APPS_CACHE_SETTING, emptyMap())
         writeMapSetting(context, SPOOFED_APPS_SETTING, emptyMap())
         targets.forEach { stopPackage(it) }
+    }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json"),
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        val snapshot = SpoofingConfigCodec.encodeBackup(
+            enabled = spoofEnabled,
+            assignments = configuredMap,
+            customProfiles = customProfiles,
+        )
+        scope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    context.contentResolver.openOutputStream(uri, "wt")
+                        ?.bufferedWriter()
+                        ?.use { it.write(snapshot) }
+                        ?: error("Unable to open destination")
+                }
+            }
+            result.fold(
+                onSuccess = {
+                    Toast.makeText(
+                        context,
+                        R.string.app_spoofing_backup_success,
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                },
+                onFailure = { error ->
+                    Toast.makeText(
+                        context,
+                        context.getString(
+                            R.string.app_spoofing_backup_failed,
+                            error.message ?: error.javaClass.simpleName,
+                        ),
+                        Toast.LENGTH_LONG,
+                    ).show()
+                },
+            )
+        }
+    }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    context.contentResolver.openInputStream(uri)
+                        ?.bufferedReader()
+                        ?.use { it.readText() }
+                        ?: error("Unable to open backup")
+                }.mapCatching { raw ->
+                    SpoofingConfigCodec.decodeBackup(raw, builtInProfileIds).getOrThrow()
+                }
+            }
+            result.fold(
+                onSuccess = { pendingRestore = it },
+                onFailure = { error ->
+                    Toast.makeText(
+                        context,
+                        context.getString(
+                            R.string.app_spoofing_restore_failed,
+                            error.message ?: error.javaClass.simpleName,
+                        ),
+                        Toast.LENGTH_LONG,
+                    ).show()
+                },
+            )
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -434,6 +499,44 @@ private fun AppSpoofingContent(context: Context) {
         )
     }
 
+    pendingRestore?.let { backup ->
+        AlertDialog(
+            onDismissRequest = { pendingRestore = null },
+            title = { Text(stringResource(R.string.app_spoofing_restore_confirm_title)) },
+            text = { Text(stringResource(R.string.app_spoofing_restore_confirm)) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val affectedPackages = allKnownConfiguredPackages() + backup.assignments.keys
+
+                        writeCustomProfiles(context, backup.customProfiles)
+                        writeEnabled(context, backup.enabled)
+                        writeConfigured(context, backup.assignments, backup.enabled)
+
+                        customProfiles = backup.customProfiles
+                        configuredMap = LinkedHashMap(backup.assignments)
+                        spoofEnabled = backup.enabled
+                        pendingRestore = null
+
+                        affectedPackages.forEach { stopPackage(it) }
+                        Toast.makeText(
+                            context,
+                            R.string.app_spoofing_restore_success,
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                    },
+                ) {
+                    Text(stringResource(R.string.app_spoofing_restore))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingRestore = null }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+        )
+    }
+
     if (showClearAllConfirm) {
         AlertDialog(
             onDismissRequest = { showClearAllConfirm = false },
@@ -467,6 +570,17 @@ private fun AppSpoofingContent(context: Context) {
         )
     }
 
+    val installedPackages = allApps.map { it.packageName }.toSet()
+    val customProfileIds = customProfiles.map { it.id }.toSet()
+    val knownProfileIds = builtInProfileIds + customProfileIds
+    val unknownProfileAssignments = configuredMap.values.count { it !in knownProfileIds }
+    val missingConfiguredApps = configuredMap.keys.count { it !in installedPackages }
+    val invalidCustomProfiles = customProfiles.count {
+        SpoofingConfigCodec.validateCustomProfile(it, builtInProfileIds) != null
+    }
+    val healthIssueCount =
+        unknownProfileAssignments + missingConfiguredApps + invalidCustomProfiles
+
     Scaffold(containerColor = Color.Transparent) { innerPadding ->
         Column(
             modifier = Modifier
@@ -495,6 +609,94 @@ private fun AppSpoofingContent(context: Context) {
                            else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(26.dp),
                 )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                ),
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.app_spoofing_health_title),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = if (healthIssueCount == 0) {
+                            stringResource(R.string.app_spoofing_health_ok)
+                        } else {
+                            stringResource(R.string.app_spoofing_health_issues, healthIssueCount)
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (healthIssueCount == 0) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        },
+                    )
+                    if (unknownProfileAssignments > 0) {
+                        Text(
+                            stringResource(
+                                R.string.app_spoofing_health_unknown_profiles,
+                                unknownProfileAssignments,
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                    if (missingConfiguredApps > 0) {
+                        Text(
+                            stringResource(
+                                R.string.app_spoofing_health_missing_apps,
+                                missingConfiguredApps,
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    if (invalidCustomProfiles > 0) {
+                        Text(
+                            stringResource(
+                                R.string.app_spoofing_health_invalid_custom,
+                                invalidCustomProfiles,
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedButton(
+                    onClick = {
+                        exportLauncher.launch("evolutionx-property-spoofing-backup.json")
+                    },
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(stringResource(R.string.app_spoofing_backup))
+                }
+                OutlinedButton(
+                    onClick = {
+                        importLauncher.launch(arrayOf("application/json", "text/plain"))
+                    },
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(stringResource(R.string.app_spoofing_restore))
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -1110,21 +1312,27 @@ private fun AddAppDialog(
 }
 
 private fun readMapSetting(context: Context, key: String): Map<String, String> {
-    val stored = Settings.Secure.getString(context.contentResolver, key) ?: return emptyMap()
-    if (stored.isBlank()) return emptyMap()
-    val map = linkedMapOf<String, String>()
-    stored.split(",").forEach { entry ->
-        val parts = entry.split(":")
-        if (parts.size == 2 && parts[0].isNotBlank() && parts[1].isNotBlank()) {
-            map[parts[0]] = parts[1]
-        }
+    val stored = Settings.Secure.getString(context.contentResolver, key)
+    val decoded = SpoofingConfigCodec.decodeAssignments(stored)
+
+    // Migrate clean legacy data in place. Malformed legacy payloads are deliberately
+    // left untouched so the user can still export/recover them instead of losing data.
+    if (decoded.legacy && decoded.malformedEntries == 0 && decoded.error == null) {
+        Settings.Secure.putString(
+            context.contentResolver,
+            key,
+            SpoofingConfigCodec.encodeAssignments(decoded.values),
+        )
     }
-    return map
+    return decoded.values
 }
 
 private fun writeMapSetting(context: Context, key: String, values: Map<String, String>) {
-    val encoded = values.entries.joinToString(",") { "${it.key}:${it.value}" }
-    Settings.Secure.putString(context.contentResolver, key, encoded)
+    Settings.Secure.putString(
+        context.contentResolver,
+        key,
+        SpoofingConfigCodec.encodeAssignments(values),
+    )
 }
 
 private fun readEnabled(context: Context): Boolean {
@@ -1165,48 +1373,27 @@ private fun writeConfigured(context: Context, values: Map<String, String>, enabl
 }
 
 private fun readCustomProfiles(context: Context): List<CustomSpoofProfile> {
-    val jsonStr = Settings.Secure.getString(context.contentResolver, CUSTOM_SPOOF_PROFILES_SETTING)
-    if (jsonStr.isNullOrBlank()) return emptyList()
-    return try {
-        val jsonArray = JSONArray(jsonStr)
-        val profiles = mutableListOf<CustomSpoofProfile>()
-        for (i in 0 until jsonArray.length()) {
-            val obj = jsonArray.getJSONObject(i)
-            profiles.add(
-                CustomSpoofProfile(
-                    id = obj.getString("id"),
-                    name = obj.getString("name"),
-                    brand = obj.getString("brand"),
-                    manufacturer = obj.getString("manufacturer"),
-                    device = obj.getString("device"),
-                    model = obj.getString("model"),
-                    fingerprint = obj.optString("fingerprint", ""),
-                    product = obj.optString("product", "")
-                )
-            )
-        }
-        profiles
-    } catch (e: Exception) {
-        emptyList()
+    val stored = Settings.Secure.getString(
+        context.contentResolver,
+        CUSTOM_SPOOF_PROFILES_SETTING,
+    )
+    val decoded = SpoofingConfigCodec.decodeCustomProfiles(stored)
+    if (decoded.legacy && decoded.malformedEntries == 0 && decoded.error == null) {
+        Settings.Secure.putString(
+            context.contentResolver,
+            CUSTOM_SPOOF_PROFILES_SETTING,
+            SpoofingConfigCodec.encodeCustomProfiles(decoded.profiles),
+        )
     }
+    return decoded.profiles
 }
 
 private fun writeCustomProfiles(context: Context, profiles: List<CustomSpoofProfile>) {
-    val jsonArray = JSONArray()
-    profiles.forEach { profile ->
-        val obj = JSONObject().apply {
-            put("id", profile.id)
-            put("name", profile.name)
-            put("brand", profile.brand)
-            put("manufacturer", profile.manufacturer)
-            put("device", profile.device)
-            put("model", profile.model)
-            put("fingerprint", profile.fingerprint)
-            put("product", profile.product)
-        }
-        jsonArray.put(obj)
-    }
-    Settings.Secure.putString(context.contentResolver, CUSTOM_SPOOF_PROFILES_SETTING, jsonArray.toString())
+    Settings.Secure.putString(
+        context.contentResolver,
+        CUSTOM_SPOOF_PROFILES_SETTING,
+        SpoofingConfigCodec.encodeCustomProfiles(profiles),
+    )
 }
 
 @Composable
@@ -1250,9 +1437,19 @@ private fun AddCustomProfileDialog(
                 OutlinedTextField(value = model, onValueChange = { model = it },
                     label = { Text(stringResource(R.string.custom_spoof_profile_model)) },
                     singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = fingerprint, onValueChange = { fingerprint = it },
+                val fingerprintInvalid = fingerprint.isNotBlank() &&
+                    !SpoofingConfigCodec.isValidFingerprint(fingerprint.trim())
+                OutlinedTextField(
+                    value = fingerprint,
+                    onValueChange = { fingerprint = it },
                     label = { Text(stringResource(R.string.custom_spoof_profile_fingerprint)) },
-                    singleLine = true, modifier = Modifier.fillMaxWidth())
+                    singleLine = true,
+                    isError = fingerprintInvalid,
+                    supportingText = if (fingerprintInvalid) {
+                        { Text(stringResource(R.string.custom_spoof_profile_invalid_fingerprint)) }
+                    } else null,
+                    modifier = Modifier.fillMaxWidth(),
+                )
                 OutlinedTextField(value = product, onValueChange = { product = it },
                     label = { Text(stringResource(R.string.custom_spoof_profile_product)) },
                     singleLine = true, modifier = Modifier.fillMaxWidth())
@@ -1273,7 +1470,9 @@ private fun AddCustomProfileDialog(
                     ))
                 },
                 enabled = name.isNotBlank() && brand.isNotBlank() && manufacturer.isNotBlank() &&
-                          device.isNotBlank() && model.isNotBlank()
+                          device.isNotBlank() && model.isNotBlank() &&
+                          (fingerprint.isBlank() ||
+                              SpoofingConfigCodec.isValidFingerprint(fingerprint.trim()))
             ) { Text(stringResource(R.string.save)) }
         },
         dismissButton = {
