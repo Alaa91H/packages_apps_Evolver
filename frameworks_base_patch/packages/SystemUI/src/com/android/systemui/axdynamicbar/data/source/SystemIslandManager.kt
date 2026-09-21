@@ -199,7 +199,7 @@ constructor(
             val elapsed = SystemClock.elapsedRealtime()
             if (
                 fingerprint == lastClipboardFingerprint &&
-                    elapsed - lastClipboardEventAtMs in 0..DUPLICATE_CLIP_WINDOW_MS
+                    elapsed - lastClipboardEventAtMs in 0L..DUPLICATE_CLIP_WINDOW_MS
             ) {
                 return@OnPrimaryClipChangedListener
             }
