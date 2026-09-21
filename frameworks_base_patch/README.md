@@ -8,7 +8,7 @@ the Evolver settings UI in this branch.
 The staged files target `Evolution-X/frameworks_base` branch `cnb` at:
 
 ```
-d9b63b2f4753a38b3f4e63378f5267e8e7ed9f29
+ed06b1ac4d92177f5c5b311290a12e38659c2411
 ```
 
 The guarded installer verifies the original Git blob SHA of every replaced upstream file before
@@ -24,6 +24,25 @@ bash frameworks_base_patch/apply.sh /path/to/android/frameworks/base
 ```
 
 Do not use `--force` unless every upstream mismatch has been manually reviewed.
+
+## Dynamic Bar cutout-island integration
+
+The staged SystemUI patch upgrades Dynamic Bar from a logical start-side chip into a
+cutout-aware island host.
+
+- Camera geometry is shared with Cutout Progress through CameraCutoutGeometryResolver.
+- Physical camera coordinates stay independent from locale direction.
+- LTR and RTL mirror semantic start/end content without moving the camera anchor.
+- Compact event content is split across both physical sides of the camera when space permits.
+- Circular, pill and off-center cutouts receive adaptive wing widths.
+- Missing or unsuitable cutout geometry falls back to a centered compact island.
+- Expanded cards animate from the camera X position and start below the compact island.
+- The lock-screen collapsed state reuses the same cutout-aware host.
+- Landscape behavior is configurable: automatic, follow camera, centered compact, or disabled.
+- Debug-bounds mode draws camera, island and anchor geometry for bring-up.
+
+The legacy AxDynamicBarChip remains staged with RTL-semantic swipe handling as a compatibility
+path for future reuse.
 
 ## Multi-ring architecture
 

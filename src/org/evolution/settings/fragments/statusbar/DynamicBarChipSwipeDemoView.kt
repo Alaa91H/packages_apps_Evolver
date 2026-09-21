@@ -142,7 +142,7 @@ class DynamicBarChipSwipeDemoView @JvmOverloads constructor(
         val left = centerX - w / 2f
         val top = cy - h / 2f
 
-        chipPaint.color = chip.accent
+        chipPaint.color = Color.BLACK
         chipPaint.alpha = (alpha * 255).toInt()
         chipRect.set(left, top, left + w, top + h)
         chipPath.reset()

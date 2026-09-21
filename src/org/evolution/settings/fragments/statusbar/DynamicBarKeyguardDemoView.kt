@@ -86,7 +86,7 @@ class DynamicBarKeyguardDemoView @JvmOverloads constructor(
         val chipTop = cy - chipH / 2f
 
         // Chip background
-        chipPaint.color = COLOR_RED
+        chipPaint.color = Color.BLACK
         chipRect.set(chipLeft, chipTop, chipLeft + chipW, chipTop + chipH)
         chipPath.reset()
         chipPath.addRoundRect(chipRect, chipH / 2f, chipH / 2f, Path.Direction.CW)

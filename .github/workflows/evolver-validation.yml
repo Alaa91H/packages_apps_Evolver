@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - cnb
+      - "dynamic-bar-*"
   pull_request:
     branches:
       - cnb
@@ -14,7 +15,7 @@ permissions:
 
 jobs:
   validate:
-    name: Cutout Progress integration checks
+    name: Evolver integration checks
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -34,3 +35,6 @@ jobs:
 
       - name: Validate Arabic localization and RTL
         run: python3 tools/validate_arabic_localization.py
+
+      - name: Validate Dynamic Bar cutout island
+        run: python3 tools/validate_dynamic_bar.py
