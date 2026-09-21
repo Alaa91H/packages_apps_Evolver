@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Evolution X
+     SPDX-License-Identifier: Apache-2.0
+-->
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:settings="http://schemas.android.com/apk/res/com.android.settings"
+    android:title="@string/lockscreen_layout_title">
+
+    <PreferenceCategory
+        android:title="@string/lockscreen_weather_category">
+
+        <org.evolution.settings.preferences.SecureSettingSeekBarPreference
+            android:key="lockscreen_weather_offset_x"
+            android:title="@string/lockscreen_layout_horizontal_offset_title"
+            android:defaultValue="0"
+            android:max="200"
+            settings:min="-200"
+            settings:interval="1"
+            settings:units="dp" />
+
+        <org.evolution.settings.preferences.SecureSettingSeekBarPreference
+            android:key="lockscreen_weather_offset_y"
+            android:title="@string/lockscreen_layout_vertical_offset_title"
+            android:defaultValue="0"
+            android:max="200"
+            settings:min="-200"
+            settings:interval="1"
+            settings:units="dp" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="@string/lockscreen_display_widgets_title">
+
+        <org.evolution.settings.preferences.SecureSettingSeekBarPreference
+            android:key="lockscreen_info_widgets_offset_x"
+            android:title="@string/lockscreen_layout_horizontal_offset_title"
+            android:defaultValue="0"
+            android:max="200"
+            settings:min="-200"
+            settings:interval="1"
+            settings:units="dp" />
+
+        <org.evolution.settings.preferences.SecureSettingSeekBarPreference
+            android:key="lockscreen_info_widgets_offset_y"
+            android:title="@string/lockscreen_layout_vertical_offset_title"
+            android:defaultValue="0"
+            android:max="200"
+            settings:min="-200"
+            settings:interval="1"
+            settings:units="dp" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="@string/lockscreen_widgets_title">
+
+        <org.evolution.settings.preferences.SecureSettingSeekBarPreference
+            android:key="lockscreen_widgets_offset_x"
+            android:title="@string/lockscreen_layout_horizontal_offset_title"
+            android:defaultValue="0"
+            android:max="200"
+            settings:min="-200"
+            settings:interval="1"
+            settings:units="dp" />
+
+        <org.evolution.settings.preferences.SecureSettingSeekBarPreference
+            android:key="lockscreen_widgets_offset_y"
+            android:title="@string/lockscreen_layout_vertical_offset_title"
+            android:defaultValue="0"
+            android:max="200"
+            settings:min="-200"
+            settings:interval="1"
+            settings:units="dp" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>
