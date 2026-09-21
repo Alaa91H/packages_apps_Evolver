@@ -21,6 +21,7 @@ import android.content.pm.PackageManager;
 import android.os.BatterySaverPolicyConfig;
 import android.os.PowerManager;
 import android.provider.Settings;
+import android.telephony.TelephonyManager;
 
 import com.android.settings.R;
 import com.android.settings.core.TogglePreferenceController;
@@ -39,17 +40,38 @@ public class BatterySaverSwitchPreferenceController extends TogglePreferenceCont
     public static final String KEY_SCREEN_TIMEOUT = "low_power_screen_timeout";
 
     private final PowerManager mPowerManager;
+    private final TelephonyManager mTelephonyManager;
 
     public BatterySaverSwitchPreferenceController(Context context, String key) {
         super(context, key);
         mPowerManager = context.getSystemService(PowerManager.class);
+        mTelephonyManager = context.getSystemService(TelephonyManager.class);
     }
 
     @Override
     public int getAvailabilityStatus() {
-        if (KEY_DISABLE_5G.equals(getPreferenceKey())
-                && !mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            return UNSUPPORTED_ON_DEVICE;
+        if (KEY_DISABLE_5G.equals(getPreferenceKey())) {
+            final PackageManager packageManager = mContext.getPackageManager();
+            if (!packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)
+                    || !packageManager.hasSystemFeature(
+                            PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS)) {
+                return UNSUPPORTED_ON_DEVICE;
+            }
+
+            if (mTelephonyManager != null) {
+                try {
+                    final long supportedRaf =
+                            mTelephonyManager.getSupportedRadioAccessFamily();
+                    if (supportedRaf != TelephonyManager.NETWORK_TYPE_BITMASK_UNKNOWN
+                            && (supportedRaf & TelephonyManager.NETWORK_TYPE_BITMASK_NR) == 0) {
+                        return UNSUPPORTED_ON_DEVICE;
+                    }
+                } catch (SecurityException | UnsupportedOperationException ignored) {
+                    // If support cannot be queried reliably, keep the option available rather
+                    // than hiding a valid control on a device whose telephony service is not
+                    // ready yet or uses a vendor-specific implementation.
+                }
+            }
         }
         return AVAILABLE;
     }
