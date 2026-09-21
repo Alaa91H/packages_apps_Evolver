@@ -106,7 +106,13 @@ object DynamicBarLayoutCalculator {
         if (usePhysical) {
             val cutout = RectF(physicalBounds)
             val islandHeightPx = max(baseHeightPx, cutout.height() + 4f * density)
-            val cameraSlotWidthPx = max(cutout.width() + cameraGapPx * 2f, 14f * density)
+            val desiredCameraSlotWidthPx =
+                max(cutout.width() + cameraGapPx * 2f, 14f * density)
+            val cameraSlotLeft =
+                max(0f, cutout.centerX() - desiredCameraSlotWidthPx / 2f)
+            val cameraSlotRight =
+                min(displayWidthPx.toFloat(), cutout.centerX() + desiredCameraSlotWidthPx / 2f)
+            val cameraSlotWidthPx = max(0f, cameraSlotRight - cameraSlotLeft)
             val verticallyRelevant =
                 occupiedBounds.filter {
                     !it.isEmpty &&
@@ -127,8 +133,7 @@ object DynamicBarLayoutCalculator {
             val leftAvailable =
                 max(
                     0f,
-                    cutout.left -
-                        cameraGapPx -
+                    cameraSlotLeft -
                         max(edgeMarginPx, leftContentEdge + contentGapPx),
                 )
             val rightAvailable =
@@ -138,8 +143,7 @@ object DynamicBarLayoutCalculator {
                         displayWidthPx.toFloat() - edgeMarginPx,
                         rightContentEdge - contentGapPx,
                     ) -
-                        cutout.right -
-                        cameraGapPx,
+                        cameraSlotRight,
                 )
             val leftWing = min(targetWingPx, leftAvailable)
             val rightWing = min(targetWingPx, rightAvailable)
@@ -151,9 +155,8 @@ object DynamicBarLayoutCalculator {
                 )
             val maxTop = max(0f, barHeight - islandHeightPx)
             val top = (cutout.centerY() - islandHeightPx / 2f).coerceIn(0f, maxTop)
-            val left = max(0f, cutout.left - cameraGapPx - leftWing)
-            val right =
-                min(displayWidthPx.toFloat(), cutout.right + cameraGapPx + rightWing)
+            val left = max(0f, cameraSlotLeft - leftWing)
+            val right = min(displayWidthPx.toFloat(), cameraSlotRight + rightWing)
             val island = RectF(left, top, right, top + islandHeightPx)
             val centerFraction =
                 (cutout.centerX() / displayWidthPx.toFloat()).coerceIn(0f, 1f)
@@ -176,22 +179,24 @@ object DynamicBarLayoutCalculator {
         }
 
         val islandHeightPx = baseHeightPx
-        val cameraSlotWidthPx =
+        val desiredCameraSlotWidthPx =
             when (effectiveSize) {
                 SIZE_COMPACT -> 6f * density
                 SIZE_LARGE -> 12f * density
                 else -> 8f * density
             }
-        val leftWing = targetWingPx
-        val rightWing = targetWingPx
+        val usableWidthPx = max(0f, displayWidthPx.toFloat() - edgeMarginPx * 2f)
+        val cameraSlotWidthPx = min(desiredCameraSlotWidthPx, usableWidthPx)
+        val wingBudgetPx = max(0f, (usableWidthPx - cameraSlotWidthPx) / 2f)
+        val leftWing = min(targetWingPx, wingBudgetPx)
+        val rightWing = min(targetWingPx, wingBudgetPx)
         val totalWidth = leftWing + cameraSlotWidthPx + rightWing
         val centerX = displayWidthPx / 2f
         val barHeight = max(statusBarHeightPx.toFloat(), islandHeightPx)
         val top = max(0f, (barHeight - islandHeightPx) / 2f)
-        val left = (centerX - totalWidth / 2f).coerceAtLeast(edgeMarginPx)
-        val right = (left + totalWidth).coerceAtMost(displayWidthPx - edgeMarginPx)
-        val actualLeft = max(edgeMarginPx, right - totalWidth)
-        val island = RectF(actualLeft, top, right, top + islandHeightPx)
+        val left = max(edgeMarginPx, centerX - totalWidth / 2f)
+        val right = min(displayWidthPx.toFloat() - edgeMarginPx, left + totalWidth)
+        val island = RectF(left, top, right, top + islandHeightPx)
         val virtualCutout = RectF(centerX, top, centerX, top + islandHeightPx)
 
         return DynamicBarLayoutState(
