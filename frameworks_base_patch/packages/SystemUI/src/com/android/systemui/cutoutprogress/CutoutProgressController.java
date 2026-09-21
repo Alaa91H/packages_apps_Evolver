@@ -82,6 +82,8 @@ public class CutoutProgressController implements CoreStartable {
     private boolean mTimerTrackingEnabled = false;
     private boolean mNotificationAuroraTrackingEnabled = false;
     private boolean mCallNotificationTrackingEnabled = false;
+    private CutoutProgressRuntimePolicy mRuntimePolicy =
+            CutoutProgressRuntimePolicy.DISABLED;
 
     private boolean mCallReceiverRegistered = false;
     private boolean mTelecomCallActive = false;
@@ -158,9 +160,7 @@ public class CutoutProgressController implements CoreStartable {
                 // A callback already queued on the main handler can outlive unregistering the
                 // AudioRecordingCallback during a settings change/user switch. Never let that
                 // stale callback reactivate Aurora after recording tracking has been disabled.
-                if (mRecordingCallbackRegistered && mSettings.isEnabled()
-                        && mSettings.isAuroraEnabled()
-                        && mSettings.isAuroraRecordingEnabled()
+                if (mRecordingCallbackRegistered && mRuntimePolicy.recordingTracking
                         && mRingView != null) {
                     mRingView.setAuroraRecordingActive(active);
                 }
@@ -184,7 +184,7 @@ public class CutoutProgressController implements CoreStartable {
             boolean charging = status == BatteryManager.BATTERY_STATUS_CHARGING
                             || status == BatteryManager.BATTERY_STATUS_FULL;
 
-            if (!mSettings.isEnabled()) {
+            if (!mRuntimePolicy.enabled || !mRuntimePolicy.batteryTracking) {
                 runOnMain(() -> {
                     mRingView.setChargingState(false, 0);
                     mRingView.setBatteryIndicatorState(false, 0);
@@ -249,57 +249,47 @@ public class CutoutProgressController implements CoreStartable {
     }
 
     private void onSettingsChanged() {
+        final CutoutProgressRuntimePolicy nextPolicy =
+                CutoutProgressRuntimePolicy.from(mSettings);
+
         mRingView.applySettings(mSettings);
 
         if (mMusicController != null) {
             mMusicController.applySettings(mSettings);
         }
 
-        if (!mSettings.isTimerEnabled()) {
-            clearTimerState();
-        }
-
-        if (mSettings.isEnabled()) {
-            enableFeature();
+        if (nextPolicy.enabled) {
+            // Publish the new policy before any seeding work can post callbacks back to main.
+            mRuntimePolicy = nextPolicy;
+            enableFeature(nextPolicy);
         } else {
             disableFeature();
         }
     }
 
-    private void enableFeature() {
+    private void enableFeature(CutoutProgressRuntimePolicy policy) {
         attachOverlay();
         registerScreenStateReceiver();
 
-        final boolean wantDownloadTracking = mSettings.getDownloadPresentation()
-                != CutoutProgressSettings.PRESENTATION_DISABLED;
-        final boolean wantTimerTracking = mSettings.isTimerEnabled()
-                && mSettings.getTimerPresentation()
-                != CutoutProgressSettings.PRESENTATION_DISABLED;
-        final boolean wantNotificationAurora = mSettings.isAuroraEnabled()
-                && mSettings.isAuroraNotificationsEnabled();
-        final boolean wantCallNotificationTracking = mSettings.isAuroraEnabled()
-                && mSettings.isAuroraCallsEnabled();
-
         final boolean startDownloadTracking =
-                wantDownloadTracking && !mDownloadTrackingEnabled;
+                policy.downloadTracking && !mDownloadTrackingEnabled;
         final boolean stopDownloadTracking =
-                !wantDownloadTracking && mDownloadTrackingEnabled;
+                !policy.downloadTracking && mDownloadTrackingEnabled;
         final boolean startTimerTracking =
-                wantTimerTracking && !mTimerTrackingEnabled;
+                policy.timerTracking && !mTimerTrackingEnabled;
         final boolean stopTimerTracking =
-                !wantTimerTracking && mTimerTrackingEnabled;
+                !policy.timerTracking && mTimerTrackingEnabled;
         final boolean startCallNotificationTracking =
-                wantCallNotificationTracking && !mCallNotificationTrackingEnabled;
+                policy.callNotificationTracking && !mCallNotificationTrackingEnabled;
         final boolean stopCallNotificationTracking =
-                !wantCallNotificationTracking && mCallNotificationTrackingEnabled;
+                !policy.callNotificationTracking && mCallNotificationTrackingEnabled;
 
-        mDownloadTrackingEnabled = wantDownloadTracking;
-        mTimerTrackingEnabled = wantTimerTracking;
-        mNotificationAuroraTrackingEnabled = wantNotificationAurora;
-        mCallNotificationTrackingEnabled = wantCallNotificationTracking;
+        mDownloadTrackingEnabled = policy.downloadTracking;
+        mTimerTrackingEnabled = policy.timerTracking;
+        mNotificationAuroraTrackingEnabled = policy.notificationAuroraTracking;
+        mCallNotificationTrackingEnabled = policy.callNotificationTracking;
 
-        if (wantDownloadTracking || wantTimerTracking || wantNotificationAurora
-                || wantCallNotificationTracking) {
+        if (policy.needsNotificationPipeline()) {
             registerPipelineListener();
         } else {
             unregisterPipelineListener();
@@ -326,32 +316,27 @@ public class CutoutProgressController implements CoreStartable {
             seedCallNotificationsFromPipeline();
         }
 
-        if (mSettings.isChargingRingEnabled() || mSettings.isBatteryIndicatorEnabled()) {
+        if (policy.batteryTracking) {
             registerBatteryReceiver();
         } else {
             unregisterBatteryReceiver();
         }
 
         if (mMusicController != null) {
-            boolean musicVisible = mSettings.isMusicRingEnabled()
-                    && mSettings.getMusicPresentation()
-                    != CutoutProgressSettings.PRESENTATION_DISABLED;
-            boolean musicNeededForAurora = mSettings.isAuroraEnabled()
-                    && mSettings.isAuroraMusicEnabled();
-            if (musicVisible || musicNeededForAurora) {
+            if (policy.musicTracking) {
                 mMusicController.start();
             } else {
                 mMusicController.stop();
             }
         }
 
-        if (mSettings.isAuroraEnabled() && mSettings.isAuroraCallsEnabled()) {
+        if (policy.callStateTracking) {
             registerCallStateReceiver();
         } else {
             unregisterCallStateReceiver();
         }
 
-        if (mSettings.isAuroraEnabled() && mSettings.isAuroraRecordingEnabled()) {
+        if (policy.recordingTracking) {
             registerRecordingCallback();
         } else {
             unregisterRecordingCallback();
@@ -359,6 +344,7 @@ public class CutoutProgressController implements CoreStartable {
     }
 
     private void disableFeature() {
+        mRuntimePolicy = CutoutProgressRuntimePolicy.DISABLED;
         unregisterPipelineListener();
         unregisterScreenStateReceiver();
         mDownloadTrackingEnabled = false;
@@ -430,7 +416,7 @@ public class CutoutProgressController implements CoreStartable {
         mNotifListener = new NotifCollectionListener() {
             @Override
             public void onEntryAdded(NotificationEntry entry) {
-                if (!mSettings.isEnabled() || !isEntryForCurrentUser(entry)) return;
+                if (!mRuntimePolicy.enabled || !isEntryForCurrentUser(entry)) return;
                 if (mDownloadTrackingEnabled) {
                     mTracker.onNotificationChanged(entry);
                 }
@@ -447,7 +433,7 @@ public class CutoutProgressController implements CoreStartable {
 
             @Override
             public void onEntryUpdated(NotificationEntry entry) {
-                if (!mSettings.isEnabled() || !isEntryForCurrentUser(entry)) return;
+                if (!mRuntimePolicy.enabled || !isEntryForCurrentUser(entry)) return;
                 if (mDownloadTrackingEnabled) {
                     mTracker.onNotificationChanged(entry);
                 }
@@ -469,7 +455,7 @@ public class CutoutProgressController implements CoreStartable {
 
             @Override
             public void onEntryRemoved(NotificationEntry entry, int reason) {
-                if (!mSettings.isEnabled()) return;
+                if (!mRuntimePolicy.enabled) return;
                 // Removal must also clear entries that belonged to a profile which was just
                 // stopped/removed. By this point UserTracker may no longer report that profile,
                 // but the previously tracked StatusBarNotification key is still authoritative.
@@ -497,7 +483,7 @@ public class CutoutProgressController implements CoreStartable {
     }
 
     private void seedDownloadsFromPipeline() {
-        if (!mSettings.isEnabled() || !mDownloadTrackingEnabled) return;
+        if (!mRuntimePolicy.enabled || !mDownloadTrackingEnabled) return;
         for (NotificationEntry entry : mPipeline.getAllNotifs()) {
             if (isEntryForCurrentUser(entry)) {
                 mTracker.onNotificationChanged(entry);
@@ -506,7 +492,7 @@ public class CutoutProgressController implements CoreStartable {
     }
 
     private void triggerNotificationAurora(NotificationEntry entry) {
-        if (!mSettings.isAuroraEnabled() || !mSettings.isAuroraNotificationsEnabled()
+        if (!mRuntimePolicy.notificationAuroraTracking
                 || entry == null || entry.getSbn() == null
                 || entry.getSbn().getNotification() == null) {
             return;
@@ -544,7 +530,7 @@ public class CutoutProgressController implements CoreStartable {
     }
 
     private void seedCallNotificationsFromPipeline() {
-        if (!mSettings.isEnabled() || !mCallNotificationTrackingEnabled) return;
+        if (!mRuntimePolicy.enabled || !mCallNotificationTrackingEnabled) return;
         for (NotificationEntry entry : mPipeline.getAllNotifs()) {
             if (isEntryForCurrentUser(entry)) updateCallNotification(entry);
         }
@@ -562,16 +548,14 @@ public class CutoutProgressController implements CoreStartable {
         // State seeding can be posted to the main handler. If call Aurora was disabled or the
         // active user changed before that runnable executes, force the effect off instead of
         // resurrecting stale call state.
-        boolean allowed = mSettings.isEnabled()
-                && mSettings.isAuroraEnabled()
-                && mSettings.isAuroraCallsEnabled();
+        boolean allowed = mRuntimePolicy.callStateTracking;
         boolean active = allowed
                 && (mTelecomCallActive || !mActiveCallNotificationKeys.isEmpty());
         mRingView.setAuroraCallActive(active);
     }
 
     private boolean updateTimerFromNotification(NotificationEntry entry) {
-        if (!mSettings.isTimerEnabled() || entry == null || entry.getSbn() == null) return false;
+        if (!mRuntimePolicy.timerTracking || entry == null || entry.getSbn() == null) return false;
         Notification notification = entry.getSbn().getNotification();
         if (notification == null || !isLikelyClockNotification(entry, notification)) return false;
 
@@ -716,7 +700,7 @@ public class CutoutProgressController implements CoreStartable {
     }
 
     private void seedTimerFromPipeline() {
-        if (!mSettings.isEnabled() || !mSettings.isTimerEnabled()) return;
+        if (!mRuntimePolicy.timerTracking) return;
         for (NotificationEntry entry : mPipeline.getAllNotifs()) {
             if (isEntryForCurrentUser(entry)) updateTimerFromNotification(entry);
         }
@@ -724,7 +708,7 @@ public class CutoutProgressController implements CoreStartable {
 
     private void updateTimerTick() {
         removeTimerTick();
-        if (!mSettings.isEnabled() || !mSettings.isTimerEnabled()
+        if (!mRuntimePolicy.timerTracking
                 || mTimerKey == null || mTimerTotalMs <= 0L) {
             clearTimerState();
             return;
@@ -862,9 +846,7 @@ public class CutoutProgressController implements CoreStartable {
         }
         final boolean recording = active;
         runOnMain(() -> {
-            if (mRecordingCallbackRegistered && mSettings.isEnabled()
-                    && mSettings.isAuroraEnabled()
-                    && mSettings.isAuroraRecordingEnabled()
+            if (mRecordingCallbackRegistered && mRuntimePolicy.recordingTracking
                     && mRingView != null) {
                 mRingView.setAuroraRecordingActive(recording);
             }

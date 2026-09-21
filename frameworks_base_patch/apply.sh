@@ -47,8 +47,13 @@ declare -A EXPECTED=(
 )
 
 NEW_FILES=(
+    "packages/SystemUI/src/com/android/systemui/cutoutprogress/CutoutProgressRuntimePolicy.java"
     "packages/SystemUI/src/com/android/systemui/cutoutprogress/ring/CameraCutoutGeometryResolver.java"
     "packages/SystemUI/src/com/android/systemui/cutoutprogress/ring/PathRingRenderer.java"
+    "packages/SystemUI/src/com/android/systemui/cutoutprogress/ring/RingRouter.java"
+    "packages/SystemUI/src/com/android/systemui/cutoutprogress/ring/MusicWavePainter.java"
+    "packages/SystemUI/src/com/android/systemui/cutoutprogress/ring/TimerFlamePainter.java"
+    "packages/SystemUI/src/com/android/systemui/cutoutprogress/ring/ProgressLabelPainter.java"
     "packages/SystemUI/src/com/android/systemui/axdynamicbar/ui/layout/DynamicBarLayoutState.kt"
     "packages/SystemUI/src/com/android/systemui/axdynamicbar/ui/compose/DynamicBarCutoutHost.kt"
 )
