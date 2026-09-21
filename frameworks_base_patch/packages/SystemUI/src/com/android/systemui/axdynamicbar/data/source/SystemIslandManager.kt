@@ -177,6 +177,11 @@ constructor(
                 clipSource == context.packageName &&
                     desc.extras?.getBoolean(EXTRA_DYNAMIC_BAR_SELF_COPY, false) == true
             ) {
+                // Image self-copies must keep the newly leased backing file alive. Text self-copies
+                // replace an older image clipboard, so any previous active image lease is stale.
+                if (!(desc.hasMimeType("image/*") && item.uri != null)) {
+                    cleanupActiveClipboardLeases(state)
+                }
                 invalidatePendingClipboardWorkAndPersist(state)
                 return@OnPrimaryClipChangedListener
             }
