@@ -74,6 +74,7 @@ object DynamicBarLayoutCalculator {
         val forceCenter = alignment == ALIGNMENT_CENTER || compactLandscape
         val usePhysical =
             physicalBounds != null &&
+                topCutout &&
                 !forceCenter &&
                 (!isLandscape || landscapeMode == LANDSCAPE_ALWAYS || topCutout)
 
