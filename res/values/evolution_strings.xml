@@ -1935,4 +1935,10 @@
     <string name="lockscreen_customization_interaction_category">Interaction &amp; security</string>
     <string name="lockscreen_customization_glymps_summary">Rotate lock screen wallpapers from curated, custom URL, or folder sources</string>
     <string name="lockscreen_customization_footer">This studio reuses the same system settings as the existing Evolver pages, so there are no duplicate or fake controls. Smartspace and weather changes may restart SystemUI when required.</string>
+
+    <!-- Lock screen layout positioning -->
+    <string name="lockscreen_layout_title">Layout positioning</string>
+    <string name="lockscreen_layout_summary">Fine-tune weather and widget positions independently</string>
+    <string name="lockscreen_layout_horizontal_offset_title">Horizontal offset</string>
+    <string name="lockscreen_layout_vertical_offset_title">Vertical offset</string>
 </resources>
