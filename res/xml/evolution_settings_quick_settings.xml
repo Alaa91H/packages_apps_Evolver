@@ -74,6 +74,12 @@
             android:title="@string/qs_compact_media_player_mode_title"
             android:summary="@string/qs_compact_media_player_mode_summary"
             android:defaultValue="false" />
+
+        <org.evolution.settings.preferences.SystemSettingSwitchPreference
+            android:key="qs_tile_haptic"
+            android:title="@string/quick_settings_brightness_slider_haptic_title"
+            android:summary="@string/quick_settings_tile_haptic_summary"
+            android:defaultValue="true" />
     </PreferenceCategory>
 
     <PreferenceCategory
