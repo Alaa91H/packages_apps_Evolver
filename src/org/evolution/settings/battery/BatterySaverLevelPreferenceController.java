@@ -17,8 +17,6 @@
 package org.evolution.settings.battery;
 
 import android.content.Context;
-import android.os.BatterySaverPolicyConfig;
-import android.os.PowerManager;
 import android.provider.Settings;
 
 import androidx.preference.ListPreference;
@@ -33,11 +31,8 @@ public class BatterySaverLevelPreferenceController extends BasePreferenceControl
 
     public static final String KEY_BRIGHTNESS_REDUCTION = "low_power_brightness_reduction";
 
-    private final PowerManager mPowerManager;
-
     public BatterySaverLevelPreferenceController(Context context, String key) {
         super(context, key);
-        mPowerManager = context.getSystemService(PowerManager.class);
     }
 
     @Override
@@ -84,24 +79,10 @@ public class BatterySaverLevelPreferenceController extends BasePreferenceControl
             try {
                 return Integer.parseInt(stored);
             } catch (NumberFormatException ignored) {
-                // Fall back to the platform policy below.
+                // Treat malformed values as the platform default.
             }
         }
-
-        if (KEY_BRIGHTNESS_REDUCTION.equals(getPreferenceKey()) && mPowerManager != null) {
-            final BatterySaverPolicyConfig policy = mPowerManager.getFullPowerSavePolicy();
-            if (!policy.getEnableAdjustBrightness()) {
-                return 0;
-            }
-
-            final int reduction = Math.round((1.0f - policy.getAdjustBrightnessFactor()) * 100f);
-            if (reduction <= 0) {
-                return 0;
-            }
-            return Math.max(10, Math.min(50, Math.round(reduction / 10.0f) * 10));
-        }
-
-        return 0;
+        return -1;
     }
 
     @Override
