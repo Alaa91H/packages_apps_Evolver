@@ -6,126 +6,49 @@
 <PreferenceScreen
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:settings="http://schemas.android.com/apk/res/com.android.settings"
-    android:title="@string/lock_screen_title">
-
-
-    <!-- Unified lock screen customization hub -->
-    <Preference
-        android:key="lockscreen_customization_settings"
-        android:title="@string/lockscreen_customization_title"
-        android:summary="@string/lockscreen_customization_summary"
-        android:icon="@drawable/ic_evolver_lock_screen"
-        android:fragment="org.evolution.settings.fragments.lockscreen.LockscreenCustomization" />
+    android:title="@string/lockscreen_customization_title">
 
     <PreferenceCategory
-        android:key="lock_screen_clock_category"
-        android:title="@string/lock_screen_clock_category">
+        android:title="@string/lockscreen_customization_design_category">
 
-        <!-- Custom clock style -->
         <Preference
-            android:key="clock_styles_settings"
+            android:key="lockscreen_studio_clock"
             android:title="@string/ls_clock_title"
             android:summary="@string/ls_clock_summary"
             android:fragment="org.evolution.settings.fragments.lockscreen.ClockStyles" />
 
-    </PreferenceCategory>
-
-    <PreferenceCategory
-        android:key="lock_screen_media_category"
-        android:title="@string/lock_screen_media_category">
-
-        <!-- Now Playing -->
         <org.evolution.settings.preferences.SystemSettingPrimarySwitchPreference
-            android:key="nowplaying_enabled"
-            android:title="@string/nowplaying_title"
-            android:summary="@string/nowplaying_summary"
-            android:fragment="org.evolution.settings.fragments.lockscreen.NowPlayingSettings"
+            android:key="lockscreen_widgets_enabled"
+            android:title="@string/lockscreen_widgets_title"
+            android:summary="@string/lockscreen_widgets_enabled_summary"
+            android:fragment="org.evolution.settings.fragments.lockscreen.LockScreenWidgets"
             android:defaultValue="false" />
 
-        <!-- Edge light -->
         <org.evolution.settings.preferences.SystemSettingPrimarySwitchPreference
-            android:key="edge_light_enabled"
-            android:title="@string/edge_light_title"
-            android:summary="@string/edge_light_summary"
-            android:fragment="org.evolution.settings.fragments.lockscreen.EdgeLightSettings"
+            android:key="depth_wallpaper_enabled"
+            android:title="@string/depthwall_wallpaper_enabled_title"
+            android:summary="@string/depthwall_wallpaper_enabled_summary"
+            android:fragment="org.evolution.settings.fragments.lockscreen.WallpaperDepth"
             android:defaultValue="false" />
 
-        <!-- Lockscreen Media Art -->
         <org.evolution.settings.preferences.SystemSettingPrimarySwitchPreference
-            android:key="ls_media_art_enabled"
-            android:title="@string/ls_media_art_title"
-            android:summary="@string/ls_media_art_summary"
-            android:fragment="org.evolution.settings.fragments.lockscreen.MediaArtSettings"
+            android:key="lock_glymps_enabled"
+            android:title="@string/lock_glymps_title"
+            android:summary="@string/lockscreen_customization_glymps_summary"
+            android:fragment="org.evolution.settings.fragments.themes.LockGlympsSettings"
             android:defaultValue="false" />
 
-        <!-- Pulse music visualizer -->
-        <org.evolution.settings.preferences.SecureSettingPrimarySwitchPreference
-            android:key="lockscreen_pulse_enabled"
-            android:title="@string/pulse_settings_title"
-            android:summary="@string/pulse_settings_summary"
-            android:fragment="org.evolution.settings.fragments.lockscreen.PulseSettings"
-            android:defaultValue="false" />
-
-    </PreferenceCategory>
-
-    <PreferenceCategory
-        android:key="lock_screen_interface_category"
-        android:title="@string/lock_screen_interface_category">
-
-        <!-- Ambient Wallpaper -->
         <org.evolution.settings.preferences.SecureSettingSwitchPreference
             android:key="doze_always_on_wallpaper_enabled"
             android:title="@string/doze_always_on_wallpaper_title"
             android:summary="@string/doze_always_on_wallpaper_summary"
             android:defaultValue="@*android:bool/config_dozeSupportsAodWallpaper" />
 
-        <!-- Charging stats -->
-        <org.evolution.settings.preferences.SystemSettingSwitchPreference
-            android:key="lockscreen_battery_info"
-            android:title="@string/lock_screen_charging_stats_title"
-            android:summary="@string/lock_screen_charging_stats_summary"
-            android:defaultValue="true" />
-
-        <!-- Remaining charging time -->
-        <!--<org.evolution.settings.preferences.SystemSettingSwitchPreference
-            android:key="lockscreen_charging_time"
-            android:title="@string/lock_screen_charging_time_title"
-            android:summary="@string/lock_screen_charging_time_summary"
-            android:defaultValue="true" />
-
-        <org.evolution.settings.preferences.SecureSettingSwitchPreference
-            android:key="keyguard_scrim_transparent"
-            android:title="@string/keyguard_scrim_transparent_title"
-            android:summary="@string/keyguard_scrim_transparent_summary"
-            android:defaultValue="false" />-->
-
     </PreferenceCategory>
 
-    <!--<PreferenceCategory
-        android:key="ambient_display_category"
-        android:title="@string/ambient_display_category_title">
-
-        <org.evolution.settings.preferences.SystemSettingListPreference
-            android:key="ambient_show_settings"
-            android:title="@string/ambient_bottom_title"
-            android:entries="@array/ambient_bottom_entries"
-            android:entryValues="@array/ambient_bottom_values"
-            android:summary="%s"
-            android:defaultValue="1" />
-
-        <org.evolution.settings.preferences.SystemSettingSwitchPreference
-            android:key="ambient_show_settings_icons"
-            android:title="@string/display_icon_title"
-            android:summary="@string/display_icon_summary"
-            android:defaultValue="false" />
-
-    </PreferenceCategory>-->
-
     <PreferenceCategory
-        android:key="lockscreen_weather_category"
-        android:title="@string/lockscreen_weather_category">
+        android:title="@string/lockscreen_customization_information_category">
 
-        <!-- Smartspace -->
         <org.evolution.settings.preferences.SecureSettingSwitchPreference
             android:key="lockscreen_smartspace_enabled"
             android:title="@string/lockscreen_smartspace_title"
@@ -133,6 +56,7 @@
             android:defaultValue="true" />
 
         <Preference
+            android:key="lockscreen_studio_weather_service"
             android:title="@string/weather_settings_title"
             android:summary="@string/weather_settings_summary">
             <intent
@@ -144,7 +68,8 @@
         <org.evolution.settings.preferences.SystemSettingSwitchPreference
             android:key="lockscreen_weather_enabled"
             android:title="@string/lockscreen_weather_title"
-            android:summary="@string/lockscreen_weather_summary" />
+            android:summary="@string/lockscreen_weather_summary"
+            android:defaultValue="false" />
 
         <org.evolution.settings.preferences.SystemSettingSwitchPreference
             android:key="lockscreen_weather_location"
@@ -173,11 +98,53 @@
             android:defaultValue="false"
             android:dependency="lockscreen_weather_enabled" />
 
+        <org.evolution.settings.preferences.SystemSettingSwitchPreference
+            android:key="lockscreen_battery_info"
+            android:title="@string/lock_screen_charging_stats_title"
+            android:summary="@string/lock_screen_charging_stats_summary"
+            android:defaultValue="true" />
+
+        <org.evolution.settings.preferences.SystemSettingListPreference
+            android:key="lockscreen_show_carrier"
+            android:title="@string/lockscreen_show_carrier_title"
+            android:dialogTitle="@string/lockscreen_show_carrier_title"
+            android:summary="%s"
+            android:entries="@array/status_bar_carrier_display_entries"
+            android:entryValues="@array/status_bar_carrier_display_values"
+            android:defaultValue="1" />
+
     </PreferenceCategory>
 
     <PreferenceCategory
-        android:key="lock_screen_charging_effects_category"
-        android:title="@string/lock_screen_charging_effects_category">
+        android:title="@string/lockscreen_customization_media_category">
+
+        <org.evolution.settings.preferences.SystemSettingPrimarySwitchPreference
+            android:key="nowplaying_enabled"
+            android:title="@string/nowplaying_title"
+            android:summary="@string/nowplaying_summary"
+            android:fragment="org.evolution.settings.fragments.lockscreen.NowPlayingSettings"
+            android:defaultValue="false" />
+
+        <org.evolution.settings.preferences.SystemSettingPrimarySwitchPreference
+            android:key="edge_light_enabled"
+            android:title="@string/edge_light_title"
+            android:summary="@string/edge_light_summary"
+            android:fragment="org.evolution.settings.fragments.lockscreen.EdgeLightSettings"
+            android:defaultValue="false" />
+
+        <org.evolution.settings.preferences.SystemSettingPrimarySwitchPreference
+            android:key="ls_media_art_enabled"
+            android:title="@string/ls_media_art_title"
+            android:summary="@string/ls_media_art_summary"
+            android:fragment="org.evolution.settings.fragments.lockscreen.MediaArtSettings"
+            android:defaultValue="false" />
+
+        <org.evolution.settings.preferences.SecureSettingPrimarySwitchPreference
+            android:key="lockscreen_pulse_enabled"
+            android:title="@string/pulse_settings_title"
+            android:summary="@string/pulse_settings_summary"
+            android:fragment="org.evolution.settings.fragments.lockscreen.PulseSettings"
+            android:defaultValue="false" />
 
         <org.evolution.settings.preferences.SystemSettingPrimarySwitchPreference
             android:key="charging_animation_enabled"
@@ -189,8 +156,26 @@
     </PreferenceCategory>
 
     <PreferenceCategory
-        android:key="lockscreen_gestures_category"
-        android:title="@string/lock_screen_fingerprint_category">
+        android:key="lockscreen_studio_interaction_category"
+        android:title="@string/lockscreen_customization_interaction_category">
+
+        <org.evolution.settings.preferences.SecureSettingSwitchPreference
+            android:key="enable_lockscreen_quick_settings"
+            android:title="@string/quick_settings_secure_lock_screen_title"
+            android:summary="@string/quick_settings_secure_lock_screen_summary"
+            android:defaultValue="true" />
+
+        <org.evolution.settings.preferences.SecureSettingSwitchPreference
+            android:key="qstile_requires_unlocking"
+            android:title="@string/quick_settings_require_unlock_title"
+            android:summary="@string/quick_settings_require_unlock_summary"
+            android:defaultValue="true" />
+
+        <org.evolution.settings.preferences.SystemSettingSwitchPreference
+            android:key="lockscreen_enable_power_menu"
+            android:title="@string/power_menu_lock_screen_secure_title"
+            android:summary="@string/power_menu_lock_screen_secure_summary"
+            android:defaultValue="true" />
 
         <org.evolution.settings.preferences.SystemSettingSwitchPreference
             android:key="enable_ripple_effect"
@@ -212,17 +197,10 @@
 
     </PreferenceCategory>
 
-    <PreferenceCategory
-        android:key="lock_screen_power_menu_category"
-        android:title="@string/power_menu_title">
-
-        <!-- Hide power menu on secure lock screen -->
-        <org.evolution.settings.preferences.SystemSettingSwitchPreference
-            android:key="lockscreen_enable_power_menu"
-            android:title="@string/power_menu_lock_screen_secure_title"
-            android:summary="@string/power_menu_lock_screen_secure_summary"
-            android:defaultValue="true" />
-
-    </PreferenceCategory>
+    <com.android.settingslib.widget.FooterPreference
+        android:key="lockscreen_customization_footer"
+        android:title="@string/lockscreen_customization_footer"
+        android:selectable="false"
+        settings:searchable="false" />
 
 </PreferenceScreen>

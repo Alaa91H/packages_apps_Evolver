@@ -1718,4 +1718,14 @@
     <string name="network_traffic_alignment_start">البداية</string>
     <string name="network_traffic_alignment_center">الوسط</string>
     <string name="network_traffic_alignment_end">النهاية</string>
+
+    <!-- استوديو تخصيص شاشة القفل الموحد -->
+    <string name="lockscreen_customization_title">استوديو شاشة القفل</string>
+    <string name="lockscreen_customization_summary">خصّص الساعة والأدوات والخلفيات والمعلومات والوسائط والمؤثرات وخيارات الأمان من مكان واحد</string>
+    <string name="lockscreen_customization_design_category">التصميم والتخطيط</string>
+    <string name="lockscreen_customization_information_category">المعلومات ولمحة سريعة</string>
+    <string name="lockscreen_customization_media_category">الوسائط والمؤثرات</string>
+    <string name="lockscreen_customization_interaction_category">التفاعل والأمان</string>
+    <string name="lockscreen_customization_glymps_summary">بدّل خلفيات شاشة القفل من مصادر مختارة أو روابط مخصصة أو مجلدات</string>
+    <string name="lockscreen_customization_footer">يستخدم هذا الاستوديو إعدادات النظام نفسها الموجودة في صفحات Evolver الحالية، لذلك لا توجد عناصر تحكم مكررة أو وهمية. قد تتطلب تغييرات Smartspace والطقس إعادة تشغيل واجهة النظام عند الحاجة.</string>
 </resources>
