@@ -19,7 +19,48 @@ class EdgeLightSettings : SettingsPreferenceFragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ensureLocationDefaults()
         addPreferencesFromResource(R.xml.edge_light_settings)
+    }
+
+    /**
+     * Preserve the legacy visual when upgrading. The old straight style lit only the sides,
+     * while the rounded/frame style lit the complete perimeter.
+     */
+    private fun ensureLocationDefaults() {
+        val resolver = requireContext().contentResolver
+        val style = Settings.System.getStringForUser(
+            resolver, Settings.System.EDGE_LIGHT_STYLE, UserHandle.USER_CURRENT
+        ) ?: "default"
+        val frameStyle = style.equals("rounded", ignoreCase = true) ||
+                style.equals("frame", ignoreCase = true)
+
+        fun ensure(key: String, defaultValue: Boolean) {
+            if (Settings.System.getStringForUser(
+                    resolver, key, UserHandle.USER_CURRENT
+                ) == null) {
+                Settings.System.putIntForUser(
+                    resolver, key, if (defaultValue) 1 else 0, UserHandle.USER_CURRENT
+                )
+            }
+        }
+
+        ensure(Settings.System.EDGE_LIGHT_TOP_ENABLED, frameStyle)
+        ensure(Settings.System.EDGE_LIGHT_SIDES_ENABLED, true)
+        ensure(Settings.System.EDGE_LIGHT_BOTTOM_ENABLED, frameStyle)
+
+        if (Settings.System.getStringForUser(
+                resolver,
+                Settings.System.EDGE_LIGHT_AURORA_COLOR_MODE,
+                UserHandle.USER_CURRENT
+            ) == null) {
+            Settings.System.putStringForUser(
+                resolver,
+                Settings.System.EDGE_LIGHT_AURORA_COLOR_MODE,
+                "single",
+                UserHandle.USER_CURRENT
+            )
+        }
     }
 
     override fun getMetricsCategory(): Int = MetricsProto.MetricsEvent.EVOLVER
@@ -42,6 +83,18 @@ class EdgeLightSettings : SettingsPreferenceFragment() {
                     Settings.System.EDGE_LIGHT_STYLE, "default", UserHandle.USER_CURRENT)
             Settings.System.putStringForUser(resolver,
                     Settings.System.EDGE_LIGHT_ANIMATION_EFFECT, "none", UserHandle.USER_CURRENT)
+            Settings.System.putIntForUser(resolver,
+                    Settings.System.EDGE_LIGHT_TOP_ENABLED, 0, UserHandle.USER_CURRENT)
+            Settings.System.putIntForUser(resolver,
+                    Settings.System.EDGE_LIGHT_SIDES_ENABLED, 1, UserHandle.USER_CURRENT)
+            Settings.System.putIntForUser(resolver,
+                    Settings.System.EDGE_LIGHT_BOTTOM_ENABLED, 0, UserHandle.USER_CURRENT)
+            Settings.System.putStringForUser(resolver,
+                    Settings.System.EDGE_LIGHT_AURORA_COLOR_MODE, "single", UserHandle.USER_CURRENT)
+            Settings.System.putIntForUser(resolver,
+                    Settings.System.EDGE_LIGHT_SPREAD, 0, UserHandle.USER_CURRENT)
+            Settings.System.putIntForUser(resolver,
+                    Settings.System.EDGE_LIGHT_INTENSITY, 0, UserHandle.USER_CURRENT)
         }
     }
 }
