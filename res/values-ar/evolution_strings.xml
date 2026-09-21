@@ -1087,6 +1087,10 @@
     <string name="edge_light_animation_effect_sparkle">بريق</string>
     <string name="edge_light_animation_effect_chase">مطاردة</string>
     <string name="edge_light_animation_effect_comet">مذنب</string>
+    <string name="edge_light_animation_effect_aurora">أورورا</string>
+    <string name="edge_light_aurora_color_mode_title">ألوان أورورا</string>
+    <string name="edge_light_aurora_color_fixed">لون ثابت</string>
+    <string name="edge_light_aurora_color_multicolor">ألوان متعددة</string>
     <string name="edge_light_spread_title">انتشار التوهج</string>
     <string name="edge_light_spread_summary">مدى امتداد التوهج نحو الداخل من الحافة</string>
     <string name="edge_light_intensity_title">شدة التوهج</string>
