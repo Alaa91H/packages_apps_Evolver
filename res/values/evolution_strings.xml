@@ -1921,6 +1921,8 @@
     <!-- Screenshots -->
     <string name="screenshot_clipboard_only_title">Copy to clipboard only</string>
     <string name="screenshot_clipboard_only_summary">Copy screenshot to clipboard instead of saving in storage</string>
+    <string name="screenshot_full_page_capture_title">Full-page scrolling screenshot</string>
+    <string name="screenshot_full_page_capture_summary">When Capture more is used, automatically continue capturing downward to the end of the content at native resolution, up to a safe 12,000 px height</string>
     <string name="hide_status_bar_in_screenshot_title">Hide status bar in screenshots</string>
     <string name="hide_status_bar_in_screenshot_summary">Crop the status bar area out of full screenshots</string>
 </resources>
