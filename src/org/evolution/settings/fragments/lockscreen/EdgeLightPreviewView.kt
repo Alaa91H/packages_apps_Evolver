@@ -12,6 +12,8 @@ import android.app.WallpaperManager
 import android.content.Context
 import android.database.ContentObserver
 import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.ComposeShader
 import android.graphics.LinearGradient
 import android.graphics.Matrix
 import android.graphics.Paint
@@ -20,6 +22,7 @@ import android.graphics.PathMeasure
 import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.SweepGradient
+import android.graphics.PorterDuff
 import android.os.Handler
 import android.os.Looper
 import android.os.UserHandle
@@ -57,6 +60,11 @@ class EdgeLightPreviewView @JvmOverloads constructor(
         }
 
     private var animationEffect: String = "none"
+    private var positionTop: Boolean = false
+    private var positionSides: Boolean = true
+    private var positionBottom: Boolean = false
+    private var auroraColorMode: String = "single"
+    private var auroraBaseColor: Int = Utils.getColorAccentDefaultColor(context)
 
     private var userPulseCount: Int = 3
         set(value) { field = value.coerceIn(1, 5) }
@@ -65,6 +73,13 @@ class EdgeLightPreviewView @JvmOverloads constructor(
         style = Paint.Style.STROKE
         strokeCap = Paint.Cap.BUTT
     }
+
+    private val auroraPaint: Paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        isDither = true
+    }
+
+    private val edgeClipPath = Path()
 
     private val totalPulseDuration: Long =
         resources.getInteger(R.integer.edge_light_preview_pulse_duration_ms).toLong()
@@ -126,14 +141,47 @@ class EdgeLightPreviewView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         if (width <= 0 || height <= 0) return
+        if (!positionTop && !positionSides && !positionBottom) return
         if (animationEffect != "breathing") {
             edgePaint.strokeWidth = userStrokeWidth * resources.displayMetrics.density
         }
-        if (isFrameStyle(edgeStyle)) {
+        if (animationEffect == "aurora") {
+            drawAurora(canvas)
+            return
+        }
+
+        val save = canvas.save()
+        clipToEnabledEdges(canvas)
+        if (isFrameStyle(edgeStyle) || positionTop || positionBottom) {
             drawRoundedEdges(canvas)
         } else {
             drawDefaultEdges(canvas)
         }
+        canvas.restoreToCount(save)
+    }
+
+    private fun clipToEnabledEdges(canvas: Canvas) {
+        edgeClipPath.reset()
+        val density = resources.displayMetrics.density
+        val minBand = edgePaint.strokeWidth * 4f + 8f * density
+        val horizontalBand = max(minBand, height * 0.18f).coerceAtMost(height.toFloat())
+        val verticalBand = max(minBand, width * 0.18f).coerceAtMost(width.toFloat())
+
+        if (positionTop) {
+            edgeClipPath.addRect(0f, 0f, width.toFloat(), horizontalBand, Path.Direction.CW)
+        }
+        if (positionBottom) {
+            edgeClipPath.addRect(
+                0f, height - horizontalBand, width.toFloat(), height.toFloat(), Path.Direction.CW
+            )
+        }
+        if (positionSides) {
+            edgeClipPath.addRect(0f, 0f, verticalBand, height.toFloat(), Path.Direction.CW)
+            edgeClipPath.addRect(
+                width - verticalBand, 0f, width.toFloat(), height.toFloat(), Path.Direction.CW
+            )
+        }
+        canvas.clipPath(edgeClipPath)
     }
 
     private fun registerSettingsObserver() {
@@ -169,6 +217,10 @@ class EdgeLightPreviewView @JvmOverloads constructor(
         var strokeWidth = 8
         var style = "default"
         var effect = "none"
+        var top = false
+        var sides = true
+        var bottom = false
+        var auroraMode = "single"
 
         try {
             Settings.System.getStringForUser(
@@ -200,11 +252,35 @@ class EdgeLightPreviewView @JvmOverloads constructor(
                 resolver, "edge_light_animation_effect", UserHandle.USER_CURRENT
             )?.let { effect = it }
         } catch (_: Exception) {}
+        try {
+            top = Settings.System.getIntForUser(
+                resolver, "edge_light_position_top", 0, UserHandle.USER_CURRENT
+            ) == 1
+        } catch (_: Exception) {}
+        try {
+            sides = Settings.System.getIntForUser(
+                resolver, "edge_light_position_sides", 1, UserHandle.USER_CURRENT
+            ) == 1
+        } catch (_: Exception) {}
+        try {
+            bottom = Settings.System.getIntForUser(
+                resolver, "edge_light_position_bottom", 0, UserHandle.USER_CURRENT
+            ) == 1
+        } catch (_: Exception) {}
+        try {
+            Settings.System.getStringForUser(
+                resolver, "edge_light_aurora_color_mode", UserHandle.USER_CURRENT
+            )?.let { auroraMode = it }
+        } catch (_: Exception) {}
 
         userPulseCount = pulseCount
         userStrokeWidth = strokeWidth
         edgeStyle = style
         animationEffect = effect
+        positionTop = top
+        positionSides = sides
+        positionBottom = bottom
+        auroraColorMode = if (auroraMode == "multicolor") "multicolor" else "single"
         setPaintColor(resolvePaintColor(colorMode, customColor))
 
         stopRainbowAnimation()
@@ -239,8 +315,10 @@ class EdgeLightPreviewView @JvmOverloads constructor(
             edgePaint.shader = null
             edgePaint.color = color
             edgePaint.alpha = 255
+            auroraBaseColor = color
         } else {
             useRainbowGradient = true
+            auroraBaseColor = Utils.getColorAccentDefaultColor(context)
             updateRainbowGradient()
         }
         invalidate()
@@ -295,8 +373,9 @@ class EdgeLightPreviewView @JvmOverloads constructor(
             height - strokeHalf,
         )
         roundedPath.reset()
+        val radius = if (isFrameStyle(edgeStyle)) cornerRadius else 0f
         roundedPath.addRoundRect(
-            roundedRect, cornerRadius, cornerRadius, Path.Direction.CW
+            roundedRect, radius, radius, Path.Direction.CW
         )
         when (animationEffect) {
             "breathing" -> {
@@ -543,6 +622,158 @@ class EdgeLightPreviewView @JvmOverloads constructor(
         }
     }
 
+    private fun drawAurora(canvas: Canvas) {
+        val density = resources.displayMetrics.density
+        val baseStroke = userStrokeWidth * density
+        val sideSpread = max(baseStroke * 3f, width * 0.22f).coerceAtMost(width * 0.55f)
+        val horizontalSpread =
+            max(baseStroke * 3f, height * 0.12f).coerceAtMost(height * 0.32f)
+
+        if (positionSides) {
+            drawAuroraVerticalBand(canvas, true, sideSpread)
+            drawAuroraVerticalBand(canvas, false, sideSpread)
+        }
+        if (positionTop) drawAuroraHorizontalBand(canvas, true, horizontalSpread)
+        if (positionBottom) drawAuroraHorizontalBand(canvas, false, horizontalSpread)
+
+        drawAuroraCore(canvas, baseStroke)
+    }
+
+    private fun drawAuroraVerticalBand(canvas: Canvas, left: Boolean, spread: Float) {
+        val colorShader = auroraLongitudinalShader(false, height.toFloat(), effectProgress)
+        val fadeColors = if (left) {
+            intArrayOf(
+                alphaColor(Color.WHITE, 0.95f),
+                alphaColor(Color.WHITE, 0.66f),
+                alphaColor(Color.WHITE, 0.28f),
+                Color.TRANSPARENT,
+            )
+        } else {
+            intArrayOf(
+                Color.TRANSPARENT,
+                alphaColor(Color.WHITE, 0.28f),
+                alphaColor(Color.WHITE, 0.66f),
+                alphaColor(Color.WHITE, 0.95f),
+            )
+        }
+        val fadeShader = LinearGradient(
+            if (left) 0f else width - spread,
+            0f,
+            if (left) spread else width.toFloat(),
+            0f,
+            fadeColors,
+            AURORA_FADE_STOPS,
+            Shader.TileMode.CLAMP,
+        )
+        auroraPaint.shader = ComposeShader(colorShader, fadeShader, PorterDuff.Mode.SRC_IN)
+        if (left) {
+            canvas.drawRect(0f, 0f, spread, height.toFloat(), auroraPaint)
+        } else {
+            canvas.drawRect(width - spread, 0f, width.toFloat(), height.toFloat(), auroraPaint)
+        }
+    }
+
+    private fun drawAuroraHorizontalBand(canvas: Canvas, top: Boolean, spread: Float) {
+        val colorShader = auroraLongitudinalShader(true, width.toFloat(), effectProgress)
+        val fadeColors = if (top) {
+            intArrayOf(
+                alphaColor(Color.WHITE, 0.95f),
+                alphaColor(Color.WHITE, 0.66f),
+                alphaColor(Color.WHITE, 0.28f),
+                Color.TRANSPARENT,
+            )
+        } else {
+            intArrayOf(
+                Color.TRANSPARENT,
+                alphaColor(Color.WHITE, 0.28f),
+                alphaColor(Color.WHITE, 0.66f),
+                alphaColor(Color.WHITE, 0.95f),
+            )
+        }
+        val fadeShader = LinearGradient(
+            0f,
+            if (top) 0f else height - spread,
+            0f,
+            if (top) spread else height.toFloat(),
+            fadeColors,
+            AURORA_FADE_STOPS,
+            Shader.TileMode.CLAMP,
+        )
+        auroraPaint.shader = ComposeShader(colorShader, fadeShader, PorterDuff.Mode.SRC_IN)
+        if (top) {
+            canvas.drawRect(0f, 0f, width.toFloat(), spread, auroraPaint)
+        } else {
+            canvas.drawRect(0f, height - spread, width.toFloat(), height.toFloat(), auroraPaint)
+        }
+    }
+
+    private fun drawAuroraCore(canvas: Canvas, baseStroke: Float) {
+        val core = Paint(edgePaint).apply {
+            style = Paint.Style.STROKE
+            strokeCap = Paint.Cap.ROUND
+            strokeWidth = max(1f, baseStroke * 0.55f)
+            alpha = 235
+            shader = auroraLongitudinalShader(false, height.toFloat(), effectProgress)
+        }
+        val half = core.strokeWidth / 2f
+        if (positionSides) {
+            canvas.drawLine(half, 0f, half, height.toFloat(), core)
+            canvas.drawLine(width - half, 0f, width - half, height.toFloat(), core)
+        }
+        if (positionTop) {
+            core.shader = auroraLongitudinalShader(true, width.toFloat(), effectProgress)
+            canvas.drawLine(0f, half, width.toFloat(), half, core)
+        }
+        if (positionBottom) {
+            core.shader = auroraLongitudinalShader(
+                true, width.toFloat(), (effectProgress + 0.35f) % 1f
+            )
+            canvas.drawLine(0f, height - half, width.toFloat(), height - half, core)
+        }
+    }
+
+    private fun auroraLongitudinalShader(
+        horizontal: Boolean,
+        length: Float,
+        phase: Float,
+    ): Shader {
+        val safeLength = length.coerceAtLeast(1f)
+        val colors = if (auroraColorMode == "multicolor") {
+            AURORA_MULTI
+        } else {
+            intArrayOf(
+                alphaColor(auroraBaseColor, 0.45f),
+                alphaColor(auroraBaseColor, 0.95f),
+                alphaColor(auroraBaseColor, 0.62f),
+                alphaColor(auroraBaseColor, 1f),
+                alphaColor(auroraBaseColor, 0.45f),
+            )
+        }
+        val positions =
+            if (auroraColorMode == "multicolor") AURORA_MULTI_STOPS else AURORA_SINGLE_STOPS
+        val shader = if (horizontal) {
+            LinearGradient(
+                -safeLength, 0f, safeLength, 0f,
+                colors, positions, Shader.TileMode.MIRROR
+            )
+        } else {
+            LinearGradient(
+                0f, -safeLength, 0f, safeLength,
+                colors, positions, Shader.TileMode.MIRROR
+            )
+        }
+        val matrix = Matrix()
+        val offset = safeLength * 2f * phase
+        if (horizontal) matrix.setTranslate(offset, 0f) else matrix.setTranslate(0f, offset)
+        shader.setLocalMatrix(matrix)
+        return shader
+    }
+
+    private fun alphaColor(color: Int, alpha: Float): Int {
+        val a = (alpha.coerceIn(0f, 1f) * 255f).toInt()
+        return (color and 0x00FFFFFF) or (a shl 24)
+    }
+
     private fun updateRainbowGradient() {
         if (width == 0 || height == 0) {
             post { applyRainbowGradient() }
@@ -622,6 +853,7 @@ class EdgeLightPreviewView @JvmOverloads constructor(
             "chase" -> 2500L
             "breathing" -> 3000L
             "sparkle" -> 100L
+            "aurora" -> 6500L
             "comet", "wave" -> 2000L
             else -> 2000L
         }
@@ -687,9 +919,27 @@ class EdgeLightPreviewView @JvmOverloads constructor(
             "edge_light_stroke_width",
             "edge_light_style",
             "edge_light_animation_effect",
+            "edge_light_position_top",
+            "edge_light_position_sides",
+            "edge_light_position_bottom",
+            "edge_light_aurora_color_mode",
         )
 
-        private val movingEffect = arrayOf("wave", "sparkle", "chase", "comet")
+        private val movingEffect = arrayOf("wave", "sparkle", "chase", "comet", "aurora")
+        private val AURORA_FADE_STOPS = floatArrayOf(0f, 0.22f, 0.58f, 1f)
+        private val AURORA_SINGLE_STOPS = floatArrayOf(0f, 0.23f, 0.5f, 0.77f, 1f)
+        private val AURORA_MULTI_STOPS =
+            floatArrayOf(0f, 0.12f, 0.26f, 0.42f, 0.58f, 0.74f, 0.88f, 1f)
+        private val AURORA_MULTI = intArrayOf(
+            0xFF00E5FF.toInt(),
+            0xFF00FFB3.toInt(),
+            0xFF4D7CFF.toInt(),
+            0xFF7C4DFF.toInt(),
+            0xFFFF4FD8.toInt(),
+            0xFF9C6BFF.toInt(),
+            0xFF00D9FF.toInt(),
+            0xFF00E5FF.toInt(),
+        )
 
         private val RAINBOW = intArrayOf(
             0xFFFF0000.toInt(), // red
