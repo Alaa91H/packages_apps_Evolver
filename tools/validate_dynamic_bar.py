@@ -17,6 +17,7 @@ APPLY = ROOT / "frameworks_base_patch/apply.sh"
 SYSTEMUI = ROOT / "frameworks_base_patch/packages/SystemUI/src/com/android/systemui"
 STATUS_ROOT = SYSTEMUI / "statusbar/pipeline/shared/ui/composable/StatusBarRoot.kt"
 SETTINGS = SYSTEMUI / "axdynamicbar/domain/AxDynamicBarSettings.kt"
+SYSTEM_MANAGER = SYSTEMUI / "axdynamicbar/data/source/SystemIslandManager.kt"
 VIEW_MODEL = SYSTEMUI / "axdynamicbar/ui/AxDynamicBarChipViewModel.kt"
 EXPANDED = SYSTEMUI / "axdynamicbar/ui/AxDynamicBarExpandedPanel.kt"
 LEGACY_CHIP = SYSTEMUI / "axdynamicbar/ui/compose/AxDynamicBarChip.kt"
@@ -72,6 +73,7 @@ for path in (
     APPLY,
     STATUS_ROOT,
     SETTINGS,
+    SYSTEM_MANAGER,
     VIEW_MODEL,
     EXPANDED,
     LEGACY_CHIP,
@@ -108,6 +110,19 @@ for key in REQUIRED_KEYS:
         fail(f"SystemUI settings missing {key}")
 if "if (contentResolver !== secureResolver)" not in settings_text:
     fail("Dynamic Bar settings teardown may double-unregister the shared ContentObserver")
+
+system_manager_text = read(SYSTEM_MANAGER)
+for token in (
+    "clipboardManager.primaryClipSource",
+    "clipSource == context.packageName",
+    "ClipDescription.EXTRA_IS_SENSITIVE",
+    "DUPLICATE_CLIP_WINDOW_MS",
+    "SystemClock.elapsedRealtime()",
+):
+    if token not in system_manager_text:
+        fail(f"Dynamic Bar clipboard hardening missing {token}")
+if "suppressNextClipEvent" in system_manager_text:
+    fail("Dynamic Bar clipboard still uses stale next-callback suppression")
 
 status_root = read(STATUS_ROOT)
 if "DynamicBarCutoutHost(" not in status_root:
@@ -197,6 +212,7 @@ for token in ("LAYOUT_DIRECTION_RTL", "direction", "Paint.Align.RIGHT"):
 
 apply_text = read(APPLY)
 for relative in (
+    "packages/SystemUI/src/com/android/systemui/axdynamicbar/data/source/SystemIslandManager.kt",
     "packages/SystemUI/src/com/android/systemui/axdynamicbar/ui/layout/DynamicBarLayoutState.kt",
     "packages/SystemUI/src/com/android/systemui/axdynamicbar/ui/compose/DynamicBarCutoutHost.kt",
     "packages/SystemUI/src/com/android/systemui/statusbar/pipeline/shared/ui/composable/StatusBarRoot.kt",
