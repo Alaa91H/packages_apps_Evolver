@@ -41,12 +41,12 @@ import java.util.List;
  * intentionally mirrors DisplayCutoutBaseView so rotation and resolution changes stay consistent
  * with SystemUI's own screen-decoration geometry.
  */
-final class CameraCutoutGeometryResolver {
+public final class CameraCutoutGeometryResolver {
 
-    static final int SOURCE_NONE = 0;
-    static final int SOURCE_CAMERA_PROTECTION = 1;
-    static final int SOURCE_DISPLAY_CUTOUT_PATH = 2;
-    static final int SOURCE_DISPLAY_CUTOUT_BOUNDS = 3;
+    public static final int SOURCE_NONE = 0;
+    public static final int SOURCE_CAMERA_PROTECTION = 1;
+    public static final int SOURCE_DISPLAY_CUTOUT_PATH = 2;
+    public static final int SOURCE_DISPLAY_CUTOUT_BOUNDS = 3;
 
     private static final float SAFE_AREA_MIN_ASPECT = 1.15f;
     private static final float SAFE_AREA_MAX_ASPECT = 2.50f;
@@ -55,13 +55,13 @@ final class CameraCutoutGeometryResolver {
     private static final float SAFE_AREA_MIN_FILL_RATIO = 0.92f;
     private static final float SAFE_AREA_MAX_SCREEN_FRACTION = 0.15f;
 
-    static final class ResolvedGeometry {
-        final Path path;
-        final RectF bounds;
-        final int source;
-        final int rotation;
-        final boolean normalizedSafeArea;
-        final boolean pillLike;
+    public static final class ResolvedGeometry {
+        public final Path path;
+        public final RectF bounds;
+        public final int source;
+        public final int rotation;
+        public final boolean normalizedSafeArea;
+        public final boolean pillLike;
 
         ResolvedGeometry(
                 Path path,
@@ -93,11 +93,11 @@ final class CameraCutoutGeometryResolver {
 
     private final Context mContext;
 
-    CameraCutoutGeometryResolver(Context context) {
+    public CameraCutoutGeometryResolver(Context context) {
         mContext = context;
     }
 
-    ResolvedGeometry resolve(DisplayCutout cutout) {
+    public ResolvedGeometry resolve(DisplayCutout cutout) {
         final Display display = mContext.getDisplay();
         final DisplayInfo info = new DisplayInfo();
         if (display != null) {
@@ -108,7 +108,7 @@ final class CameraCutoutGeometryResolver {
         final int logicalWidth = resolveLogicalWidth(info);
         final int logicalHeight = resolveLogicalHeight(info);
         final Candidate reference = cutout != null
-                ? chooseDisplayCutoutCandidate(cutout, logicalWidth, logicalHeight)
+                ? chooseDisplayCutoutCandidate(cutout, logicalWidth, logicalHeight, rotation)
                 : null;
 
         Path protection = loadAndTransformProtectionPath(
@@ -146,7 +146,7 @@ final class CameraCutoutGeometryResolver {
         if (cutout == null) return null;
 
         Candidate candidate = reference != null ? reference : chooseDisplayCutoutCandidate(
-                cutout, logicalWidth, logicalHeight);
+                cutout, logicalWidth, logicalHeight, rotation);
         if (candidate == null || candidate.bounds.isEmpty()) return null;
 
         RectF bounds = candidate.bounds;
@@ -208,7 +208,7 @@ final class CameraCutoutGeometryResolver {
     }
 
     private Candidate chooseDisplayCutoutCandidate(
-            DisplayCutout cutout, int logicalWidth, int logicalHeight) {
+            DisplayCutout cutout, int logicalWidth, int logicalHeight, int rotation) {
         Path allPath = null;
         try {
             allPath = cutout.getCutoutPath();
@@ -236,7 +236,8 @@ final class CameraCutoutGeometryResolver {
                 clip.addRect(rectF, Path.Direction.CW);
                 if (clipped.op(clip, Path.Op.INTERSECT) && isUsable(clipped)) {
                     Candidate contour = chooseBestContour(
-                            clipped, logicalWidth, logicalHeight, SOURCE_DISPLAY_CUTOUT_PATH);
+                            clipped, logicalWidth, logicalHeight,
+                            SOURCE_DISPLAY_CUTOUT_PATH, rotation);
                     if (contour != null) {
                         candidatePath = contour.path;
                         candidateBounds = contour.bounds;
@@ -251,7 +252,8 @@ final class CameraCutoutGeometryResolver {
                 candidateBounds = rectF;
             }
 
-            double score = candidateScore(candidateBounds, logicalWidth, logicalHeight);
+            double score = candidateScore(
+                    candidateBounds, logicalWidth, logicalHeight, rotation);
             if (score < bestScore) {
                 bestScore = score;
                 best = new Candidate(candidatePath, candidateBounds, source);
@@ -261,13 +263,14 @@ final class CameraCutoutGeometryResolver {
         // Some implementations may expose a path while bounding rects are absent.
         if (best == null && isUsable(allPath)) {
             best = chooseBestContour(
-                    allPath, logicalWidth, logicalHeight, SOURCE_DISPLAY_CUTOUT_PATH);
+                    allPath, logicalWidth, logicalHeight,
+                    SOURCE_DISPLAY_CUTOUT_PATH, rotation);
         }
         return best;
     }
 
     private static Candidate chooseBestContour(
-            Path path, int logicalWidth, int logicalHeight, int source) {
+            Path path, int logicalWidth, int logicalHeight, int source, int rotation) {
         if (!isUsable(path)) return null;
 
         PathMeasure measure = new PathMeasure(path, true);
@@ -283,7 +286,7 @@ final class CameraCutoutGeometryResolver {
             RectF bounds = boundsOf(contour);
             if (bounds.isEmpty()) continue;
 
-            double score = candidateScore(bounds, logicalWidth, logicalHeight);
+            double score = candidateScore(bounds, logicalWidth, logicalHeight, rotation);
             if (score < bestScore) {
                 bestScore = score;
                 best = new Candidate(contour, bounds, source);
@@ -293,7 +296,8 @@ final class CameraCutoutGeometryResolver {
         return best;
     }
 
-    private static double candidateScore(RectF b, int logicalWidth, int logicalHeight) {
+    private static double candidateScore(
+            RectF b, int logicalWidth, int logicalHeight, int rotation) {
         if (b == null || b.isEmpty()) return Double.MAX_VALUE;
 
         double area = Math.max(1.0, (double) b.width() * b.height());
@@ -306,9 +310,31 @@ final class CameraCutoutGeometryResolver {
         double aspect = max / min;
         double aspectPenalty = Math.max(0.0, aspect - 1.0);
 
-        // Prefer compact camera-like geometry while still strongly preferring the smaller physical
-        // non-functional region when a display reports more than one cutout.
-        return areaTerm * 1000.0 + aspectPenalty * 0.08;
+        double shortDisplay = Math.max(
+                1.0, Math.min(Math.max(1, logicalWidth), Math.max(1, logicalHeight)));
+        double edgePenalty =
+                expectedCameraEdgeDistance(b, logicalWidth, logicalHeight, rotation)
+                        / shortDisplay;
+
+        // A front camera authored on the natural top edge rotates with the display. Prefer a
+        // candidate on that physical edge first, then compact camera-like geometry and size.
+        // This avoids selecting an unrelated secondary cutout on multi-cutout devices.
+        return edgePenalty * 2.0 + areaTerm * 1000.0 + aspectPenalty * 0.08;
+    }
+
+    private static double expectedCameraEdgeDistance(
+            RectF b, int logicalWidth, int logicalHeight, int rotation) {
+        switch (rotation) {
+            case Surface.ROTATION_90:
+                return Math.max(0.0, b.left);
+            case Surface.ROTATION_180:
+                return Math.max(0.0, logicalHeight - b.bottom);
+            case Surface.ROTATION_270:
+                return Math.max(0.0, logicalWidth - b.right);
+            case Surface.ROTATION_0:
+            default:
+                return Math.max(0.0, b.top);
+        }
     }
 
     private Path loadAndTransformProtectionPath(
