@@ -1971,4 +1971,11 @@
     <string name="lockscreen_notifications_top_spacing_summary">Adjust the distance between lock screen content and notifications</string>
     <string name="lockscreen_notifications_horizontal_inset_title">Notification side inset</string>
     <string name="lockscreen_notifications_horizontal_inset_summary">Add equal side margins to the lock screen notification area</string>
+
+    <!-- Lock screen indication layout -->
+    <string name="lockscreen_indication_layout_category_title">Indication text</string>
+    <string name="lockscreen_indication_vertical_offset_title">Indication vertical offset</string>
+    <string name="lockscreen_indication_vertical_offset_summary">Adjust the bottom position of charging, biometric, and unlock messages</string>
+    <string name="lockscreen_indication_horizontal_inset_title">Indication side inset</string>
+    <string name="lockscreen_indication_horizontal_inset_summary">Add equal side margins to the bottom indication area</string>
 </resources>
