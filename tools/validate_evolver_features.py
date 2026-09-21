@@ -167,6 +167,74 @@ def validate_dynamic_bar() -> None:
         if "LAYOUT_DIRECTION_RTL" not in text:
             fail(f"Dynamic Bar preview is missing explicit RTL behavior: {demo.relative_to(ROOT)}")
 
+def validate_edge_light() -> None:
+    relative = "res/xml/edge_light_settings.xml"
+    keys = validate_preference_file(relative)
+    root = parse(ROOT / relative)
+    defaults = {
+        node.attrib[AKEY]: node.attrib.get(ADEFAULT)
+        for node in root.iter()
+        if AKEY in node.attrib
+    }
+
+    required_defaults = {
+        "edge_light_enabled": "false",
+        "edge_light_show_screen_on": "false",
+        "edge_light_show_screen_off": "true",
+        "edge_light_show_aod": "true",
+        "edge_light_position_top": "true",
+        "edge_light_position_sides": "true",
+        "edge_light_position_bottom": "true",
+        "edge_light_aurora_color_mode": "multicolor",
+    }
+    missing = sorted(set(required_defaults) - keys)
+    if missing:
+        fail(f"Edge light preferences missing: {missing}")
+    for key, expected in required_defaults.items():
+        if defaults.get(key) != expected:
+            fail(f"Edge light default mismatch for {key}: {defaults.get(key)!r}")
+
+    arrays = (ROOT / "res/values/evolution_arrays.xml").read_text(encoding="utf-8")
+    for token in (
+        "@string/edge_light_animation_effect_aurora",
+        "<item>aurora</item>",
+        'name="edge_light_aurora_color_mode_values"',
+        "<item>fixed</item>",
+        "<item>multicolor</item>",
+    ):
+        if token not in arrays:
+            fail(f"Edge light Aurora array wiring missing: {token}")
+
+    preview = (
+        ROOT / "src/org/evolution/settings/fragments/lockscreen/EdgeLightPreviewView.kt"
+    ).read_text(encoding="utf-8")
+    for token in (
+        '"edge_light_position_top"',
+        '"edge_light_position_sides"',
+        '"edge_light_position_bottom"',
+        '"edge_light_aurora_color_mode"',
+        'animationEffect == "aurora"',
+        "AURORA_COLORS",
+    ):
+        if token not in preview:
+            fail(f"Edge light preview wiring missing: {token}")
+
+    reset = (
+        ROOT / "src/org/evolution/settings/fragments/lockscreen/EdgeLightSettings.kt"
+    ).read_text(encoding="utf-8")
+    for token in (
+        "EDGE_LIGHT_SHOW_SCREEN_ON",
+        "EDGE_LIGHT_SHOW_SCREEN_OFF",
+        "EDGE_LIGHT_SHOW_AOD",
+        "EDGE_LIGHT_POSITION_TOP",
+        "EDGE_LIGHT_POSITION_SIDES",
+        "EDGE_LIGHT_POSITION_BOTTOM",
+        "EDGE_LIGHT_AURORA_COLOR_MODE",
+    ):
+        if token not in reset:
+            fail(f"Edge light reset wiring missing: {token}")
+
+
 def validate_repository_boundary() -> None:
     staged = sorted(
         path.relative_to(ROOT).as_posix()
@@ -186,6 +254,7 @@ def main() -> int:
         validate_network_traffic()
         validate_mobile_type()
         validate_dynamic_bar()
+        validate_edge_light()
     except (ValidationError, OSError) as exc:
         print(f"EVOLVER FEATURE VALIDATION FAILED: {exc}", file=sys.stderr)
         return 1
@@ -196,6 +265,7 @@ def main() -> int:
     print("- Network Traffic UI/defaults: OK")
     print("- Mobile type preference handling: OK")
     print("- Dynamic Bar UI/settings/RTL previews: OK")
+    print("- Edge light regions/display states/Aurora wiring: OK")
     return 0
 
 if __name__ == "__main__":
