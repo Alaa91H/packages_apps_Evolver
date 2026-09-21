@@ -216,6 +216,33 @@ private fun AppSpoofingContent(context: Context) {
         return keys
     }
 
+    fun restartAppsUsingProfile(profileId: String) {
+        if (!spoofEnabled) return
+        configuredMap
+            .filterValues { it == profileId }
+            .keys
+            .forEach { stopPackage(it) }
+    }
+
+    fun removeCustomProfile(profileId: String) {
+        val affectedPackages = configuredMap
+            .filterValues { it == profileId }
+            .keys
+            .toSet()
+
+        val updatedProfiles = customProfiles.filter { it.id != profileId }
+        writeCustomProfiles(context, updatedProfiles)
+        customProfiles = updatedProfiles
+
+        if (affectedPackages.isNotEmpty()) {
+            configuredMap = LinkedHashMap(
+                configuredMap.filterValues { it != profileId }
+            )
+            persistConfigured()
+            if (spoofEnabled) affectedPackages.forEach { stopPackage(it) }
+        }
+    }
+
     fun setMasterEnabled(enabled: Boolean) {
         val targets = allKnownConfiguredPackages()
         spoofEnabled = enabled
@@ -244,7 +271,7 @@ private fun AppSpoofingContent(context: Context) {
     LaunchedEffect(Unit) {
         loadState()
         allApps = withContext(Dispatchers.IO) {
-                pm.getInstalledPackages(PackageManager.MATCH_ANY_USER)
+                pm.getInstalledPackages(PackageManager.MATCH_DISABLED_COMPONENTS)
                     .mapNotNull { pkg ->
                         val ai = pkg.applicationInfo ?: return@mapNotNull null
                         if (pkg.overlayTarget != null) return@mapNotNull null
@@ -279,6 +306,12 @@ private fun AppSpoofingContent(context: Context) {
             onWriteCustomProfiles = { updated ->
                 writeCustomProfiles(context, updated)
                 customProfiles = updated
+            },
+            onDeleteCustomProfile = { profileId ->
+                removeCustomProfile(profileId)
+            },
+            onCustomProfileChanged = { profileId ->
+                restartAppsUsingProfile(profileId)
             }
         )
     }
@@ -344,14 +377,7 @@ private fun AppSpoofingContent(context: Context) {
                                 Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(20.dp))
                             }
                             IconButton(onClick = {
-                                val newList = customProfiles.filter { it.id != profile.id }
-                                writeCustomProfiles(context, newList)
-                                customProfiles = newList
-                                val newConfigured = configuredMap.filterValues { it != profile.id }
-                                if (newConfigured.size != configuredMap.size) {
-                                    configuredMap = LinkedHashMap(newConfigured)
-                                    persistConfigured()
-                                }
+                                removeCustomProfile(profile.id)
                             }) {
                                 Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(20.dp))
                             }
@@ -391,13 +417,15 @@ private fun AppSpoofingContent(context: Context) {
                 customProfileToEdit = null
             },
             onSave = { newProfile ->
-                val updatedProfiles = if (customProfileToEdit != null) {
+                val wasEditing = customProfileToEdit != null
+                val updatedProfiles = if (wasEditing) {
                     customProfiles.map { if (it.id == newProfile.id) newProfile else it }
                 } else {
                     customProfiles + newProfile
                 }
                 writeCustomProfiles(context, updatedProfiles)
                 customProfiles = updatedProfiles
+                if (wasEditing) restartAppsUsingProfile(newProfile.id)
                 showAddCustomProfileDialog = false
                 customProfileToEdit = null
                 showModelDialog = true
@@ -744,7 +772,9 @@ private fun AddAppDialog(
     customProfiles: List<CustomSpoofProfile>,
     onDismiss: () -> Unit,
     onAppAdded: (AppItem, String) -> Unit,
-    onWriteCustomProfiles: (List<CustomSpoofProfile>) -> Unit
+    onWriteCustomProfiles: (List<CustomSpoofProfile>) -> Unit,
+    onDeleteCustomProfile: (String) -> Unit,
+    onCustomProfileChanged: (String) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var showSystemApps by remember { mutableStateOf(false) }
@@ -996,9 +1026,9 @@ private fun AddAppDialog(
                                     Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(20.dp))
                                 }
                                 IconButton(onClick = {
-                                    val newList = customProfilesList.filter { it.id != profile.id }
-                                    onWriteCustomProfiles(newList)
-                                    customProfilesList = newList
+                                    onDeleteCustomProfile(profile.id)
+                                    customProfilesList = customProfilesList.filter { it.id != profile.id }
+                                    if (selectedProfile == profile.id) selectedProfile = null
                                 }) {
                                     Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(20.dp))
                                 }
@@ -1037,10 +1067,10 @@ private fun AddAppDialog(
                     TextButton(
                         onClick = {
                             val app = selectedApp ?: return@TextButton
-                            val profile = selectedProfile ?: "None"
+                            val profile = selectedProfile ?: return@TextButton
                             onAppAdded(app, profile)
                         },
-                        enabled = selectedApp != null
+                        enabled = selectedApp != null && selectedProfile != null
                     ) {
                         Text(stringResource(R.string.add))
                     }
@@ -1062,13 +1092,15 @@ private fun AddAppDialog(
                 customProfileToEdit = null
             },
             onSave = { newProfile ->
-                val updatedProfiles = if (customProfileToEdit != null) {
+                val wasEditing = customProfileToEdit != null
+                val updatedProfiles = if (wasEditing) {
                     customProfilesList.map { if (it.id == newProfile.id) newProfile else it }
                 } else {
                     customProfilesList + newProfile
                 }
                 onWriteCustomProfiles(updatedProfiles)
                 customProfilesList = updatedProfiles
+                if (wasEditing) onCustomProfileChanged(newProfile.id)
                 showAddCustomProfileDialog = false
                 customProfileToEdit = null
             },
@@ -1108,8 +1140,16 @@ private fun readConfigured(context: Context, enabled: Boolean): Map<String, Stri
         val active = readMapSetting(context, SPOOFED_APPS_SETTING)
         if (active.isNotEmpty()) {
             writeMapSetting(context, SPOOFED_APPS_CACHE_SETTING, active)
+            active
+        } else {
+            val cached = readMapSetting(context, SPOOFED_APPS_CACHE_SETTING)
+            if (cached.isNotEmpty()) {
+                // Heal partial/legacy states where the master switch is enabled
+                // but only the cache still contains the configured assignments.
+                writeMapSetting(context, SPOOFED_APPS_SETTING, cached)
+            }
+            cached
         }
-        active.ifEmpty { readMapSetting(context, SPOOFED_APPS_CACHE_SETTING) }
     } else {
         readMapSetting(context, SPOOFED_APPS_CACHE_SETTING)
     }
@@ -1222,8 +1262,14 @@ private fun AddCustomProfileDialog(
             TextButton(
                 onClick = {
                     onSave(CustomSpoofProfile(
-                        id = id, name = name, brand = brand, manufacturer = manufacturer,
-                        device = device, model = model, fingerprint = fingerprint, product = product
+                        id = id,
+                        name = name.trim(),
+                        brand = brand.trim(),
+                        manufacturer = manufacturer.trim(),
+                        device = device.trim(),
+                        model = model.trim(),
+                        fingerprint = fingerprint.trim(),
+                        product = product.trim()
                     ))
                 },
                 enabled = name.isNotBlank() && brand.isNotBlank() && manufacturer.isNotBlank() &&
