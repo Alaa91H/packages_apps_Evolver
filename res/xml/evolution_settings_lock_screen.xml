@@ -8,6 +8,15 @@
     xmlns:settings="http://schemas.android.com/apk/res/com.android.settings"
     android:title="@string/lock_screen_title">
 
+
+    <!-- Unified lock screen customization hub -->
+    <Preference
+        android:key="lockscreen_customization_settings"
+        android:title="@string/lockscreen_customization_title"
+        android:summary="@string/lockscreen_customization_summary"
+        android:icon="@drawable/ic_evolver_lock_screen"
+        android:fragment="org.evolution.settings.fragments.lockscreen.LockscreenCustomization" />
+
     <PreferenceCategory
         android:key="lock_screen_clock_category"
         android:title="@string/lock_screen_clock_category">
