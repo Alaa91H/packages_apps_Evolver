@@ -1758,4 +1758,10 @@
     <string name="lockscreen_battery_power_title">قدرة الشحن</string>
     <string name="lockscreen_battery_voltage_title">جهد الشحن</string>
     <string name="lockscreen_battery_temperature_title">درجة حرارة البطارية</string>
+
+    <!-- تخطيط إشعارات شاشة القفل -->
+    <string name="lockscreen_notifications_top_spacing_title">المسافة العلوية للإشعارات</string>
+    <string name="lockscreen_notifications_top_spacing_summary">اضبط المسافة بين محتوى شاشة القفل ومنطقة الإشعارات</string>
+    <string name="lockscreen_notifications_horizontal_inset_title">الهامش الجانبي للإشعارات</string>
+    <string name="lockscreen_notifications_horizontal_inset_summary">أضف هوامش جانبية متساوية لمنطقة إشعارات شاشة القفل</string>
 </resources>
