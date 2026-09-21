@@ -1750,4 +1750,12 @@
     <string name="lockscreen_custom_clock_aod_scale_summary">اضبط حجم الساعة المخصصة المستخدم أثناء انتقال شاشة AOD</string>
     <string name="lockscreen_custom_clock_aod_opacity_title">شفافية الساعة على AOD</string>
     <string name="lockscreen_custom_clock_aod_opacity_summary">حدّد الحد الأقصى لشفافية الساعة المخصصة أثناء وضع السكون</string>
+
+    <!-- تفاصيل الشحن على شاشة القفل -->
+    <string name="lockscreen_battery_details_title">تفاصيل الشحن</string>
+    <string name="lockscreen_battery_details_summary">اختر قياسات الشحن التي تظهر على شاشة القفل</string>
+    <string name="lockscreen_battery_current_title">تيار الشحن</string>
+    <string name="lockscreen_battery_power_title">قدرة الشحن</string>
+    <string name="lockscreen_battery_voltage_title">جهد الشحن</string>
+    <string name="lockscreen_battery_temperature_title">درجة حرارة البطارية</string>
 </resources>
