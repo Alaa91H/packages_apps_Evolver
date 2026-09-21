@@ -65,9 +65,25 @@ ClipboardService/default-IME access policy.
 - Dynamic Bar self-copy also suppresses the stock SystemUI clipboard overlay to avoid duplicate UI,
   while Gboard and other default IMEs continue to receive the system clipboard normally.
 
-Multi-user clipboard rebinding is intentionally left for a separate change because it requires
-coordinating per-user ClipboardManager, cache, and persistent-history ownership rather than mixing
-that lifecycle refactor into this regression fix.
+Clipboard lifecycle hardening now follows SystemUI's current-user model:
+
+- Dynamic Bar binds through `UserTracker` and `UserScopedService<ClipboardManager>`, removes the
+  old user's listener during user switches, and reloads history from the new user's context.
+- Preferences and clipboard cache files are resolved from the selected user's context, preventing
+  Dynamic Bar history from being shared accidentally across secondary users.
+- The private `SELF_COPY` marker is accepted only when ClipboardService also attributes the clip
+  source to `com.android.systemui`.
+- Copying an image from Dynamic Bar history creates a separate active clipboard lease under the
+  existing FileProvider path. Removing/evicting the history entry no longer deletes the file backing
+  the image currently offered to Gboard or another paste target.
+- Active image leases are reclaimed only after another external clipboard mutation or after a newer
+  Dynamic Bar image lease replaces them.
+- Broken/missing cached image entries are pruned during history restore instead of becoming dead
+  clipboard rows, and failed thumbnail loads are never committed as image history items.
+- Image thumbnail loading follows the platform's bounded 300 ms timeout convention.
+- User switches flush the old user's latest history snapshot independently, avoiding cross-user
+  persistence races; self-copy, sensitive-copy and listener shutdown paths also persist the current
+  snapshot after invalidating stale async work.
 
 ## Multi-ring architecture
 
