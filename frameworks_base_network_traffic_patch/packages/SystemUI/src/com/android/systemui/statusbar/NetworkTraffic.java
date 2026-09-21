@@ -470,7 +470,7 @@ public class NetworkTraffic extends TextView implements TunerService.Tunable,
 
                 @Override
                 public void onAvailable(Network network) {
-                    LinkProperties lp = mConnectivityManager == null ? null : 
+                    LinkProperties lp = mConnectivityManager == null ? null :
                         mConnectivityManager.getLinkProperties(network);
                     if (lp != null && mTrafficHandler != null) {
                         Message msg = Message.obtain(mTrafficHandler,
