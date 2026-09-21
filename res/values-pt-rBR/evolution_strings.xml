@@ -1703,4 +1703,14 @@
     <string name="screenshot_clipboard_only_summary">Copiar captura de tela para área de transferência em vez de salvar no armazenamento</string>
     <string name="hide_status_bar_in_screenshot_title">Ocultar barra de status nas capturas de tela</string>
     <string name="hide_status_bar_in_screenshot_summary">Cortar a área da barra de status fora de capturas de tela inteira</string>
+
+
+    <!-- Synced from upstream -->
+    <string name="spoofing_reset_defaults_title">Restaurar padrões</string>
+    <string name="spoofing_reset_defaults_summary">Limpar Play Integrity, keybox, lista de alvos, nível de patch e configuração do GameProps</string>
+    <string name="spoofing_reset_defaults_dialog_title">Redefinir configurações de mascaramento?</string>
+    <string name="spoofing_reset_defaults_dialog_message">Isso limpa a configuração do Play Integrity, o keybox, a lista de alvos do TrickyStore, a substituição do patch de segurança e a configuração do GameProps. Eles são repopulados na próxima execução da atualização automática. As chaves de ativação não são alteradas.</string>
+    <string name="spoofing_reset_defaults_confirm">Redefinir</string>
+    <string name="spoofing_reset_defaults_done">Configurações de mascaramento redefinidas</string>
+    <string name="pif_recommended_suffix">Recomendado</string>
 </resources>

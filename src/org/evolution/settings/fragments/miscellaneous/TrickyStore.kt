@@ -116,23 +116,28 @@ class TrickyStore : SettingsPreferenceFragment() {
         private val EXPIRY_WARN_MS = TimeUnit.DAYS.toMillis(14)
 
         /**
-         * Clears PIF config, keybox, TrickyStore target list, patch level and
-         * GameProps config back to fresh-install state, then lets the normal
-         * auto-refresh paths (AxSpoofManager's hourly job, or the next manual
-         * Action) repopulate them. Mirrors AlwaysStrong's reset_defaults.sh —
-         * deliberately deletion-only, nothing is re-fetched inline here so a
-         * dead network at reset time doesn't leave the device stuck.
+         * Puts the spoofing settings back to a fresh-install state: the PIF
+         * config, patch level and GameProps config are cleared and the
+         * TrickyStore target list is reseeded with the defaults. The keybox is
+         * kept, since it may be the user's own and the official one is kept
+         * current by AxSpoofManager anyway. Mirrors AlwaysStrong's
+         * reset_defaults.sh, which also keeps the keybox.
+         *
+         * Nothing is fetched here. AxSpoofManager watches the PIF config and,
+         * a few seconds after it goes empty, refreshes the fingerprint and patch
+         * level itself (from the built-in profiles when offline). Order matters
+         * for that: the fetch cooldown is zeroed first and the PIF config is
+         * cleared last, so the refresh sees a fully reset state.
          */
         @JvmStatic
         fun resetAllSpoofDefaults(context: Context) {
             val resolver = context.contentResolver
-            Settings.Secure.putString(resolver, PlayIntegrityFix.PIF_CONFIG_KEY, "")
-            Settings.Secure.putString(resolver, KEYBOX_KEY, "")
-            Settings.Secure.putString(resolver, KEYBOX_SOURCE_KEY, "")
-            Settings.Secure.putString(resolver, TARGET_KEY, "")
+            Settings.Secure.putLong(resolver, LAST_AUTO_FETCH_KEY_COMPAT, 0L)
+            Settings.Secure.putString(
+                resolver, TARGET_KEY, TrickyStoreAppSettings.buildDefaultTargetSeed())
             Settings.Secure.putString(resolver, PATCH_KEY, "")
             Settings.Secure.putString(resolver, Settings.Secure.SPOOF_GAMEPROPS_CONFIG, "")
-            Settings.Secure.putLong(resolver, LAST_AUTO_FETCH_KEY_COMPAT, 0L)
+            Settings.Secure.putString(resolver, PlayIntegrityFix.PIF_CONFIG_KEY, "")
         }
 
         // PlayIntegrityFix owns the real LAST_AUTO_FETCH_KEY constant; this local

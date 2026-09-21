@@ -1705,4 +1705,14 @@
     <string name="screenshot_clipboard_only_summary">Kopiuj zrzut ekranu do schowka, zamiast zapisywać go w pamięci</string>
     <string name="hide_status_bar_in_screenshot_title">Ukryj pasek stanu na zrzutach ekranu</string>
     <string name="hide_status_bar_in_screenshot_summary">Wytnij obszar paska stanu z pełnych zrzutów ekranu</string>
+
+
+    <!-- Synced from upstream -->
+    <string name="spoofing_reset_defaults_title">Zresetuj do domyślnych</string>
+    <string name="spoofing_reset_defaults_summary">Wyczyść integralność Google Play, zestaw kluczy, listę docelową, poziom poprawki i konfigurację profili gier</string>
+    <string name="spoofing_reset_defaults_dialog_title">Zresetować ustawienia fałszowania?</string>
+    <string name="spoofing_reset_defaults_dialog_message">Spowoduje to wyczyszczenie konfiguracji integralności Google Play, zestawu kluczy, listy docelowej TrickyStore, obejścia poprawki zabezpieczeń i konfiguracji profili gier. Zostaną one ponownie wypełnione przy następnym uruchomieniu automatycznego odświeżania. Przełączniki włączania nie zostaną zmienione.</string>
+    <string name="spoofing_reset_defaults_confirm">Resetuj</string>
+    <string name="spoofing_reset_defaults_done">Zresetuj ustawienia fałszowania</string>
+    <string name="pif_recommended_suffix">Zalecane</string>
 </resources>

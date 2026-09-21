@@ -1702,4 +1702,14 @@
     <string name="screenshot_clipboard_only_summary">ストレージ内に保存する代わりにクリップボードにスクリーンショットをコピー</string>
     <string name="hide_status_bar_in_screenshot_title">スクリーンショット内のステータスバーを隠す</string>
     <string name="hide_status_bar_in_screenshot_summary">全画面表示からステータスバーの領域をトリミングする</string>
+
+
+    <!-- Synced from upstream -->
+    <string name="spoofing_reset_defaults_title">デフォルトに戻す</string>
+    <string name="spoofing_reset_defaults_summary">Play Integrity、キーボックス、ターゲットリスト、パッチレベル、ゲーム偽装の設定をクリアする</string>
+    <string name="spoofing_reset_defaults_dialog_title">偽装の設定をリセットしますか？</string>
+    <string name="spoofing_reset_defaults_dialog_message">これにより、Play Integrity設定、キーボックス、TrickyStoreのターゲットリスト、セキュリティパッチのオーバーライド、およびゲーム偽装の設定がクリアされます。これらは次回の自動更新実行時に再生成されます。有効/無効の切り替え設定は変更されません。</string>
+    <string name="spoofing_reset_defaults_confirm">リセット</string>
+    <string name="spoofing_reset_defaults_done">偽装の設定をリセットしました</string>
+    <string name="pif_recommended_suffix">おすすめ</string>
 </resources>

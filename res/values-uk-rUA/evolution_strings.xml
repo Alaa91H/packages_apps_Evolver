@@ -1703,4 +1703,13 @@
     <string name="screenshot_clipboard_only_summary">Скопіювати скріншот в буфер обміну замість збереження в сховищі</string>
     <string name="hide_status_bar_in_screenshot_title">Приховувати рядок стану на скріншотах</string>
     <string name="hide_status_bar_in_screenshot_summary">Обрізати область в рядку стану з повноекранних знімків</string>
+
+
+    <!-- Synced from upstream -->
+    <string name="spoofing_reset_defaults_title">Скинути до значень за замовчуванням</string>
+    <string name="spoofing_reset_defaults_summary">Очистити цілісність відтворення, вибір з клавіш, цільового списку, рівень патчу та налаштування GameProps</string>
+    <string name="spoofing_reset_defaults_dialog_title">Скинути параметри Spoofs?</string>
+    <string name="spoofing_reset_defaults_dialog_message">Це очищує файл конфігурації Play Цілісності, keybox, цільовий список TrickyStore, перевизначити патч і файл GameProps в налаштуваннях. Вони заповнені наступного разу під час автоматичного оновлення. Активація перемикачів не змінюється.</string>
+    <string name="spoofing_reset_defaults_confirm">Скинути</string>
+    <string name="spoofing_reset_defaults_done">Налаштування Spoofing скинуто</string>
 </resources>
