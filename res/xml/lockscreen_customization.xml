@@ -110,10 +110,11 @@
             android:defaultValue="false"
             android:dependency="lockscreen_weather_enabled" />
 
-        <org.evolution.settings.preferences.SystemSettingSwitchPreference
+        <org.evolution.settings.preferences.SystemSettingPrimarySwitchPreference
             android:key="lockscreen_battery_info"
             android:title="@string/lock_screen_charging_stats_title"
-            android:summary="@string/lock_screen_charging_stats_summary"
+            android:summary="@string/lockscreen_battery_details_summary"
+            android:fragment="org.evolution.settings.fragments.lockscreen.LockscreenBatteryDetails"
             android:defaultValue="true" />
 
         <org.evolution.settings.preferences.SystemSettingListPreference
