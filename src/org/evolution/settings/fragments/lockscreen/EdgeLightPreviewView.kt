@@ -152,7 +152,7 @@ class EdgeLightPreviewView @JvmOverloads constructor(
 
         val save = canvas.save()
         clipToEnabledEdges(canvas)
-        if (isFrameStyle(edgeStyle) || positionTop || positionBottom) {
+        if (isFrameStyle(edgeStyle) && positionTop && positionSides && positionBottom) {
             drawRoundedEdges(canvas)
         } else {
             drawDefaultEdges(canvas)
@@ -337,15 +337,12 @@ class EdgeLightPreviewView @JvmOverloads constructor(
     }
 
     private fun drawDefaultEdges(canvas: Canvas) {
-        val strokeHalf = edgePaint.strokeWidth / 2f
-        edgePaint.strokeCap = Paint.Cap.BUTT
+        edgePaint.strokeCap =
+            if (isFrameStyle(edgeStyle)) Paint.Cap.ROUND else Paint.Cap.BUTT
         when (animationEffect) {
             "breathing" -> {
                 applyBreathingEffect()
-                val sh = edgePaint.strokeWidth / 2f
-                val (top, bottom) = defaultVerticalEdgeY(sh)
-                canvas.drawLine(sh, top, sh, bottom, edgePaint)
-                canvas.drawLine(width - sh, top, width - sh, bottom, edgePaint)
+                drawSelectedBaseLines(canvas, edgePaint)
             }
             "wave" -> drawWaveEffect(canvas)
             "chase" -> drawChaseEffect(canvas)
@@ -354,12 +351,23 @@ class EdgeLightPreviewView @JvmOverloads constructor(
             else -> {
                 edgePaint.alpha = 255
                 edgePaint.maskFilter = null
-                val (top, bottom) = defaultVerticalEdgeY(strokeHalf)
-                canvas.drawLine(strokeHalf, top, strokeHalf, bottom, edgePaint)
-                canvas.drawLine(
-                    width - strokeHalf, top, width - strokeHalf, bottom, edgePaint
-                )
+                drawSelectedBaseLines(canvas, edgePaint)
             }
+        }
+    }
+
+    private fun drawSelectedBaseLines(canvas: Canvas, paint: Paint) {
+        val halfStroke = paint.strokeWidth / 2f
+        val (top, bottom) = defaultVerticalEdgeY(halfStroke)
+        if (positionSides) {
+            canvas.drawLine(halfStroke, top, halfStroke, bottom, paint)
+            canvas.drawLine(width - halfStroke, top, width - halfStroke, bottom, paint)
+        }
+        if (positionTop) {
+            canvas.drawLine(0f, halfStroke, width.toFloat(), halfStroke, paint)
+        }
+        if (positionBottom) {
+            canvas.drawLine(0f, height - halfStroke, width.toFloat(), height - halfStroke, paint)
         }
     }
 
@@ -405,35 +413,50 @@ class EdgeLightPreviewView @JvmOverloads constructor(
 
     private fun drawWaveEffect(canvas: Canvas) {
         val strokeHalf = edgePaint.strokeWidth / 2f
-        val (top, bottom) = defaultVerticalEdgeY(strokeHalf)
-        val length = bottom - top
-        val amplitude = width * 0.05f
+        val segments = 50
         edgePaint.alpha = 255
         edgePaint.maskFilter = null
 
-        // Left edge.
-        for (i in 0 until 50) {
-            val t1 = i / 50f
-            val t2 = (i + 1) / 50f
-            val y1 = top + t1 * length
-            val y2 = top + t2 * length
-            val dx1 = sin((effectProgress + t1) * 2.0 * Math.PI).toFloat() * amplitude
-            val dx2 = sin((effectProgress + t2) * 2.0 * Math.PI).toFloat() * amplitude
-            canvas.drawLine(strokeHalf + dx1, y1, strokeHalf + dx2, y2, edgePaint)
+        if (positionSides) {
+            val (top, bottom) = defaultVerticalEdgeY(strokeHalf)
+            val length = bottom - top
+            val amplitude = width * 0.05f
+            for (index in 0 until segments) {
+                val t1 = index / segments.toFloat()
+                val t2 = (index + 1) / segments.toFloat()
+                val y1 = top + t1 * length
+                val y2 = top + t2 * length
+                val dx1 = sin((effectProgress + t1) * 2.0 * Math.PI).toFloat() * amplitude
+                val dx2 = sin((effectProgress + t2) * 2.0 * Math.PI).toFloat() * amplitude
+                canvas.drawLine(strokeHalf + dx1, y1, strokeHalf + dx2, y2, edgePaint)
+                canvas.drawLine(
+                    width - strokeHalf + dx1, y1,
+                    width - strokeHalf + dx2, y2,
+                    edgePaint,
+                )
+            }
         }
-        // Right edge.
-        for (i in 0 until 50) {
-            val t1 = i / 50f
-            val t2 = (i + 1) / 50f
-            val y1 = top + t1 * length
-            val y2 = top + t2 * length
-            val dx1 = sin((effectProgress + t1) * 2.0 * Math.PI).toFloat() * amplitude
-            val dx2 = sin((effectProgress + t2) * 2.0 * Math.PI).toFloat() * amplitude
-            canvas.drawLine(
-                width - strokeHalf + dx1, y1,
-                width - strokeHalf + dx2, y2,
-                edgePaint,
-            )
+
+        if (positionTop || positionBottom) {
+            val amplitude = height * 0.025f
+            for (index in 0 until segments) {
+                val t1 = index / segments.toFloat()
+                val t2 = (index + 1) / segments.toFloat()
+                val x1 = t1 * width
+                val x2 = t2 * width
+                val dy1 = sin((effectProgress + t1) * 2.0 * Math.PI).toFloat() * amplitude
+                val dy2 = sin((effectProgress + t2) * 2.0 * Math.PI).toFloat() * amplitude
+                if (positionTop) {
+                    canvas.drawLine(x1, strokeHalf + dy1, x2, strokeHalf + dy2, edgePaint)
+                }
+                if (positionBottom) {
+                    canvas.drawLine(
+                        x1, height - strokeHalf + dy1,
+                        x2, height - strokeHalf + dy2,
+                        edgePaint,
+                    )
+                }
+            }
         }
     }
 
@@ -458,34 +481,60 @@ class EdgeLightPreviewView @JvmOverloads constructor(
     }
 
     private fun drawChaseEffect(canvas: Canvas) {
-        val strokeHalf = edgePaint.strokeWidth / 2f
-        val (top, bottom) = defaultVerticalEdgeY(strokeHalf)
-        val length = bottom - top
-        val trail = 0.15f * length
-
         edgePaint.alpha = 50
         edgePaint.maskFilter = null
-        canvas.drawLine(strokeHalf, top, strokeHalf, bottom, edgePaint)
-        canvas.drawLine(width - strokeHalf, top, width - strokeHalf, bottom, edgePaint)
+        drawSelectedBaseLines(canvas, edgePaint)
 
+        val strokeHalf = edgePaint.strokeWidth / 2f
         val baseColor = edgePaint.color
         val transparent = baseColor and 0x00FFFFFF
-        for (i in 0 until 3) {
-            val pos = top + ((effectProgress + i / 3f) % 1f) * length
-            val gradient = LinearGradient(
-                0f, pos - trail, 0f, pos + trail,
-                intArrayOf(transparent, baseColor, transparent),
-                floatArrayOf(0f, 0.5f, 1f),
-                Shader.TileMode.CLAMP,
-            )
-            val pulsePaint = Paint(edgePaint).apply {
-                shader = gradient
-                alpha = 255
+
+        if (positionSides) {
+            val (top, bottom) = defaultVerticalEdgeY(strokeHalf)
+            val length = bottom - top
+            val trail = 0.15f * length
+            for (index in 0 until 3) {
+                val pos = top + ((effectProgress + index / 3f) % 1f) * length
+                val gradient = LinearGradient(
+                    0f, pos - trail, 0f, pos + trail,
+                    intArrayOf(transparent, baseColor, transparent),
+                    floatArrayOf(0f, 0.5f, 1f),
+                    Shader.TileMode.CLAMP,
+                )
+                val pulsePaint = Paint(edgePaint).apply {
+                    shader = gradient
+                    alpha = 255
+                }
+                val y1 = (pos - trail).coerceAtLeast(top)
+                val y2 = (pos + trail).coerceAtMost(bottom)
+                canvas.drawLine(strokeHalf, y1, strokeHalf, y2, pulsePaint)
+                canvas.drawLine(width - strokeHalf, y1, width - strokeHalf, y2, pulsePaint)
             }
-            val y1 = (pos - trail).coerceAtLeast(top)
-            val y2 = (pos + trail).coerceAtMost(bottom)
-            canvas.drawLine(strokeHalf, y1, strokeHalf, y2, pulsePaint)
-            canvas.drawLine(width - strokeHalf, y1, width - strokeHalf, y2, pulsePaint)
+        }
+
+        if (positionTop || positionBottom) {
+            val trail = 0.15f * width
+            for (index in 0 until 3) {
+                val pos = ((effectProgress + index / 3f) % 1f) * width
+                val gradient = LinearGradient(
+                    pos - trail, 0f, pos + trail, 0f,
+                    intArrayOf(transparent, baseColor, transparent),
+                    floatArrayOf(0f, 0.5f, 1f),
+                    Shader.TileMode.CLAMP,
+                )
+                val pulsePaint = Paint(edgePaint).apply {
+                    shader = gradient
+                    alpha = 255
+                }
+                val x1 = (pos - trail).coerceAtLeast(0f)
+                val x2 = (pos + trail).coerceAtMost(width.toFloat())
+                if (positionTop) canvas.drawLine(x1, strokeHalf, x2, strokeHalf, pulsePaint)
+                if (positionBottom) {
+                    canvas.drawLine(
+                        x1, height - strokeHalf, x2, height - strokeHalf, pulsePaint
+                    )
+                }
+            }
         }
     }
 
@@ -512,34 +561,57 @@ class EdgeLightPreviewView @JvmOverloads constructor(
     }
 
     private fun drawCometEffect(canvas: Canvas) {
-        val strokeHalf = edgePaint.strokeWidth / 2f
-        val (top, bottom) = defaultVerticalEdgeY(strokeHalf)
-        val length = bottom - top
-        val trail = 0.25f * length
-
         edgePaint.alpha = 30
         edgePaint.maskFilter = null
-        canvas.drawLine(strokeHalf, top, strokeHalf, bottom, edgePaint)
-        canvas.drawLine(width - strokeHalf, top, width - strokeHalf, bottom, edgePaint)
+        drawSelectedBaseLines(canvas, edgePaint)
 
-        val head = top + effectProgress * length
-        val tailY = (head - trail).coerceAtLeast(top)
+        val strokeHalf = edgePaint.strokeWidth / 2f
         val baseColor = edgePaint.color
-        val gradient = LinearGradient(
-            0f, tailY, 0f, head,
-            intArrayOf(baseColor and 0x00FFFFFF, baseColor),
-            null,
-            Shader.TileMode.CLAMP,
-        )
-        val cometPaint = Paint(edgePaint).apply {
-            shader = gradient
-            alpha = 255
-            strokeWidth = edgePaint.strokeWidth * 1.5f
+        val transparent = baseColor and 0x00FFFFFF
+
+        if (positionSides) {
+            val (top, bottom) = defaultVerticalEdgeY(strokeHalf)
+            val length = bottom - top
+            val trail = 0.25f * length
+            val head = top + effectProgress * length
+            val tailY = (head - trail).coerceAtLeast(top)
+            val gradient = LinearGradient(
+                0f, tailY, 0f, head,
+                intArrayOf(transparent, baseColor),
+                null,
+                Shader.TileMode.CLAMP,
+            )
+            val cometPaint = Paint(edgePaint).apply {
+                shader = gradient
+                alpha = 255
+                strokeWidth = edgePaint.strokeWidth * 1.5f
+            }
+            canvas.drawLine(strokeHalf, tailY, strokeHalf, head, cometPaint)
+            canvas.drawLine(width - strokeHalf, tailY, width - strokeHalf, head, cometPaint)
         }
-        canvas.drawLine(strokeHalf, tailY, strokeHalf, head, cometPaint)
-        canvas.drawLine(
-            width - strokeHalf, tailY, width - strokeHalf, head, cometPaint
-        )
+
+        if (positionTop || positionBottom) {
+            val trail = 0.25f * width
+            val head = effectProgress * width
+            val tailX = (head - trail).coerceAtLeast(0f)
+            val gradient = LinearGradient(
+                tailX, 0f, head, 0f,
+                intArrayOf(transparent, baseColor),
+                null,
+                Shader.TileMode.CLAMP,
+            )
+            val cometPaint = Paint(edgePaint).apply {
+                shader = gradient
+                alpha = 255
+                strokeWidth = edgePaint.strokeWidth * 1.5f
+            }
+            if (positionTop) canvas.drawLine(tailX, strokeHalf, head, strokeHalf, cometPaint)
+            if (positionBottom) {
+                canvas.drawLine(
+                    tailX, height - strokeHalf, head, height - strokeHalf, cometPaint
+                )
+            }
+        }
     }
 
     private fun drawCometEffectRounded(canvas: Canvas) {
@@ -561,22 +633,46 @@ class EdgeLightPreviewView @JvmOverloads constructor(
     }
 
     private fun drawSparkleEffect(canvas: Canvas) {
-        val strokeHalf = edgePaint.strokeWidth / 2f
-        val (top, bottom) = defaultVerticalEdgeY(strokeHalf)
-        val length = bottom - top
-
         edgePaint.alpha = 100
         edgePaint.maskFilter = null
-        canvas.drawLine(strokeHalf, top, strokeHalf, bottom, edgePaint)
-        canvas.drawLine(width - strokeHalf, top, width - strokeHalf, bottom, edgePaint)
+        drawSelectedBaseLines(canvas, edgePaint)
 
         sparkles.removeAll { it.lifetime <= 0f }
-        if (sparkles.size < 15 && Random.nextFloat() < 0.3f) {
-            val onLeft = Random.nextBoolean()
-            val sx = if (onLeft) strokeHalf else width - strokeHalf
-            val sy = top + Random.nextFloat() * length
+
+        val activeEdges = mutableListOf<Int>()
+        if (positionSides) {
+            activeEdges += EDGE_LEFT
+            activeEdges += EDGE_RIGHT
+        }
+        if (positionTop) activeEdges += EDGE_TOP
+        if (positionBottom) activeEdges += EDGE_BOTTOM
+
+        if (activeEdges.isNotEmpty() && sparkles.size < 18 && Random.nextFloat() < 0.3f) {
+            val edge = activeEdges[Random.nextInt(activeEdges.size)]
+            val strokeHalf = edgePaint.strokeWidth / 2f
+            val (top, bottom) = defaultVerticalEdgeY(strokeHalf)
+            val x: Float
+            val y: Float
+            when (edge) {
+                EDGE_LEFT -> {
+                    x = strokeHalf
+                    y = top + Random.nextFloat() * (bottom - top)
+                }
+                EDGE_RIGHT -> {
+                    x = width - strokeHalf
+                    y = top + Random.nextFloat() * (bottom - top)
+                }
+                EDGE_TOP -> {
+                    x = Random.nextFloat() * width
+                    y = strokeHalf
+                }
+                else -> {
+                    x = Random.nextFloat() * width
+                    y = height - strokeHalf
+                }
+            }
             val maxSize = edgePaint.strokeWidth * (Random.nextFloat() * 2f + 2f)
-            sparkles.add(Sparkle(sx, sy, 1f, maxSize))
+            sparkles.add(Sparkle(x, y, 1f, maxSize))
         }
 
         val sparklePaint = Paint(edgePaint).apply {
@@ -930,6 +1026,10 @@ class EdgeLightPreviewView @JvmOverloads constructor(
         private val AURORA_SINGLE_STOPS = floatArrayOf(0f, 0.23f, 0.5f, 0.77f, 1f)
         private val AURORA_MULTI_STOPS =
             floatArrayOf(0f, 0.12f, 0.26f, 0.42f, 0.58f, 0.74f, 0.88f, 1f)
+        private const val EDGE_LEFT = 0
+        private const val EDGE_RIGHT = 1
+        private const val EDGE_TOP = 2
+        private const val EDGE_BOTTOM = 3
         private val AURORA_MULTI = intArrayOf(
             0xFF00E5FF.toInt(),
             0xFF00FFB3.toInt(),
