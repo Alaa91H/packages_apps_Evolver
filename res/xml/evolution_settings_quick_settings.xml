@@ -199,6 +199,18 @@
     </PreferenceCategory>-->
 
     <PreferenceCategory
+        android:key="qs_tile_shape_category"
+        android:title="@string/quick_settings_layout_category_title">
+
+        <org.evolution.settings.preferences.SystemSettingListPreference
+            android:key="qs_tile_shape"
+            android:title="@string/quick_settings_tile_shape_title"
+            android:entries="@array/quick_settings_tile_shape_entries"
+            android:entryValues="@array/quick_settings_tile_shape_values"
+            android:defaultValue="0" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:key="quick_settings_footer_category"
         android:title="@string/quick_settings_footer_category">
 
