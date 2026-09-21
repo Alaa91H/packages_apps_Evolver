@@ -129,7 +129,7 @@ for token in (
     "UserScopedService<ClipboardManager>",
     "clipboardUserCallback",
     "switchClipboardUser(",
-    "persistClipboardHistoryDetached(",
+    "writeClipboardHistory(oldState, oldSnapshot)",
     "ACTIVE_CLIPBOARD_DIR",
     "createActiveClipboardLease(",
     "cleanupActiveClipboardLeases(",
