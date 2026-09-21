@@ -55,6 +55,31 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        android:title="@string/lockscreen_indication_layout_category_title">
+
+        <org.evolution.settings.preferences.SecureSettingSeekBarPreference
+            android:key="lockscreen_indication_vertical_offset"
+            android:title="@string/lockscreen_indication_vertical_offset_title"
+            android:summary="@string/lockscreen_indication_vertical_offset_summary"
+            android:defaultValue="0"
+            android:max="200"
+            settings:min="-80"
+            settings:interval="1"
+            settings:units="dp" />
+
+        <org.evolution.settings.preferences.SecureSettingSeekBarPreference
+            android:key="lockscreen_indication_horizontal_inset"
+            android:title="@string/lockscreen_indication_horizontal_inset_title"
+            android:summary="@string/lockscreen_indication_horizontal_inset_summary"
+            android:defaultValue="0"
+            android:max="120"
+            settings:min="0"
+            settings:interval="1"
+            settings:units="dp" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:title="@string/notifications_title">
 
         <org.evolution.settings.preferences.SecureSettingSeekBarPreference
