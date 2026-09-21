@@ -1764,4 +1764,11 @@
     <string name="lockscreen_notifications_top_spacing_summary">اضبط المسافة بين محتوى شاشة القفل ومنطقة الإشعارات</string>
     <string name="lockscreen_notifications_horizontal_inset_title">الهامش الجانبي للإشعارات</string>
     <string name="lockscreen_notifications_horizontal_inset_summary">أضف هوامش جانبية متساوية لمنطقة إشعارات شاشة القفل</string>
+
+    <!-- تخطيط نصوص إرشادات شاشة القفل -->
+    <string name="lockscreen_indication_layout_category_title">نصوص الإرشادات</string>
+    <string name="lockscreen_indication_vertical_offset_title">الإزاحة العمودية للإرشادات</string>
+    <string name="lockscreen_indication_vertical_offset_summary">اضبط موضع رسائل الشحن والبصمة وفتح القفل في أسفل الشاشة</string>
+    <string name="lockscreen_indication_horizontal_inset_title">الهامش الجانبي للإرشادات</string>
+    <string name="lockscreen_indication_horizontal_inset_summary">أضف هوامش جانبية متساوية لمنطقة الإرشادات السفلية</string>
 </resources>
