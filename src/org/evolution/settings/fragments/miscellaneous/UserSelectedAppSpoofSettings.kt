@@ -194,8 +194,13 @@ private fun AppSpoofingContent(context: Context) {
         storedConfigIssues = countStoredConfigIssues(context)
     }
 
+    fun refreshStoredConfigIssues() {
+        storedConfigIssues = countStoredConfigIssues(context)
+    }
+
     fun persistConfigured() {
         writeConfigured(context, configuredMap, spoofEnabled)
+        refreshStoredConfigIssues()
     }
 
     fun stopPackage(pkg: String) {
@@ -229,6 +234,7 @@ private fun AppSpoofingContent(context: Context) {
         val updatedProfiles = customProfiles.filter { it.id != profileId }
         writeCustomProfiles(context, updatedProfiles)
         customProfiles = updatedProfiles
+        refreshStoredConfigIssues()
 
         if (affectedPackages.isNotEmpty()) {
             configuredMap = LinkedHashMap(
@@ -254,6 +260,7 @@ private fun AppSpoofingContent(context: Context) {
             writeMapSetting(context, SPOOFED_APPS_SETTING, emptyMap())
         }
         targets.forEach { stopPackage(it) }
+        refreshStoredConfigIssues()
     }
 
     fun clearAllConfigured() {
@@ -262,6 +269,7 @@ private fun AppSpoofingContent(context: Context) {
         writeMapSetting(context, SPOOFED_APPS_CACHE_SETTING, emptyMap())
         writeMapSetting(context, SPOOFED_APPS_SETTING, emptyMap())
         targets.forEach { stopPackage(it) }
+        refreshStoredConfigIssues()
     }
 
     val exportLauncher = rememberLauncherForActivityResult(
@@ -373,6 +381,7 @@ private fun AppSpoofingContent(context: Context) {
             onWriteCustomProfiles = { updated ->
                 writeCustomProfiles(context, updated)
                 customProfiles = updated
+                refreshStoredConfigIssues()
             },
             onDeleteCustomProfile = { profileId ->
                 removeCustomProfile(profileId)
@@ -492,6 +501,7 @@ private fun AppSpoofingContent(context: Context) {
                 }
                 writeCustomProfiles(context, updatedProfiles)
                 customProfiles = updatedProfiles
+                refreshStoredConfigIssues()
                 if (wasEditing) restartAppsUsingProfile(newProfile.id)
                 showAddCustomProfileDialog = false
                 customProfileToEdit = null
@@ -577,7 +587,11 @@ private fun AppSpoofingContent(context: Context) {
     val customProfileIds = customProfiles.map { it.id }.toSet()
     val knownProfileIds = builtInProfileIds + customProfileIds
     val unknownProfileAssignments = configuredMap.values.count { it !in knownProfileIds }
-    val missingConfiguredApps = configuredMap.keys.count { it !in installedPackages }
+    val missingConfiguredApps = if (allApps.isEmpty()) {
+        0
+    } else {
+        configuredMap.keys.count { it !in installedPackages }
+    }
     val invalidCustomProfiles = customProfiles.count {
         SpoofingConfigCodec.validateCustomProfile(it, builtInProfileIds) != null
     }
