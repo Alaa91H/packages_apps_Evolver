@@ -20,6 +20,7 @@ EVOLVER_FRAGMENT = ROOT / "src/org/evolution/settings/fragments/statusbar/Cutout
 SYSUI_SETTINGS = PATCH_ROOT / "packages/SystemUI/src/com/android/systemui/cutoutprogress/CutoutProgressSettings.java"
 RING_ROUTER = PATCH_ROOT / "packages/SystemUI/src/com/android/systemui/cutoutprogress/ring/RingRouter.java"
 RUNTIME_POLICY = PATCH_ROOT / "packages/SystemUI/src/com/android/systemui/cutoutprogress/CutoutProgressRuntimePolicy.java"
+LABEL_PAINTER = PATCH_ROOT / "packages/SystemUI/src/com/android/systemui/cutoutprogress/ring/ProgressLabelPainter.java"
 SYSUI_MANIFEST = PATCH_ROOT / "packages/SystemUI/AndroidManifest.xml"
 UPSTREAM_RAW = "https://raw.githubusercontent.com/Evolution-X/frameworks_base/cnb/"
 ANDROID_NS = "http://schemas.android.com/apk/res/android"
@@ -291,6 +292,13 @@ def validate_sources() -> None:
             fail(f"Staged patch file is missing: {rel}")
 
     run(["bash", "-n", str(APPLY_SCRIPT)])
+
+    label_text = LABEL_PAINTER.read_text(encoding="utf-8")
+    if "mFilenamePaint.setTextAlign(filenameTextAlign(mFilenamePosition))" not in label_text:
+        fail("Filename label alignment is not position-aware")
+    for token in ('case "left":', 'case "top_left":', 'case "bottom_left":', "Paint.Align.RIGHT"):
+        if token not in label_text:
+            fail(f"Filename label outward-alignment policy missing {token}")
 
     focus_files = [EVOLVER_FRAGMENT, *sorted(PATCH_ROOT.rglob("*.java"))]
     for path in focus_files:
