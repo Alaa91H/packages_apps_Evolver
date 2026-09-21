@@ -630,6 +630,7 @@
         <item>@string/edge_light_animation_effect_sparkle</item>
         <item>@string/edge_light_animation_effect_chase</item>
         <item>@string/edge_light_animation_effect_comet</item>
+        <item>@string/edge_light_animation_effect_aurora</item>
     </string-array>
 
     <string-array name="edge_light_animation_values" translatable="false">
@@ -639,6 +640,17 @@
         <item>sparkle</item>
         <item>chase</item>
         <item>comet</item>
+        <item>aurora</item>
+    </string-array>
+
+    <string-array name="edge_light_aurora_color_mode_entries" translatable="false">
+        <item>@string/edge_light_aurora_color_fixed</item>
+        <item>@string/edge_light_aurora_color_multicolor</item>
+    </string-array>
+
+    <string-array name="edge_light_aurora_color_mode_values" translatable="false">
+        <item>fixed</item>
+        <item>multicolor</item>
     </string-array>
 
     <!-- Hardware key rebinding -->
