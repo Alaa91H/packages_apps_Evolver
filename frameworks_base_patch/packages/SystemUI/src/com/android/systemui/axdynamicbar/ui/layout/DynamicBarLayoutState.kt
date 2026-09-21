@@ -72,11 +72,16 @@ object DynamicBarLayoutCalculator {
                     (landscapeMode == LANDSCAPE_AUTO && !topCutout))
 
         val forceCenter = alignment == ALIGNMENT_CENTER || compactLandscape
+        val physicalCutoutEligible =
+            if (isLandscape) {
+                landscapeMode == LANDSCAPE_ALWAYS || topCutout
+            } else {
+                topCutout
+            }
         val usePhysical =
             physicalBounds != null &&
-                topCutout &&
                 !forceCenter &&
-                (!isLandscape || landscapeMode == LANDSCAPE_ALWAYS || topCutout)
+                physicalCutoutEligible
 
         val effectiveSize = if (compactLandscape) SIZE_COMPACT else islandSize
         val baseHeightDp =
