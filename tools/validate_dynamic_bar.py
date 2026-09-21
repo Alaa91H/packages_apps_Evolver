@@ -157,6 +157,10 @@ for token in (
     "public final class CameraCutoutGeometryResolver",
     "public static final class ResolvedGeometry",
     "public ResolvedGeometry resolve",
+    "expectedCameraEdgeDistance",
+    "case Surface.ROTATION_90",
+    "case Surface.ROTATION_180",
+    "case Surface.ROTATION_270",
 ):
     if token not in resolver_text:
         fail(f"camera resolver is not shareable: {token}")
