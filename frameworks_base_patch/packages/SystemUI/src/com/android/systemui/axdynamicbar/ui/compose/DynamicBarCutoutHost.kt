@@ -362,14 +362,16 @@ private fun DynamicBarStartWing(
     accent: Color,
     width: Dp,
 ) {
-    if (width.value < 16f) return
+    // PhysicalWing reserves 4dp on each side. Keep the icon hidden when the remaining
+    // content box cannot contain it without spilling into the camera slot.
+    if (width.value < 24f) return
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         PillEventIcon(event = event, tint = accent, animated = true)
-        if (eventCount > 1 && width.value >= 32f) {
+        if (eventCount > 1 && width.value >= 48f) {
             Box(
                 modifier =
                     Modifier.height(16.dp)
