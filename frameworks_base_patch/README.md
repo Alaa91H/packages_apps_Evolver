@@ -44,14 +44,30 @@ cutout-aware island host.
 The legacy AxDynamicBarChip remains staged with RTL-semantic swipe handling as a compatibility
 path for future reuse.
 
-### Gboard/default-IME clipboard compatibility
+### Clipboard hardening and Gboard compatibility
 
-Dynamic Bar now treats the Android clipboard as a passive source instead of using a global
-"skip next callback" flag. Self-authored SystemUI copies are ignored by checking the platform
-clipboard source package, so a delayed callback can no longer consume the next real copy made
-while Gboard or another default IME is active. Identical callbacks are coalesced only inside a
-small time window, and clips marked with `ClipDescription.EXTRA_IS_SENSITIVE` are never persisted
-to Dynamic Bar history. Gboard still receives the original system clipboard normally.
+Dynamic Bar remains a passive observer of Android's system clipboard and does not modify
+ClipboardService/default-IME access policy.
+
+- Copies initiated by Dynamic Bar carry a private `SELF_COPY` marker. Only those exact writes are
+  ignored by Dynamic Bar, so other `com.android.systemui` producers such as screenshot-to-clipboard
+  remain visible.
+- Duplicate framework callbacks are detected from `ClipDescription.timestamp`, matching the
+  platform clipboard mutation instead of relying on an arbitrary time window.
+- Sensitive clips marked with `ClipDescription.EXTRA_IS_SENSITIVE` are never rendered or persisted.
+- Clipboard previews are filtered from Dynamic Bar while the keyguard is active.
+- Text previews use `ClipData.Item.text` directly; Dynamic Bar does not synchronously dereference
+  arbitrary content URIs with `coerceToText()`.
+- Image history uses bounded thumbnail decoding on the background dispatcher instead of decoding
+  unconstrained source dimensions.
+- Clipboard generation tokens prevent stale image or persistence work from resurrecting an older
+  clip after a newer copy, clear-history action, or listener shutdown.
+- Dynamic Bar self-copy also suppresses the stock SystemUI clipboard overlay to avoid duplicate UI,
+  while Gboard and other default IMEs continue to receive the system clipboard normally.
+
+Multi-user clipboard rebinding is intentionally left for a separate change because it requires
+coordinating per-user ClipboardManager, cache, and persistent-history ownership rather than mixing
+that lifecycle refactor into this regression fix.
 
 ## Multi-ring architecture
 
