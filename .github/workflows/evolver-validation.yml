@@ -36,6 +36,9 @@ jobs:
       - name: Validate stacked Network Traffic integration
         run: python3 tools/validate_network_traffic.py
 
+      - name: Validate mobile network type presentation
+        run: python3 tools/validate_mobile_type_presentation.py
+
       - name: Validate Arabic localization and RTL
         run: python3 tools/validate_arabic_localization.py
 
