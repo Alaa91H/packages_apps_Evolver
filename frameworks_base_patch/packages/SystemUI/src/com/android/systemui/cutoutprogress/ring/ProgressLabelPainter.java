@@ -227,4 +227,6 @@ final class ProgressLabelPainter {
                 return value.substring(0, headEnd) + ellipsis + value.substring(tailStart);
             }
         }
-    }}
+    }
+}
+
