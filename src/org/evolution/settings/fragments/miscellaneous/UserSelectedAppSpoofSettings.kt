@@ -183,6 +183,7 @@ private fun AppSpoofingContent(context: Context) {
     var editTarget by remember { mutableStateOf<AppItem?>(null) }
     var customProfiles by remember { mutableStateOf(listOf<CustomSpoofProfile>()) }
     var pendingRestore by remember { mutableStateOf<SpoofingBackupData?>(null) }
+    var storedConfigIssues by remember { mutableStateOf(0) }
 
     fun loadState() {
         spoofEnabled = readEnabled(context)
@@ -190,6 +191,7 @@ private fun AppSpoofingContent(context: Context) {
             putAll(readConfigured(context, spoofEnabled))
         }
         customProfiles = readCustomProfiles(context)
+        storedConfigIssues = countStoredConfigIssues(context)
     }
 
     fun persistConfigured() {
@@ -516,6 +518,7 @@ private fun AppSpoofingContent(context: Context) {
                         customProfiles = backup.customProfiles
                         configuredMap = LinkedHashMap(backup.assignments)
                         spoofEnabled = backup.enabled
+                        storedConfigIssues = 0
                         pendingRestore = null
 
                         affectedPackages.forEach { stopPackage(it) }
@@ -579,7 +582,8 @@ private fun AppSpoofingContent(context: Context) {
         SpoofingConfigCodec.validateCustomProfile(it, builtInProfileIds) != null
     }
     val healthIssueCount =
-        unknownProfileAssignments + missingConfiguredApps + invalidCustomProfiles
+        unknownProfileAssignments + missingConfiguredApps +
+            invalidCustomProfiles + storedConfigIssues
 
     Scaffold(containerColor = Color.Transparent) { innerPadding ->
         Column(
@@ -667,6 +671,16 @@ private fun AppSpoofingContent(context: Context) {
                             stringResource(
                                 R.string.app_spoofing_health_invalid_custom,
                                 invalidCustomProfiles,
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                    if (storedConfigIssues > 0) {
+                        Text(
+                            stringResource(
+                                R.string.app_spoofing_health_malformed_storage,
+                                storedConfigIssues,
                             ),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
@@ -1333,6 +1347,24 @@ private fun writeMapSetting(context: Context, key: String, values: Map<String, S
         key,
         SpoofingConfigCodec.encodeAssignments(values),
     )
+}
+
+private fun countStoredConfigIssues(context: Context): Int {
+    val resolver = context.contentResolver
+    val active = SpoofingConfigCodec.decodeAssignments(
+        Settings.Secure.getString(resolver, SPOOFED_APPS_SETTING),
+    )
+    val cached = SpoofingConfigCodec.decodeAssignments(
+        Settings.Secure.getString(resolver, SPOOFED_APPS_CACHE_SETTING),
+    )
+    val profiles = SpoofingConfigCodec.decodeCustomProfiles(
+        Settings.Secure.getString(resolver, CUSTOM_SPOOF_PROFILES_SETTING),
+    )
+
+    return active.malformedEntries +
+        cached.malformedEntries +
+        profiles.malformedEntries +
+        listOf(active.error, cached.error, profiles.error).count { it != null }
 }
 
 private fun readEnabled(context: Context): Boolean {
