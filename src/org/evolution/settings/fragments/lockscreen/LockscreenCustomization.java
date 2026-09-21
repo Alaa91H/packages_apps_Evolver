@@ -9,6 +9,7 @@ import android.content.Context;
 import android.os.Bundle;
 
 import androidx.preference.Preference;
+import androidx.preference.PreferenceCategory;
 import androidx.preference.SwitchPreferenceCompat;
 
 import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
@@ -18,6 +19,7 @@ import com.android.settings.SettingsPreferenceFragment;
 import com.android.settings.search.BaseSearchIndexProvider;
 import com.android.settingslib.search.SearchIndexable;
 
+import org.evolution.settings.utils.DeviceUtils;
 import org.evolution.settings.utils.PreferenceUtils;
 import org.evolution.settings.utils.SystemUtils;
 
@@ -34,6 +36,10 @@ public class LockscreenCustomization extends SettingsPreferenceFragment
 
     private static final String KEY_SMARTSPACE = "lockscreen_smartspace_enabled";
     private static final String KEY_WEATHER = "lockscreen_weather_enabled";
+    private static final String KEY_RIPPLE_EFFECT = "enable_ripple_effect";
+    private static final String KEY_FP_SUCCESS = "fp_success_vibrate";
+    private static final String KEY_FP_ERROR = "fp_error_vibrate";
+    private static final String KEY_INTERACTION_CATEGORY = "lockscreen_studio_interaction_category";
 
     private SwitchPreferenceCompat mSmartspace;
     private SwitchPreferenceCompat mWeather;
@@ -45,6 +51,8 @@ public class LockscreenCustomization extends SettingsPreferenceFragment
 
         mSmartspace = findPreference(KEY_SMARTSPACE);
         mWeather = findPreference(KEY_WEATHER);
+
+        configureBiometricPreferences();
 
         if (mSmartspace != null) {
             mSmartspace.setOnPreferenceChangeListener(this);
@@ -70,6 +78,33 @@ public class LockscreenCustomization extends SettingsPreferenceFragment
         }
 
         return false;
+    }
+
+    private void configureBiometricPreferences() {
+        final Context context = getContext();
+        final PreferenceCategory interactionCategory =
+                findPreference(KEY_INTERACTION_CATEGORY);
+        if (context == null || interactionCategory == null) {
+            return;
+        }
+
+        final Preference rippleEffect = findPreference(KEY_RIPPLE_EFFECT);
+        final Preference fpSuccess = findPreference(KEY_FP_SUCCESS);
+        final Preference fpError = findPreference(KEY_FP_ERROR);
+        final boolean hasFingerprint = DeviceUtils.hasFingerprint(context);
+
+        if (!hasFingerprint && rippleEffect != null) {
+            interactionCategory.removePreference(rippleEffect);
+        }
+
+        if ((!hasFingerprint || !DeviceUtils.hasVibrator(context))) {
+            if (fpSuccess != null) {
+                interactionCategory.removePreference(fpSuccess);
+            }
+            if (fpError != null) {
+                interactionCategory.removePreference(fpError);
+            }
+        }
     }
 
     private void updateWeatherSettings() {
@@ -109,5 +144,22 @@ public class LockscreenCustomization extends SettingsPreferenceFragment
     }
 
     public static final BaseSearchIndexProvider SEARCH_INDEX_DATA_PROVIDER =
-            new BaseSearchIndexProvider(R.xml.lockscreen_customization);
+            new BaseSearchIndexProvider(R.xml.lockscreen_customization) {
+                @Override
+                public java.util.List<String> getNonIndexableKeys(Context context) {
+                    final java.util.List<String> keys = super.getNonIndexableKeys(context);
+                    final boolean hasFingerprint = DeviceUtils.hasFingerprint(context);
+
+                    if (!hasFingerprint) {
+                        keys.add(KEY_RIPPLE_EFFECT);
+                    }
+
+                    if (!hasFingerprint || !DeviceUtils.hasVibrator(context)) {
+                        keys.add(KEY_FP_SUCCESS);
+                        keys.add(KEY_FP_ERROR);
+                    }
+
+                    return keys;
+                }
+            };
 }
