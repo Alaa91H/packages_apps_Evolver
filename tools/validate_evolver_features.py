@@ -167,6 +167,48 @@ def validate_dynamic_bar() -> None:
         if "LAYOUT_DIRECTION_RTL" not in text:
             fail(f"Dynamic Bar preview is missing explicit RTL behavior: {demo.relative_to(ROOT)}")
 
+def validate_edge_light() -> None:
+    keys = validate_preference_file("res/xml/edge_light_settings.xml")
+    required = {
+        "edge_light_enabled",
+        "edge_light_top_enabled",
+        "edge_light_sides_enabled",
+        "edge_light_bottom_enabled",
+        "edge_light_animation_effect",
+        "edge_light_aurora_color_mode",
+    }
+    missing = sorted(required - keys)
+    if missing:
+        fail(f"Edge light preferences missing: {missing}")
+
+    arrays = (ROOT / "res/values/evolution_arrays.xml").read_text(encoding="utf-8")
+    for token in (
+        "<item>aurora</item>",
+        'name="edge_light_aurora_color_mode_entries"',
+        'name="edge_light_aurora_color_mode_values"',
+        "<item>single</item>",
+        "<item>multi</item>",
+    ):
+        if token not in arrays:
+            fail(f"Edge light Aurora array wiring missing: {token}")
+
+    preview = (
+        ROOT
+        / "src/org/evolution/settings/fragments/lockscreen/EdgeLightPreviewView.kt"
+    ).read_text(encoding="utf-8")
+    for token in (
+        '"edge_light_top_enabled"',
+        '"edge_light_sides_enabled"',
+        '"edge_light_bottom_enabled"',
+        '"edge_light_aurora_color_mode"',
+        "drawAuroraEffect",
+        "highQuality = true",
+        "BlurMaskFilter",
+    ):
+        if token not in preview:
+            fail(f"Edge light preview wiring missing: {token}")
+
+
 def validate_repository_boundary() -> None:
     staged = sorted(
         path.relative_to(ROOT).as_posix()
@@ -186,6 +228,7 @@ def main() -> int:
         validate_network_traffic()
         validate_mobile_type()
         validate_dynamic_bar()
+        validate_edge_light()
     except (ValidationError, OSError) as exc:
         print(f"EVOLVER FEATURE VALIDATION FAILED: {exc}", file=sys.stderr)
         return 1
@@ -196,6 +239,7 @@ def main() -> int:
     print("- Network Traffic UI/defaults: OK")
     print("- Mobile type preference handling: OK")
     print("- Dynamic Bar UI/settings/RTL previews: OK")
+    print("- Edge light zones/Aurora UI and preview: OK")
     return 0
 
 if __name__ == "__main__":
