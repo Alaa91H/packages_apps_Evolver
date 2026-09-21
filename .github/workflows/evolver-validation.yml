@@ -30,20 +30,11 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Validate Evolver and staged SystemUI integration
-        run: python3 tools/validate_cutout_progress.py
-
-      - name: Validate stacked Network Traffic integration
-        run: python3 tools/validate_network_traffic.py
-
-      - name: Validate mobile network type presentation
-        run: python3 tools/validate_mobile_type_presentation.py
+      - name: Validate Evolver feature boundaries
+        run: python3 tools/validate_evolver_features.py
 
       - name: Validate Arabic localization and RTL
         run: python3 tools/validate_arabic_localization.py
 
       - name: Validate Home double tap to sleep preference
         run: python3 tools/validate_native_dt2s.py
-
-      - name: Validate Dynamic Bar cutout island
-        run: python3 tools/validate_dynamic_bar.py
