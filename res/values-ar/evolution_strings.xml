@@ -1078,8 +1078,8 @@
     <string name="edge_light_stroke_width_title">سُمك الخط</string>
     <string name="edge_light_stroke_width_summary">تعيين سُمك أشرطة إضاءة الحواف</string>
     <string name="edge_light_style_title">نمط الرسم</string>
-    <string name="edge_light_style_default">افتراضي (يسار/يمين)</string>
-    <string name="edge_light_style_frame">إطار (جميع الجوانب)</string>
+    <string name="edge_light_style_default">حواف مستقيمة</string>
+    <string name="edge_light_style_frame">حواف مستديرة</string>
     <string name="edge_light_animation_effect_title">تأثير الحركة</string>
     <string name="edge_light_animation_effect_none">قياسي</string>
     <string name="edge_light_animation_effect_breathing">تنفس</string>
