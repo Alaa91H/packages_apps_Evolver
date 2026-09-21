@@ -139,6 +139,7 @@ final class ProgressLabelPainter {
                 mFilenamePaint.getTextSize(),
                 0f,
                 false);
+        mFilenamePaint.setTextAlign(filenameTextAlign(mFilenamePosition));
         mFilenamePaint.setColor(ringColor);
         mFilenamePaint.setAlpha(alpha);
         canvas.drawText(
@@ -198,6 +199,20 @@ final class ProgressLabelPainter {
                 mPosition[0] = bounds.right + (hasTextWidth ? textWidth / 2f : 0f) + pad;
                 mPosition[1] = bounds.centerY() + textHeight / 3f;
                 break;
+        }
+    }
+
+    private static Paint.Align filenameTextAlign(String position) {
+        switch (position) {
+            case "left":
+            case "top_left":
+            case "bottom_left":
+                return Paint.Align.RIGHT;
+            case "top":
+            case "bottom":
+                return Paint.Align.CENTER;
+            default:
+                return Paint.Align.LEFT;
         }
     }
 
