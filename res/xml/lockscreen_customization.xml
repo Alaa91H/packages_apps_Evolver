@@ -23,6 +23,12 @@
             android:summary="@string/lockscreen_layout_summary"
             android:fragment="org.evolution.settings.fragments.lockscreen.LockscreenLayout" />
 
+        <Preference
+            android:key="lockscreen_shortcuts_settings"
+            android:title="@string/lockscreen_shortcuts_title"
+            android:summary="@string/lockscreen_shortcuts_summary"
+            android:fragment="org.evolution.settings.fragments.lockscreen.LockscreenShortcuts" />
+
         <org.evolution.settings.preferences.SystemSettingPrimarySwitchPreference
             android:key="lockscreen_widgets_enabled"
             android:title="@string/lockscreen_widgets_title"
