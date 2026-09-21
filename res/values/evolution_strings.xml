@@ -1216,6 +1216,10 @@
     <string name="edge_light_animation_effect_sparkle">Sparkle</string>
     <string name="edge_light_animation_effect_chase">Chase</string>
     <string name="edge_light_animation_effect_comet">Comet</string>
+    <string name="edge_light_animation_effect_aurora">Aurora</string>
+    <string name="edge_light_aurora_color_mode_title">Aurora colors</string>
+    <string name="edge_light_aurora_color_fixed">Fixed color</string>
+    <string name="edge_light_aurora_color_multicolor">Multicolor</string>
     <string name="edge_light_spread_title">Glow spread</string>
     <string name="edge_light_spread_summary">How far inward the glow extends from the edge</string>
     <string name="edge_light_intensity_title">Glow intensity</string>
