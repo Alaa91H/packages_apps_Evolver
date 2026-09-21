@@ -12,6 +12,9 @@ import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.provider.Settings
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.expandVertically
@@ -93,8 +96,6 @@ import com.android.settingslib.spa.framework.theme.SettingsTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.json.JSONArray
-import org.json.JSONObject
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -133,17 +134,6 @@ private data class AppItem(
     val label: String,
     val icon: Drawable?,
     val isSystem: Boolean
-)
-
-private data class CustomSpoofProfile(
-    val id: String,
-    val name: String,
-    val brand: String,
-    val manufacturer: String,
-    val device: String,
-    val model: String,
-    val fingerprint: String,
-    val product: String
 )
 
 private fun brandColorForProfile(profileKey: String, brand: String): Color {
@@ -1110,21 +1100,27 @@ private fun AddAppDialog(
 }
 
 private fun readMapSetting(context: Context, key: String): Map<String, String> {
-    val stored = Settings.Secure.getString(context.contentResolver, key) ?: return emptyMap()
-    if (stored.isBlank()) return emptyMap()
-    val map = linkedMapOf<String, String>()
-    stored.split(",").forEach { entry ->
-        val parts = entry.split(":")
-        if (parts.size == 2 && parts[0].isNotBlank() && parts[1].isNotBlank()) {
-            map[parts[0]] = parts[1]
-        }
+    val stored = Settings.Secure.getString(context.contentResolver, key)
+    val decoded = SpoofingConfigCodec.decodeAssignments(stored)
+
+    // Migrate clean legacy data in place. Malformed legacy payloads are deliberately
+    // left untouched so the user can still export/recover them instead of losing data.
+    if (decoded.legacy && decoded.malformedEntries == 0 && decoded.error == null) {
+        Settings.Secure.putString(
+            context.contentResolver,
+            key,
+            SpoofingConfigCodec.encodeAssignments(decoded.values),
+        )
     }
-    return map
+    return decoded.values
 }
 
 private fun writeMapSetting(context: Context, key: String, values: Map<String, String>) {
-    val encoded = values.entries.joinToString(",") { "${it.key}:${it.value}" }
-    Settings.Secure.putString(context.contentResolver, key, encoded)
+    Settings.Secure.putString(
+        context.contentResolver,
+        key,
+        SpoofingConfigCodec.encodeAssignments(values),
+    )
 }
 
 private fun readEnabled(context: Context): Boolean {
@@ -1165,48 +1161,27 @@ private fun writeConfigured(context: Context, values: Map<String, String>, enabl
 }
 
 private fun readCustomProfiles(context: Context): List<CustomSpoofProfile> {
-    val jsonStr = Settings.Secure.getString(context.contentResolver, CUSTOM_SPOOF_PROFILES_SETTING)
-    if (jsonStr.isNullOrBlank()) return emptyList()
-    return try {
-        val jsonArray = JSONArray(jsonStr)
-        val profiles = mutableListOf<CustomSpoofProfile>()
-        for (i in 0 until jsonArray.length()) {
-            val obj = jsonArray.getJSONObject(i)
-            profiles.add(
-                CustomSpoofProfile(
-                    id = obj.getString("id"),
-                    name = obj.getString("name"),
-                    brand = obj.getString("brand"),
-                    manufacturer = obj.getString("manufacturer"),
-                    device = obj.getString("device"),
-                    model = obj.getString("model"),
-                    fingerprint = obj.optString("fingerprint", ""),
-                    product = obj.optString("product", "")
-                )
-            )
-        }
-        profiles
-    } catch (e: Exception) {
-        emptyList()
+    val stored = Settings.Secure.getString(
+        context.contentResolver,
+        CUSTOM_SPOOF_PROFILES_SETTING,
+    )
+    val decoded = SpoofingConfigCodec.decodeCustomProfiles(stored)
+    if (decoded.legacy && decoded.malformedEntries == 0 && decoded.error == null) {
+        Settings.Secure.putString(
+            context.contentResolver,
+            CUSTOM_SPOOF_PROFILES_SETTING,
+            SpoofingConfigCodec.encodeCustomProfiles(decoded.profiles),
+        )
     }
+    return decoded.profiles
 }
 
 private fun writeCustomProfiles(context: Context, profiles: List<CustomSpoofProfile>) {
-    val jsonArray = JSONArray()
-    profiles.forEach { profile ->
-        val obj = JSONObject().apply {
-            put("id", profile.id)
-            put("name", profile.name)
-            put("brand", profile.brand)
-            put("manufacturer", profile.manufacturer)
-            put("device", profile.device)
-            put("model", profile.model)
-            put("fingerprint", profile.fingerprint)
-            put("product", profile.product)
-        }
-        jsonArray.put(obj)
-    }
-    Settings.Secure.putString(context.contentResolver, CUSTOM_SPOOF_PROFILES_SETTING, jsonArray.toString())
+    Settings.Secure.putString(
+        context.contentResolver,
+        CUSTOM_SPOOF_PROFILES_SETTING,
+        SpoofingConfigCodec.encodeCustomProfiles(profiles),
+    )
 }
 
 @Composable
@@ -1250,9 +1225,19 @@ private fun AddCustomProfileDialog(
                 OutlinedTextField(value = model, onValueChange = { model = it },
                     label = { Text(stringResource(R.string.custom_spoof_profile_model)) },
                     singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = fingerprint, onValueChange = { fingerprint = it },
+                val fingerprintInvalid = fingerprint.isNotBlank() &&
+                    !SpoofingConfigCodec.isValidFingerprint(fingerprint.trim())
+                OutlinedTextField(
+                    value = fingerprint,
+                    onValueChange = { fingerprint = it },
                     label = { Text(stringResource(R.string.custom_spoof_profile_fingerprint)) },
-                    singleLine = true, modifier = Modifier.fillMaxWidth())
+                    singleLine = true,
+                    isError = fingerprintInvalid,
+                    supportingText = if (fingerprintInvalid) {
+                        { Text(stringResource(R.string.custom_spoof_profile_invalid_fingerprint)) }
+                    } else null,
+                    modifier = Modifier.fillMaxWidth(),
+                )
                 OutlinedTextField(value = product, onValueChange = { product = it },
                     label = { Text(stringResource(R.string.custom_spoof_profile_product)) },
                     singleLine = true, modifier = Modifier.fillMaxWidth())
@@ -1273,7 +1258,9 @@ private fun AddCustomProfileDialog(
                     ))
                 },
                 enabled = name.isNotBlank() && brand.isNotBlank() && manufacturer.isNotBlank() &&
-                          device.isNotBlank() && model.isNotBlank()
+                          device.isNotBlank() && model.isNotBlank() &&
+                          (fingerprint.isBlank() ||
+                              SpoofingConfigCodec.isValidFingerprint(fingerprint.trim()))
             ) { Text(stringResource(R.string.save)) }
         },
         dismissButton = {
