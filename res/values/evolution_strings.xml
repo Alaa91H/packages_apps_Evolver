@@ -1941,4 +1941,14 @@
     <string name="lockscreen_layout_summary">Fine-tune weather and widget positions independently</string>
     <string name="lockscreen_layout_horizontal_offset_title">Horizontal offset</string>
     <string name="lockscreen_layout_vertical_offset_title">Vertical offset</string>
+
+    <!-- Lock screen bottom shortcuts -->
+    <string name="lockscreen_shortcuts_title">Bottom shortcuts</string>
+    <string name="lockscreen_shortcuts_summary">Customize shortcut size, position, spacing, and background</string>
+    <string name="lockscreen_shortcuts_scale_title">Shortcut size</string>
+    <string name="lockscreen_shortcuts_vertical_offset_title">Vertical offset</string>
+    <string name="lockscreen_shortcuts_vertical_offset_summary">Positive values move both shortcuts upward</string>
+    <string name="lockscreen_shortcuts_horizontal_inset_title">Horizontal inset</string>
+    <string name="lockscreen_shortcuts_horizontal_inset_summary">Positive values move both shortcuts toward the center</string>
+    <string name="lockscreen_shortcuts_background_opacity_title">Background opacity</string>
 </resources>
