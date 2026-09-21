@@ -76,8 +76,6 @@ public final class CutoutRingView extends View {
     private final Path mScaledPath = new Path();
     private final Matrix mScaleMatrix = new Matrix();
     private final Matrix mShaderMatrix = new Matrix();
-    private final float[] mEffectPosition = new float[2];
-    private final float[] mEffectNormal = new float[2];
     private final float[] mRotatedOffset = new float[2];
     private final RectF mPathBounds = new RectF();
     private final RectF mArcBounds = new RectF();
@@ -91,6 +89,8 @@ public final class CutoutRingView extends View {
     private RingViewRenderer mRenderer;
     private final RingRouter.Result mRingLayout = new RingRouter.Result();
     private CountBadgePainter mBadge;
+    private final MusicWavePainter mMusicWavePainter = new MusicWavePainter();
+    private final TimerFlamePainter mTimerFlamePainter = new TimerFlamePainter();
 
     private final Paint mRingPaint = makePaint();
     private final Paint mShinePaint = makePaint();
@@ -106,9 +106,7 @@ public final class CutoutRingView extends View {
     private float mRainbowCx = Float.NaN;
     private float mRainbowCy = Float.NaN;
     private final Paint mMusicPaint = makePaint();
-    private final Paint mMusicWavePaint = makePaint();
     private final Paint mTimerPaint = makePaint();
-    private final Paint mFlamePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint mAuroraPaint = makePaint();
     private SweepGradient mAuroraShader = null;
     private float mAuroraCx = Float.NaN;
@@ -1417,30 +1415,16 @@ public final class CutoutRingView extends View {
     }
 
     private void drawMusicWave(Canvas canvas) {
-        int density = Math.max(16, Math.min(96, sCfgMusicWaveDensity));
-        float amplitudeBase = Math.max(0.5f, sCfgMusicWaveAmplitudeDp) * mDp;
-        float pad = (sCfgMusicStrokeDp * 0.65f + 0.8f) * mDp;
-        mMusicWavePaint.setColor(sCfgMusicColor);
-        mMusicWavePaint.setAlpha(sCfgMusicOpacity * 255 / 100);
-        float[] position = mEffectPosition;
-        float[] normal = mEffectNormal;
-
-        for (int i = 0; i < density; i++) {
-            float fraction = i / (float) density;
-            if (!mRenderer.getPointAndOutwardNormal(fraction, position, normal)) continue;
-            float t = (float) (Math.PI * 2.0 * fraction);
-            float wave = 0.55f
-                    + 0.25f * (float) Math.sin(t * 3f + mMusicWavePhase)
-                    + 0.20f * (float) Math.sin(t * 7f - mMusicWavePhase * 1.7f);
-            wave = Math.max(0.12f, Math.min(1f, wave));
-            float amplitude = amplitudeBase * wave;
-            canvas.drawLine(
-                    position[0] + normal[0] * pad,
-                    position[1] + normal[1] * pad,
-                    position[0] + normal[0] * (pad + amplitude),
-                    position[1] + normal[1] * (pad + amplitude),
-                    mMusicWavePaint);
-        }
+        mMusicWavePainter.draw(
+                canvas,
+                mRenderer,
+                sCfgMusicWaveDensity,
+                sCfgMusicWaveAmplitudeDp,
+                sCfgMusicStrokeDp,
+                mDp,
+                sCfgMusicColor,
+                sCfgMusicOpacity,
+                mMusicWavePhase);
     }
 
     private void drawTimerRing(Canvas canvas, float laneOffsetDp) {
@@ -1481,46 +1465,17 @@ public final class CutoutRingView extends View {
     }
 
     private void drawTimerFlame(Canvas canvas, int timerColor) {
-        float[] position = mEffectPosition;
-        float[] normal = mEffectNormal;
-        float endpoint = sCfgTimerClockwise ? mTimerFraction : 1f - mTimerFraction;
-        endpoint = endpoint - (float) Math.floor(endpoint);
-        if (!mRenderer.getPointAndOutwardNormal(endpoint, position, normal)) return;
-
-        float flameSize = Math.max(1f, sCfgTimerFlameSizeDp) * mDp;
-        float flicker = 0.88f + 0.12f * (float) Math.sin(mVisualEffectPhase * 3.1f);
-        float wick = Math.max(sCfgTimerStrokeDp * 0.55f * mDp, flameSize * 0.22f);
-        float fx = position[0] + normal[0] * (wick + flameSize * 0.35f);
-        float fy = position[1] + normal[1] * (wick + flameSize * 0.35f);
-
-        mFlamePaint.setStyle(Paint.Style.STROKE);
-        mFlamePaint.setStrokeCap(Paint.Cap.ROUND);
-        mFlamePaint.setStrokeWidth(Math.max(1f, sCfgTimerStrokeDp * 0.45f * mDp));
-        mFlamePaint.setColor(timerColor);
-        mFlamePaint.setAlpha(sCfgTimerOpacity * 220 / 100);
-        canvas.drawLine(position[0], position[1],
-                position[0] + normal[0] * wick,
-                position[1] + normal[1] * wick, mFlamePaint);
-
-        mFlamePaint.setStyle(Paint.Style.FILL);
-        mFlamePaint.setColor(timerColor);
-        mFlamePaint.setAlpha(sCfgTimerOpacity * 190 / 100);
-        canvas.drawCircle(fx, fy, flameSize * 0.58f * flicker, mFlamePaint);
-
-        int inner = blendColors(timerColor, Color.WHITE, 0.58f);
-        mFlamePaint.setColor(inner);
-        mFlamePaint.setAlpha(sCfgTimerOpacity * 230 / 100);
-        canvas.drawCircle(
-                fx - normal[0] * flameSize * 0.12f,
-                fy - normal[1] * flameSize * 0.12f,
-                flameSize * 0.34f * (1.06f - 0.06f * flicker), mFlamePaint);
-
-        mFlamePaint.setColor(Color.WHITE);
-        mFlamePaint.setAlpha(sCfgTimerOpacity * 210 / 100);
-        canvas.drawCircle(
-                fx - normal[0] * flameSize * 0.20f,
-                fy - normal[1] * flameSize * 0.20f,
-                flameSize * 0.13f, mFlamePaint);
+        mTimerFlamePainter.draw(
+                canvas,
+                mRenderer,
+                sCfgTimerClockwise,
+                mTimerFraction,
+                sCfgTimerFlameSizeDp,
+                sCfgTimerStrokeDp,
+                mDp,
+                timerColor,
+                sCfgTimerOpacity,
+                mVisualEffectPhase);
     }
 
     private void drawAurora(
@@ -1870,7 +1825,6 @@ public final class CutoutRingView extends View {
         applyStroke(mChargingPaint, baseColor, stroke, sCfgOpacity * 255 / 100);
         applyStroke(mTimerPaint, resolveTimerColor(),
                 sCfgTimerStrokeDp * mDp, sCfgTimerOpacity * 255 / 100);
-        mFlamePaint.setAntiAlias(true);
         mAuroraPaint.setAntiAlias(true);
 
         mRainbowPaint.setStyle(Paint.Style.STROKE);
@@ -1897,11 +1851,6 @@ public final class CutoutRingView extends View {
                 sCfgMusicColor,
                 sCfgMusicStrokeDp * mDp,
                 sCfgMusicOpacity * 255 / 100);
-        applyStroke(mMusicWavePaint,
-                sCfgMusicColor,
-                Math.max(1f, sCfgMusicStrokeDp * 0.45f * mDp),
-                sCfgMusicOpacity * 255 / 100);
-        mMusicWavePaint.setStrokeCap(Paint.Cap.ROUND);
     }
 
     private static void applyStroke(Paint p, int color, float width, int alpha) {
