@@ -102,6 +102,8 @@ settings_text = read(SETTINGS)
 for key in REQUIRED_KEYS:
     if key not in settings_text:
         fail(f"SystemUI settings missing {key}")
+if "if (contentResolver !== secureResolver)" not in settings_text:
+    fail("Dynamic Bar settings teardown may double-unregister the shared ContentObserver")
 
 status_root = read(STATUS_ROOT)
 if "DynamicBarCutoutHost(" not in status_root:
@@ -135,6 +137,10 @@ for token in (
     "leftContentEdge",
     "rightContentEdge",
     "physicalCutoutEligible",
+    "cameraSlotLeft",
+    "cameraSlotRight",
+    "usableWidthPx",
+    "wingBudgetPx",
 ):
     if token not in layout_text:
         fail(f"layout calculator missing {token}")
