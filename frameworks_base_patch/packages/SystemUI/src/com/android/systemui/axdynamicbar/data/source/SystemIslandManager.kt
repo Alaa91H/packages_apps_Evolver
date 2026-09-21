@@ -150,6 +150,9 @@ constructor(
 
             if (!clipboardManager.hasPrimaryClip()) {
                 cleanupActiveClipboardLeases(state)
+                lastClipboardToken = null
+                invalidatePendingClipboardWorkAndPersist(state)
+                _clipboardEvent.value = null
                 return@OnPrimaryClipChangedListener
             }
 
@@ -343,10 +346,11 @@ constructor(
                     imageUri = imageUri,
                     items = historySnapshot,
                 )
+            // Keep publication atomic with generation invalidation paths using the same lock.
+            _clipboardEvent.value = event
         }
 
         persistClipboardHistory(state, historySnapshot, generation)
-        _clipboardEvent.value = event
 
         if (callbackOnMainThread) {
             mainHandler.post {
@@ -442,7 +446,10 @@ constructor(
             _clipboardEvent.value = null
         }
         persistJob?.cancel()
-        persistClipboardHistoryDetached(oldState, oldSnapshot)
+        // Only ten entries are serialized and SharedPreferences.apply() performs the disk write
+        // asynchronously. Persist the outgoing user's snapshot before rebinding so a fast
+        // A -> B -> A switch cannot let an older detached coroutine overwrite newer user state.
+        writeClipboardHistory(oldState, oldSnapshot)
 
         val newState = createClipboardUserState(user, userContext)
         clipboardUserState = newState
@@ -496,10 +503,16 @@ constructor(
         sourceUri: Uri,
     ): ActiveClipboardLease? {
         return try {
+            val extension =
+                sourceUri.lastPathSegment
+                    ?.substringAfterLast('.', "")
+                    ?.lowercase()
+                    ?.takeIf { it.matches(Regex("[a-z0-9]{1,5}")) }
+                    ?: "bin"
             val file =
                 File(
                     activeClipboardDir(state),
-                    "active_${System.currentTimeMillis()}.img",
+                    "active_${System.currentTimeMillis()}.$extension",
                 )
             val input = state.context.contentResolver.openInputStream(sourceUri) ?: return null
             input.use { src ->
@@ -788,15 +801,6 @@ constructor(
                 }
                 writeClipboardHistory(state, history)
             }
-    }
-
-    private fun persistClipboardHistoryDetached(
-        state: ClipboardUserState,
-        history: List<IslandEvent.ClipboardItem>,
-    ) {
-        applicationScope.launch(backgroundDispatcher) {
-            writeClipboardHistory(state, history)
-        }
     }
 
     private fun writeClipboardHistory(

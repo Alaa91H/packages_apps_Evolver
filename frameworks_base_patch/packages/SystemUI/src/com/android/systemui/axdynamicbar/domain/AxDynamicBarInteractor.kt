@@ -60,11 +60,11 @@ constructor(
 
     @Volatile private var panelBlocking = false
     private val _isPanelExpanded = MutableStateFlow(false)
-
+    
     val isPanelExpanded: StateFlow<Boolean> = _isPanelExpanded.asStateFlow()
-
+    
     val qsExpansion: StateFlow<Float> = shadeInteractor.qsExpansion
-
+    
     val legacyShadeExpansion: StateFlow<Float> = shadeRepository.legacyShadeExpansion
     val mediaUseWaveform: StateFlow<Boolean> = settings.useWaveformSeekBar
     private val _isOnKeyguard = MutableStateFlow(false)
@@ -76,7 +76,7 @@ constructor(
     private val _isDozing = MutableStateFlow(statusBarStateController.isDozing)
     val isDozing: StateFlow<Boolean> = _isDozing.asStateFlow()
     private val _dozeAmount = MutableStateFlow(0f)
-
+    
     val dozeAmount: StateFlow<Float> = _dozeAmount.asStateFlow()
     @Volatile private var isDreaming = false
 
@@ -229,13 +229,13 @@ constructor(
                 dismissedEventIds.removeAll { id -> rawEvents.none { it.id == id } }
                 val events = rawEvents.filter { e ->
                     e.id !in dismissedEventIds &&
-
+                        
                         !(onKeyguard && e is IslandEvent.Notification) &&
-
+                        
                         !(onKeyguard && e is IslandEvent.Charging) &&
-
+                        
                         !(onKeyguard && e is IslandEvent.AppSwitch) &&
-
+                        
                         !(onKeyguard && e is IslandEvent.Clipboard) &&
 
                         !(!onKeyguard && e is IslandEvent.KeyguardIndication)
