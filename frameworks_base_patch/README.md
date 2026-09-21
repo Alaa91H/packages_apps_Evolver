@@ -44,6 +44,15 @@ cutout-aware island host.
 The legacy AxDynamicBarChip remains staged with RTL-semantic swipe handling as a compatibility
 path for future reuse.
 
+### Gboard/default-IME clipboard compatibility
+
+Dynamic Bar now treats the Android clipboard as a passive source instead of using a global
+"skip next callback" flag. Self-authored SystemUI copies are ignored by checking the platform
+clipboard source package, so a delayed callback can no longer consume the next real copy made
+while Gboard or another default IME is active. Identical callbacks are coalesced only inside a
+small time window, and clips marked with `ClipDescription.EXTRA_IS_SENSITIVE` are never persisted
+to Dynamic Bar history. Gboard still receives the original system clipboard normally.
+
 ## Multi-ring architecture
 
 Download, music and countdown timer sources can independently use:

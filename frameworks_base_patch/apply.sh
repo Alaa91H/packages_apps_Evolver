@@ -43,6 +43,7 @@ declare -A EXPECTED=(
     ["packages/SystemUI/src/com/android/systemui/axdynamicbar/ui/AxDynamicBarExpandedPanel.kt"]="63bad85d0277e248eb5a4996fa79c71542232104"
     ["packages/SystemUI/src/com/android/systemui/axdynamicbar/ui/compose/AxDynamicBarChip.kt"]="6ee00401280443b0544e923441cde34f9729fedf"
     ["packages/SystemUI/src/com/android/systemui/axdynamicbar/domain/AxDynamicBarSettings.kt"]="f24e43401fcbc9560e512eebb33cefb7c5616215"
+    ["packages/SystemUI/src/com/android/systemui/axdynamicbar/data/source/SystemIslandManager.kt"]="290659fc0258a41330af8eaa23217b53ea59afe1"
     ["packages/SystemUI/src/com/android/systemui/keyguard/ui/view/layout/sections/AxDynamicBarKeyguardChipSection.kt"]="2866dd72a94f652018ede00353e75ea9238764e5"
 )
 
