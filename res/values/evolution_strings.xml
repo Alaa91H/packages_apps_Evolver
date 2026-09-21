@@ -1957,4 +1957,12 @@
     <string name="lockscreen_custom_clock_aod_scale_summary">Set the custom clock scale used by the AOD transition</string>
     <string name="lockscreen_custom_clock_aod_opacity_title">AOD clock opacity</string>
     <string name="lockscreen_custom_clock_aod_opacity_summary">Limit custom clock opacity while the device is dozing</string>
+
+    <!-- Lock screen charging details -->
+    <string name="lockscreen_battery_details_title">Charging details</string>
+    <string name="lockscreen_battery_details_summary">Choose which charging measurements appear on the lock screen</string>
+    <string name="lockscreen_battery_current_title">Charging current</string>
+    <string name="lockscreen_battery_power_title">Charging power</string>
+    <string name="lockscreen_battery_voltage_title">Charging voltage</string>
+    <string name="lockscreen_battery_temperature_title">Battery temperature</string>
 </resources>
