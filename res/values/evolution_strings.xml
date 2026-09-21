@@ -1951,4 +1951,10 @@
     <string name="lockscreen_shortcuts_horizontal_inset_title">Horizontal inset</string>
     <string name="lockscreen_shortcuts_horizontal_inset_summary">Positive values move both shortcuts toward the center</string>
     <string name="lockscreen_shortcuts_background_opacity_title">Background opacity</string>
+
+    <!-- Custom lock screen clock AOD tuning -->
+    <string name="lockscreen_custom_clock_aod_scale_title">AOD clock scale</string>
+    <string name="lockscreen_custom_clock_aod_scale_summary">Set the custom clock scale used by the AOD transition</string>
+    <string name="lockscreen_custom_clock_aod_opacity_title">AOD clock opacity</string>
+    <string name="lockscreen_custom_clock_aod_opacity_summary">Limit custom clock opacity while the device is dozing</string>
 </resources>
