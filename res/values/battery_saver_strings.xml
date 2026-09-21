@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Additional Battery Saver controls -->
+    <string name="battery_saver_disable_aod_title">Turn off always-on display</string>
+    <string name="battery_saver_disable_aod_summary">Turn off AOD while Battery Saver is active</string>
+    <string name="battery_saver_brightness_reduction_title">Reduce screen brightness</string>
+    <string name="battery_saver_brightness_reduction_summary">Temporarily reduce display brightness while Battery Saver is active</string>
+    <string name="battery_saver_disable_5g_title">Use 4G instead of 5G</string>
+    <string name="battery_saver_disable_5g_summary">Temporarily disable 5G while Battery Saver is active</string>
+    <string name="battery_saver_force_dark_title">Use Dark theme</string>
+    <string name="battery_saver_force_dark_summary">Turn on Dark theme while Battery Saver is active</string>
+    <string name="battery_saver_screen_timeout_title">Set screen timeout to 30 seconds</string>
+    <string name="battery_saver_screen_timeout_summary">Temporarily use a 30-second screen timeout while Battery Saver is active</string>
+
+    <string name="battery_saver_brightness_system_default">System default</string>
+    <string name="battery_saver_brightness_10">Reduce by 10%</string>
+    <string name="battery_saver_brightness_20">Reduce by 20%</string>
+    <string name="battery_saver_brightness_30">Reduce by 30%</string>
+    <string name="battery_saver_brightness_40">Reduce by 40%</string>
+    <string name="battery_saver_brightness_50">Reduce by 50%</string>
+</resources>
