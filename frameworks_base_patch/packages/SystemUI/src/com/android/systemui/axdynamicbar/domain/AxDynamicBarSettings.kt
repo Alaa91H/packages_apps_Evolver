@@ -157,8 +157,11 @@ class AxDynamicBarSettings @Inject constructor(
     fun destroy() {
         if (!initialized) return
         initialized = false
-        secureSettings.getContentResolver().unregisterContentObserver(settingsObserver)
-        contentResolver.unregisterContentObserver(settingsObserver)
+        val secureResolver = secureSettings.getContentResolver()
+        secureResolver.unregisterContentObserver(settingsObserver)
+        if (contentResolver !== secureResolver) {
+            contentResolver.unregisterContentObserver(settingsObserver)
+        }
     }
 
     private fun refresh() {
