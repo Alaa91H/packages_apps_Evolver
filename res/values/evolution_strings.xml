@@ -1349,6 +1349,7 @@
     <string name="app_spoofing_health_unknown_profiles">%1$d assignment(s) reference an unknown profile</string>
     <string name="app_spoofing_health_missing_apps">%1$d configured app(s) are not currently installed</string>
     <string name="app_spoofing_health_invalid_custom">%1$d custom profile(s) are invalid</string>
+    <string name="app_spoofing_health_malformed_storage">%1$d stored configuration issue(s) could not be migrated automatically</string>
     <string name="pp_target_count">Spoofing %1$d app(s) as Pixel</string>
     <string name="pp_spoof_as">Spoof as</string>
     <string name="pp_empty_description">Selected apps will report the chosen Pixel device identity to unlock Pixel-exclusive features</string>
