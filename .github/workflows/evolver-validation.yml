@@ -42,5 +42,8 @@ jobs:
       - name: Validate Arabic localization and RTL
         run: python3 tools/validate_arabic_localization.py
 
+      - name: Validate Home double tap to sleep preference
+        run: python3 tools/validate_native_dt2s.py
+
       - name: Validate Dynamic Bar cutout island
         run: python3 tools/validate_dynamic_bar.py
