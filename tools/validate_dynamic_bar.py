@@ -125,6 +125,8 @@ for token in (
     "PillEventIcon",
     "PillEventText",
     "rememberOccupiedBounds",
+    "if (width.value < 24f) return",
+    "width.value >= 48f",
 ):
     if token not in host_text:
         fail(f"cutout host missing {token}")
