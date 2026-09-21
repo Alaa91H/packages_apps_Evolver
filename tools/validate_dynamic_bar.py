@@ -116,13 +116,24 @@ if "if (contentResolver !== secureResolver)" not in settings_text:
 system_manager_text = read(SYSTEM_MANAGER)
 for token in (
     "EXTRA_DYNAMIC_BAR_SELF_COPY",
+    "clipSource == context.packageName",
     "ClipDescription.EXTRA_IS_SENSITIVE",
     "desc.timestamp",
     "lastClipboardToken",
     "loadThumbnail(",
+    "withTimeoutOrNull(CLIPBOARD_IMAGE_TIMEOUT_MS)",
     "clipboardGeneration",
     "commitClipboardEvent(",
     "PersistableBundle",
+    "UserTracker",
+    "UserScopedService<ClipboardManager>",
+    "clipboardUserCallback",
+    "switchClipboardUser(",
+    "persistClipboardHistoryDetached(",
+    "ACTIVE_CLIPBOARD_DIR",
+    "createActiveClipboardLease(",
+    "cleanupActiveClipboardLeases(",
+    "prunedBrokenImage",
 ):
     if token not in system_manager_text:
         fail(f"Dynamic Bar clipboard hardening missing {token}")
@@ -131,12 +142,27 @@ for forbidden in (
     "suppressNextClipEvent",
     "DUPLICATE_CLIP_WINDOW_MS",
     "SystemClock.elapsedRealtime()",
-    "clipSource == context.packageName",
     "coerceToText(context)",
     "ImageDecoder",
+    "private val clipboardManager: ClipboardManager by lazy",
+    "private val prefs by lazy",
+    "private val clipboardCacheDir: File by lazy",
 ):
     if forbidden in system_manager_text:
         fail(f"Dynamic Bar clipboard still contains legacy behavior: {forbidden}")
+
+if not re.search(
+    r"clipSource\s*==\s*context\.packageName\s*&&\s*desc\.extras\?\.getBoolean\(EXTRA_DYNAMIC_BAR_SELF_COPY",
+    system_manager_text,
+    re.S,
+):
+    fail("Dynamic Bar self-copy marker is not source-attributed to SystemUI")
+
+if "if (cachedUri == null)" not in system_manager_text:
+    fail("Dynamic Bar can still persist a broken image history item")
+
+if "if (isImage && imageUri == null)" not in system_manager_text:
+    fail("Dynamic Bar restore does not prune missing clipboard image cache files")
 
 interactor_text = read(INTERACTOR)
 if "!(onKeyguard && e is IslandEvent.Clipboard)" not in interactor_text:
