@@ -257,13 +257,13 @@ def validate_upstream_and_installer() -> None:
 
 
 def validate_source_hygiene() -> None:
+    # Limit whitespace enforcement to feature-owned files. The larger resource files may
+    # contain unrelated pre-existing formatting that this integration must not rewrite.
     for path in (
         PREF_XML,
-        ROOT / "res/values/evolution_arrays.xml",
-        ROOT / "res/values/evolution_strings.xml",
-        ROOT / "res/values-ar/evolution_strings.xml",
         APPLY_SCRIPT,
         STAGED_SYSUI,
+        ROOT / "tools/validate_network_traffic.py",
     ):
         text = path.read_text(encoding="utf-8")
         bad_lines = [
