@@ -1734,4 +1734,14 @@
     <string name="lockscreen_layout_summary">اضبط موضع الطقس والأدوات بدقة وبشكل مستقل</string>
     <string name="lockscreen_layout_horizontal_offset_title">الإزاحة الأفقية</string>
     <string name="lockscreen_layout_vertical_offset_title">الإزاحة العمودية</string>
+
+    <!-- اختصارات شاشة القفل السفلية -->
+    <string name="lockscreen_shortcuts_title">الاختصارات السفلية</string>
+    <string name="lockscreen_shortcuts_summary">خصّص حجم الاختصارات وموضعها وتباعدها وخلفيتها</string>
+    <string name="lockscreen_shortcuts_scale_title">حجم الاختصار</string>
+    <string name="lockscreen_shortcuts_vertical_offset_title">الإزاحة العمودية</string>
+    <string name="lockscreen_shortcuts_vertical_offset_summary">القيم الموجبة تحرّك الاختصارين إلى الأعلى</string>
+    <string name="lockscreen_shortcuts_horizontal_inset_title">الإزاحة نحو الوسط</string>
+    <string name="lockscreen_shortcuts_horizontal_inset_summary">القيم الموجبة تقرّب الاختصارين من منتصف الشاشة</string>
+    <string name="lockscreen_shortcuts_background_opacity_title">شفافية الخلفية</string>
 </resources>
