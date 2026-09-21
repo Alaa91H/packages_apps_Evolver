@@ -38,14 +38,22 @@ declare -A EXPECTED=(
     ["packages/SystemUI/src/com/android/systemui/cutoutprogress/ring/RingViewRenderer.java"]="26ef233598b088413ca4e25118fce1cea0e7cb93"
     ["packages/SystemUI/src/com/android/systemui/cutoutprogress/ring/CircleRingRenderer.java"]="1cda0ec70db67d068ca1848a27a86384d59cc7e8"
     ["packages/SystemUI/src/com/android/systemui/cutoutprogress/ring/CapsuleRingRenderer.java"]="e100dde1ba48a124a378dbba34c5bd3ad577e368"
+    ["packages/SystemUI/src/com/android/systemui/statusbar/pipeline/shared/ui/composable/StatusBarRoot.kt"]="640aa7cc55b1c487c994efcb3bb4e3451e89c3f5"
+    ["packages/SystemUI/src/com/android/systemui/axdynamicbar/ui/AxDynamicBarChipViewModel.kt"]="6f55bce3adf8477442780271fb90cd02a5067497"
+    ["packages/SystemUI/src/com/android/systemui/axdynamicbar/ui/AxDynamicBarExpandedPanel.kt"]="63bad85d0277e248eb5a4996fa79c71542232104"
+    ["packages/SystemUI/src/com/android/systemui/axdynamicbar/ui/compose/AxDynamicBarChip.kt"]="6ee00401280443b0544e923441cde34f9729fedf"
+    ["packages/SystemUI/src/com/android/systemui/axdynamicbar/domain/AxDynamicBarSettings.kt"]="f24e43401fcbc9560e512eebb33cefb7c5616215"
+    ["packages/SystemUI/src/com/android/systemui/keyguard/ui/view/layout/sections/AxDynamicBarKeyguardChipSection.kt"]="2866dd72a94f652018ede00353e75ea9238764e5"
 )
 
 NEW_FILES=(
     "packages/SystemUI/src/com/android/systemui/cutoutprogress/ring/CameraCutoutGeometryResolver.java"
     "packages/SystemUI/src/com/android/systemui/cutoutprogress/ring/PathRingRenderer.java"
+    "packages/SystemUI/src/com/android/systemui/axdynamicbar/ui/layout/DynamicBarLayoutState.kt"
+    "packages/SystemUI/src/com/android/systemui/axdynamicbar/ui/compose/DynamicBarCutoutHost.kt"
 )
 
-echo "Checking frameworks/base cutout-progress baseline..."
+echo "Checking frameworks/base Cutout Progress + Dynamic Bar baseline..."
 for rel in "${!EXPECTED[@]}"; do
     staged="$SCRIPT_DIR/$rel"
     if [[ ! -f "$staged" ]]; then
@@ -96,7 +104,7 @@ for rel in "${NEW_FILES[@]}"; do
     fi
 done
 
-echo "Applying staged Cutout Progress Pro files..."
+echo "Applying staged Cutout Progress Pro + Dynamic Bar files..."
 for rel in "${!EXPECTED[@]}"; do
     install -D -m 0644 "$SCRIPT_DIR/$rel" "$TARGET/$rel"
 done
@@ -107,7 +115,10 @@ done
 echo "Checking resulting diff for whitespace errors..."
 git -C "$TARGET" diff --check -- \
     packages/SystemUI/AndroidManifest.xml \
-    packages/SystemUI/src/com/android/systemui/cutoutprogress
+    packages/SystemUI/src/com/android/systemui/cutoutprogress \
+    packages/SystemUI/src/com/android/systemui/axdynamicbar \
+    packages/SystemUI/src/com/android/systemui/statusbar/pipeline/shared/ui/composable/StatusBarRoot.kt \
+    packages/SystemUI/src/com/android/systemui/keyguard/ui/view/layout/sections/AxDynamicBarKeyguardChipSection.kt
 
 echo
 echo "Applied successfully. Review with:"
@@ -115,4 +126,7 @@ echo "  git -C '$TARGET' diff -- packages/SystemUI/AndroidManifest.xml packages/
 echo
 git -C "$TARGET" diff --stat -- \
     packages/SystemUI/AndroidManifest.xml \
-    packages/SystemUI/src/com/android/systemui/cutoutprogress
+    packages/SystemUI/src/com/android/systemui/cutoutprogress \
+    packages/SystemUI/src/com/android/systemui/axdynamicbar \
+    packages/SystemUI/src/com/android/systemui/statusbar/pipeline/shared/ui/composable/StatusBarRoot.kt \
+    packages/SystemUI/src/com/android/systemui/keyguard/ui/view/layout/sections/AxDynamicBarKeyguardChipSection.kt

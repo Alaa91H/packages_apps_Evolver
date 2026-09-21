@@ -41,12 +41,12 @@ import java.util.List;
  * intentionally mirrors DisplayCutoutBaseView so rotation and resolution changes stay consistent
  * with SystemUI's own screen-decoration geometry.
  */
-final class CameraCutoutGeometryResolver {
+public final class CameraCutoutGeometryResolver {
 
-    static final int SOURCE_NONE = 0;
-    static final int SOURCE_CAMERA_PROTECTION = 1;
-    static final int SOURCE_DISPLAY_CUTOUT_PATH = 2;
-    static final int SOURCE_DISPLAY_CUTOUT_BOUNDS = 3;
+    public static final int SOURCE_NONE = 0;
+    public static final int SOURCE_CAMERA_PROTECTION = 1;
+    public static final int SOURCE_DISPLAY_CUTOUT_PATH = 2;
+    public static final int SOURCE_DISPLAY_CUTOUT_BOUNDS = 3;
 
     private static final float SAFE_AREA_MIN_ASPECT = 1.15f;
     private static final float SAFE_AREA_MAX_ASPECT = 2.50f;
@@ -55,13 +55,13 @@ final class CameraCutoutGeometryResolver {
     private static final float SAFE_AREA_MIN_FILL_RATIO = 0.92f;
     private static final float SAFE_AREA_MAX_SCREEN_FRACTION = 0.15f;
 
-    static final class ResolvedGeometry {
-        final Path path;
-        final RectF bounds;
-        final int source;
-        final int rotation;
-        final boolean normalizedSafeArea;
-        final boolean pillLike;
+    public static final class ResolvedGeometry {
+        public final Path path;
+        public final RectF bounds;
+        public final int source;
+        public final int rotation;
+        public final boolean normalizedSafeArea;
+        public final boolean pillLike;
 
         ResolvedGeometry(
                 Path path,
@@ -93,11 +93,11 @@ final class CameraCutoutGeometryResolver {
 
     private final Context mContext;
 
-    CameraCutoutGeometryResolver(Context context) {
+    public CameraCutoutGeometryResolver(Context context) {
         mContext = context;
     }
 
-    ResolvedGeometry resolve(DisplayCutout cutout) {
+    public ResolvedGeometry resolve(DisplayCutout cutout) {
         final Display display = mContext.getDisplay();
         final DisplayInfo info = new DisplayInfo();
         if (display != null) {
