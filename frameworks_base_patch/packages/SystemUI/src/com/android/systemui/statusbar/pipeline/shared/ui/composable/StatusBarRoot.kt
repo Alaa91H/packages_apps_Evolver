@@ -239,6 +239,7 @@ fun StatusBarRoot(
     var touchableExclusionRegionDisposableHandle: DisposableHandle? = null
 
     val touchSlop = LocalViewConfiguration.current.touchSlop
+    var dynamicBarOccupiedViews by remember { mutableStateOf<List<View>>(emptyList()) }
 
     // Let the DesktopStatusBar compose all the UI if [useDesktopStatusBar] is true.
     if (StatusBarForDesktop.isEnabled && statusBarViewModel.useDesktopStatusBar) {
@@ -268,13 +269,19 @@ fun StatusBarRoot(
                 val phoneStatusBarView =
                     inflater.inflate(R.layout.status_bar, parent, false) as PhoneStatusBarView
 
+                dynamicBarOccupiedViews =
+                    listOf(
+                        phoneStatusBarView.requireViewById(R.id.status_bar_start_side_content),
+                        phoneStatusBarView.requireViewById(R.id.status_bar_end_side_content),
+                        phoneStatusBarView.requireViewById(R.id.clock_center),
+                    )
+
                 addStartSideComposable(
                     phoneStatusBarView = phoneStatusBarView,
                     clockViewModelFactory = clockViewModelFactory,
                     statusBarViewModel = statusBarViewModel,
                     iconViewStore = iconViewStore,
                     appHandlesViewModel = appHandlesViewModel,
-                    axDynamicBarChipViewModel = axDynamicBarChipViewModel,
                     context = context,
                 )
 
@@ -385,7 +392,10 @@ fun StatusBarRoot(
                     .thenIf(headlineViewModel != null) {
                         Modifier.drawWithHeadlineScrim(headlineViewModel!!)
                     },
-            onRelease = { touchableExclusionRegionDisposableHandle?.dispose() },
+            onRelease = {
+                touchableExclusionRegionDisposableHandle?.dispose()
+                dynamicBarOccupiedViews = emptyList()
+            },
         )
 
         val axDynamicBarEnabled by
@@ -393,6 +403,7 @@ fun StatusBarRoot(
         if (axDynamicBarEnabled) {
             DynamicBarCutoutHost(
                 viewModel = axDynamicBarChipViewModel,
+                occupiedViews = dynamicBarOccupiedViews,
                 modifier = Modifier.align(Alignment.TopStart),
             )
         }
@@ -412,7 +423,6 @@ private fun addStartSideComposable(
     statusBarViewModel: HomeStatusBarViewModel,
     iconViewStore: NotificationIconContainerViewBinder.IconViewStore?,
     appHandlesViewModel: AppHandlesViewModel,
-    axDynamicBarChipViewModel: AxDynamicBarChipViewModel,
     context: Context,
 ) {
     val startSideExceptHeadsUp =

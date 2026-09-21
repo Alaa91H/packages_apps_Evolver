@@ -6,6 +6,7 @@
 
 package com.android.systemui.axdynamicbar.ui.compose
 
+import android.graphics.RectF
 import android.view.DisplayCutout
 import android.view.View
 import android.view.WindowInsets
@@ -91,6 +92,7 @@ fun DynamicBarCutoutHost(
     viewModel: AxDynamicBarChipViewModel,
     modifier: Modifier = Modifier,
     keyguardMode: Boolean = false,
+    occupiedViews: List<View> = emptyList(),
 ) {
     val chipState by viewModel.chipState.collectAsStateWithLifecycle()
     val isOnKeyguard by viewModel.isOnKeyguard.collectAsStateWithLifecycle()
@@ -126,6 +128,7 @@ fun DynamicBarCutoutHost(
         onDispose { view.removeOnLayoutChangeListener(listener) }
     }
 
+    val occupiedBounds = rememberOccupiedBounds(occupiedViews)
     val resolver = remember(context) { CameraCutoutGeometryResolver(context) }
     val resolvedGeometry =
         remember(
@@ -146,6 +149,7 @@ fun DynamicBarCutoutHost(
             islandSize,
             landscapeMode,
             density.density,
+            occupiedBounds,
         ) {
             DynamicBarLayoutCalculator.calculate(
                 displayWidthPx = windowGeometry.widthPx,
@@ -156,6 +160,7 @@ fun DynamicBarCutoutHost(
                 alignment = alignment,
                 islandSize = islandSize,
                 landscapeMode = landscapeMode,
+                occupiedBounds = occupiedBounds,
             )
         }
 
@@ -394,6 +399,40 @@ private fun DynamicBarEndWing(event: IslandEvent, width: Dp) {
         overrideColor = Color.White,
     )
 }
+
+@Composable
+private fun rememberOccupiedBounds(views: List<View>): List<RectF> {
+    var bounds by remember(views) { mutableStateOf(readOccupiedBounds(views)) }
+
+    DisposableEffect(views) {
+        val listener =
+            View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+                bounds = readOccupiedBounds(views)
+            }
+        views.forEach {
+            it.addOnLayoutChangeListener(listener)
+            it.post { bounds = readOccupiedBounds(views) }
+        }
+        onDispose { views.forEach { it.removeOnLayoutChangeListener(listener) } }
+    }
+
+    return bounds
+}
+
+private fun readOccupiedBounds(views: List<View>): List<RectF> =
+    views.mapNotNull { view ->
+        if (view.visibility != View.VISIBLE || view.width <= 0 || view.height <= 0) {
+            return@mapNotNull null
+        }
+        val location = IntArray(2)
+        view.getLocationOnScreen(location)
+        RectF(
+            location[0].toFloat(),
+            location[1].toFloat(),
+            (location[0] + view.width).toFloat(),
+            (location[1] + view.height).toFloat(),
+        )
+    }
 
 private fun readWindowGeometry(view: View): DynamicBarWindowGeometry {
     val metrics = view.resources.displayMetrics

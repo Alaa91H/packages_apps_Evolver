@@ -118,6 +118,7 @@ for token in (
     "updateDynamicBarAnchor",
     "PillEventIcon",
     "PillEventText",
+    "rememberOccupiedBounds",
 ):
     if token not in host_text:
         fail(f"cutout host missing {token}")
@@ -130,6 +131,9 @@ for token in (
     "hasPhysicalCutout",
     "LANDSCAPE_COMPACT",
     "ALIGNMENT_CENTER",
+    "occupiedBounds",
+    "leftContentEdge",
+    "rightContentEdge",
 ):
     if token not in layout_text:
         fail(f"layout calculator missing {token}")

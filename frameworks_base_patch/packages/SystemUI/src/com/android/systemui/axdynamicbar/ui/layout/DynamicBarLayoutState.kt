@@ -54,6 +54,7 @@ object DynamicBarLayoutCalculator {
         alignment: Int,
         islandSize: Int,
         landscapeMode: Int,
+        occupiedBounds: List<RectF> = emptyList(),
     ): DynamicBarLayoutState? {
         if (displayWidthPx <= 0 || displayHeightPx <= 0 || density <= 0f) return null
 
@@ -94,14 +95,46 @@ object DynamicBarLayoutCalculator {
         val targetWingPx = targetWingDp * density
         val cameraGapPx = 4f * density
         val edgeMarginPx = 4f * density
+        val contentGapPx = 4f * density
 
         if (usePhysical) {
             val cutout = RectF(physicalBounds)
             val islandHeightPx = max(baseHeightPx, cutout.height() + 4f * density)
             val cameraSlotWidthPx = max(cutout.width() + cameraGapPx * 2f, 14f * density)
-            val leftAvailable = max(0f, cutout.left - edgeMarginPx - cameraGapPx)
+            val verticallyRelevant =
+                occupiedBounds.filter {
+                    !it.isEmpty &&
+                        it.bottom > cutout.top &&
+                        it.top < max(cutout.bottom, statusBarHeightPx.toFloat())
+                }
+            val leftContentEdge =
+                verticallyRelevant
+                    .filter { it.centerX() < cutout.centerX() && it.left < cutout.left }
+                    .maxOfOrNull { it.right }
+                    ?: edgeMarginPx
+            val rightContentEdge =
+                verticallyRelevant
+                    .filter { it.centerX() > cutout.centerX() && it.right > cutout.right }
+                    .minOfOrNull { it.left }
+                    ?: (displayWidthPx.toFloat() - edgeMarginPx)
+
+            val leftAvailable =
+                max(
+                    0f,
+                    cutout.left -
+                        cameraGapPx -
+                        max(edgeMarginPx, leftContentEdge + contentGapPx),
+                )
             val rightAvailable =
-                max(0f, displayWidthPx.toFloat() - cutout.right - edgeMarginPx - cameraGapPx)
+                max(
+                    0f,
+                    min(
+                        displayWidthPx.toFloat() - edgeMarginPx,
+                        rightContentEdge - contentGapPx,
+                    ) -
+                        cutout.right -
+                        cameraGapPx,
+                )
             val leftWing = min(targetWingPx, leftAvailable)
             val rightWing = min(targetWingPx, rightAvailable)
 
