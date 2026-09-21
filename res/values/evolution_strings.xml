@@ -694,6 +694,20 @@
     <string name="network_traffic_units_megabytes">Megabytes per second (MB/s)</string>
     <string name="network_traffic_hidearrow">Hide arrows</string>
     <string name="network_traffic_hidearrow_summary">Hide the network traffic indicator arrows</string>
+    <string name="network_traffic_layout_title">Presentation</string>
+    <string name="network_traffic_layout_adaptive">Adaptive (dominant speed)</string>
+    <string name="network_traffic_layout_stacked">Stacked (upload above download)</string>
+    <string name="network_traffic_hide_units">Hide units</string>
+    <string name="network_traffic_hide_units_summary">Hide b/s, kB/s, MB/s and similar unit labels</string>
+    <string name="network_traffic_speed_text_size_title">Speed text size</string>
+    <string name="network_traffic_unit_text_size_title">Unit text size</string>
+    <string name="network_traffic_line_spacing_title">Line spacing</string>
+    <string name="network_traffic_text_alignment_title">Text alignment</string>
+    <string name="network_traffic_alignment_start">Start</string>
+    <string name="network_traffic_alignment_center">Center</string>
+    <string name="network_traffic_alignment_end">End</string>
+    <string name="unit_sp" translatable="false">sp</string>
+    <string name="unit_percent" translatable="false">%</string>
 
     <!-- Status bar/Dynamic Bar -->
     <string name="dynamic_bar">Dynamic Bar</string>

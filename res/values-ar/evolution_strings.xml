@@ -1697,4 +1697,17 @@
     <string name="screenshot_clipboard_only_summary">نسخ لقطة الشاشة إلى الحافظة بدل حفظها في مساحة التخزين</string>
     <string name="hide_status_bar_in_screenshot_title">إخفاء شريط الحالة في لقطات الشاشة</string>
     <string name="hide_status_bar_in_screenshot_summary">اقتصاص منطقة شريط الحالة من لقطات الشاشة الكاملة</string>
+    <!-- شريط الحالة/عرض حركة الشبكة -->
+    <string name="network_traffic_layout_title">نمط العرض</string>
+    <string name="network_traffic_layout_adaptive">تلقائي (السرعة الأعلى)</string>
+    <string name="network_traffic_layout_stacked">متراكب (الرفع أعلى والتنزيل أسفل)</string>
+    <string name="network_traffic_hide_units">إخفاء الوحدات</string>
+    <string name="network_traffic_hide_units_summary">إخفاء b/s وkB/s وMB/s وتسميات الوحدات المشابهة</string>
+    <string name="network_traffic_speed_text_size_title">حجم نص السرعة</string>
+    <string name="network_traffic_unit_text_size_title">حجم نص الوحدة</string>
+    <string name="network_traffic_line_spacing_title">تباعد السطرين</string>
+    <string name="network_traffic_text_alignment_title">محاذاة النص</string>
+    <string name="network_traffic_alignment_start">البداية</string>
+    <string name="network_traffic_alignment_center">الوسط</string>
+    <string name="network_traffic_alignment_end">النهاية</string>
 </resources>
