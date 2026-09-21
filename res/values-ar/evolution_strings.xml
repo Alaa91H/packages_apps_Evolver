@@ -1701,6 +1701,8 @@
     <string name="global_actions_advanced_reboot_summary">يفتح مربع حوار جديد يتيح خيارات إعادة تشغيل متقدمة</string>
     <string name="screenshot_clipboard_only_title">النسخ إلى الحافظة فقط</string>
     <string name="screenshot_clipboard_only_summary">نسخ لقطة الشاشة إلى الحافظة بدل حفظها في مساحة التخزين</string>
+    <string name="screenshot_full_page_capture_title">لقطة شاشة ممتدة لكامل الصفحة</string>
+    <string name="screenshot_full_page_capture_summary">عند استخدام التقاط المزيد، يستمر الالتقاط تلقائيًا إلى الأسفل حتى نهاية المحتوى بالدقة الأصلية، ضمن حد أمان يبلغ 12000 بكسل للارتفاع</string>
     <string name="hide_status_bar_in_screenshot_title">إخفاء شريط الحالة في لقطات الشاشة</string>
     <string name="hide_status_bar_in_screenshot_summary">اقتصاص منطقة شريط الحالة من لقطات الشاشة الكاملة</string>
     <!-- شريط الحالة/عرض حركة الشبكة -->
