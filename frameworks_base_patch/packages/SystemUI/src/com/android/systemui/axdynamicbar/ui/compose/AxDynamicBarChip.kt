@@ -109,7 +109,7 @@ fun AxDynamicBarChip(
     val chipStyle by viewModel.chipStyle.collectAsStateWithLifecycle()
 
     var toggleCount by remember { mutableIntStateOf(0) }
-    
+
     val carrierName = if (isOnKeyguard && ignoreKeyguard) keyguardCarrier.takeIf { it.isNotBlank() } else null
     val chipTextMaxWidth = dimensionResource(R.dimen.ongoing_activity_chip_max_text_width)
     val screenWidthPx = with(LocalDensity.current) {
@@ -133,17 +133,17 @@ fun AxDynamicBarChip(
             .pointerInput(viewModel, isRtl) {
                 awaitEachGesture {
                     val down = awaitFirstDown(pass = PointerEventPass.Initial)
-                    
+
                     val startX = down.position.x
                     val startY = down.position.y
                     var dragging = false
                     var totalDx = 0f
-                    var decided = false 
+                    var decided = false
                     while (true) {
                         val event = awaitPointerEvent(PointerEventPass.Initial)
                         val change = event.changes.firstOrNull() ?: break
                         if (!change.pressed) {
-                            
+
                             if (dragging) {
                                 change.consume()
                                 val next = if (isRtl) totalDx > 0f else totalDx < 0f
@@ -166,20 +166,20 @@ fun AxDynamicBarChip(
                                     if (!wasExpanded) toggleCount++
                                 }
                             }
-                            
+
                             break
                         }
                         val dx = change.position.x - startX
                         val dy = change.position.y - startY
                         if (!decided && (abs(dx) > touchSlop || abs(dy) > touchSlop)) {
                             if (abs(dx) >= abs(dy)) {
-                                
+
                                 decided = true
                                 dragging = true
                                 totalDx = dx
                                 change.consume()
                             } else {
-                                
+
                                 decided = true
                                 break
                             }

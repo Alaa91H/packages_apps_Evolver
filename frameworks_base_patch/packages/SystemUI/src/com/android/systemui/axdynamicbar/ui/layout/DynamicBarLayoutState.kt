@@ -60,7 +60,7 @@ object DynamicBarLayoutCalculator {
         val isLandscape = displayWidthPx > displayHeightPx
         if (isLandscape && landscapeMode == LANDSCAPE_DISABLED) return null
 
-        val physicalBounds = geometry?.bounds?.let(::RectF)
+        val physicalBounds = geometry?.bounds?.let { RectF(it) }
         val topCutout =
             physicalBounds != null &&
                 physicalBounds.centerY() <= max(statusBarHeightPx.toFloat(), 32f * density) * 1.35f

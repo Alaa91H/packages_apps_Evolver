@@ -99,7 +99,7 @@ constructor(
                     hideOverlayJob = null
                     showOverlay()
                 } else {
-                    
+
                     hideOverlayJob?.cancel()
                     hideOverlayJob =
                         applicationScope.launch {
@@ -279,19 +279,19 @@ private fun OverlayContent(viewModel: AxDynamicBarChipViewModel, statusBarHeight
             transformOrigin = origin,
         ),
     ) {
-        
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .pointerInput(Unit) {
                     val slop = viewConfiguration.touchSlop
                     awaitEachGesture {
-                        
+
                         var ev: PointerEvent
                         do {
                             ev = awaitPointerEvent(PointerEventPass.Final)
                         } while (!ev.changes.any { it.changedToDownIgnoreConsumed() })
-                        
+
                         val downChange =
                             ev.changes.firstOrNull { it.changedToDownIgnoreConsumed() }
                                 ?: ev.changes.firstOrNull()
@@ -338,14 +338,14 @@ private fun OverlayContent(viewModel: AxDynamicBarChipViewModel, statusBarHeight
                             indication = null,
                             onClick = {}
                         )
-                ) {                
+                ) {
                    ExpandedIslandContent(
                     events = filtered,
                     interactor = viewModel.interactor,
                     onCollapse = { viewModel.statusBarExpansion.collapse() },
                     pinnedEventId = state.event.id,
                     hapticsViewModelFactory = viewModel.interactor.sliderHapticsViewModelFactory,
-                  ) 
+                  )
                 }
             }
         }

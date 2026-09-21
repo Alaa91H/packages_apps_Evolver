@@ -50,7 +50,7 @@ class AxDynamicBarSettings @Inject constructor(
 
     private val _useWaveformSeekBar = MutableStateFlow(false)
     val useWaveformSeekBar: StateFlow<Boolean> = _useWaveformSeekBar.asStateFlow()
-    
+
     private val _chipStyle = MutableStateFlow(0)
     val chipStyle: StateFlow<Int> = _chipStyle.asStateFlow()
 

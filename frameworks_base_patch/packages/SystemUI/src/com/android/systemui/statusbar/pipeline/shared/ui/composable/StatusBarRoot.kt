@@ -391,21 +391,9 @@ fun StatusBarRoot(
         val axDynamicBarEnabled by
             axDynamicBarChipViewModel.interactor.settings.isEnabled.collectAsState()
         if (axDynamicBarEnabled) {
-            val dynamicBarTouchSlop = LocalViewConfiguration.current.touchSlop
             DynamicBarCutoutHost(
                 viewModel = axDynamicBarChipViewModel,
-                modifier =
-                    Modifier.align(Alignment.TopStart)
-                        .forwardDragAndSwipeToShadeRootView(
-                            shadeWindowRootView,
-                            dynamicBarTouchSlop,
-                        ) { position, size, isConsumed ->
-                            statusBarViewModel.onShadeExpansionIntent(
-                                position.x,
-                                size.width,
-                                isConsumed,
-                            )
-                        },
+                modifier = Modifier.align(Alignment.TopStart),
             )
         }
 
