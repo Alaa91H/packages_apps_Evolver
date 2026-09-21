@@ -1060,7 +1060,7 @@
     <string name="essential_remove_title">إزالة التطبيق؟</string>
     <string name="essential_remove_confirm">إزالة %s من الإشعارات الأساسية؟</string>
     <string name="edge_light_title">إضاءة الحواف</string>
-    <string name="edge_light_summary">إضاءة حواف الشاشة عند نبض الإشعار</string>
+    <string name="edge_light_summary">إضاءة الجهات المحددة من حواف الشاشة للإشعارات في حالات الشاشة التي تختارها</string>
     <string name="edge_light_display_state_category">حالة الشاشة</string>
     <string name="edge_light_show_screen_on_title">أثناء تشغيل الشاشة</string>
     <string name="edge_light_show_screen_on_summary">إظهار إضاءة الحواف عندما تكون الشاشة قيد التشغيل والتفاعل</string>
