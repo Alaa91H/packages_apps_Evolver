@@ -1061,6 +1061,17 @@
     <string name="essential_remove_confirm">إزالة %s من الإشعارات الأساسية؟</string>
     <string name="edge_light_title">إضاءة الحواف</string>
     <string name="edge_light_summary">إضاءة حواف الشاشة عند نبض الإشعار</string>
+    <string name="edge_light_display_state_category">حالة الشاشة</string>
+    <string name="edge_light_show_screen_on_title">أثناء تشغيل الشاشة</string>
+    <string name="edge_light_show_screen_on_summary">إظهار إضاءة الحواف عندما تكون الشاشة قيد التشغيل والتفاعل</string>
+    <string name="edge_light_show_screen_off_title">عند إيقاف الشاشة</string>
+    <string name="edge_light_show_screen_off_summary">إظهار إضاءة الحواف مع نبضات الإشعارات عندما تكون الشاشة مطفأة</string>
+    <string name="edge_light_show_aod_title">شاشة العرض الدائم AOD</string>
+    <string name="edge_light_show_aod_summary">إظهار إضاءة الحواف على شاشة العرض الدائم</string>
+    <string name="edge_light_position_category">جهة الإضاءة</string>
+    <string name="edge_light_position_top_title">الأعلى</string>
+    <string name="edge_light_position_sides_title">الجوانب</string>
+    <string name="edge_light_position_bottom_title">الأسفل</string>
     <string name="edge_light_color_mode_title">وضع اللون</string>
     <string name="edge_light_pulse_count_title">عدد النبضات</string>
     <string name="edge_light_pulse_count_summary">عدد نبضات إضاءة الحواف</string>
