@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- خيارات إضافية لتوفير شحن البطارية -->
+    <string name="battery_saver_disable_aod_title">إيقاف الشاشة الدائمة التشغيل</string>
+    <string name="battery_saver_disable_aod_summary">إيقاف AOD مؤقتًا أثناء تفعيل توفير شحن البطارية</string>
+    <string name="battery_saver_brightness_reduction_title">خفض سطوع الشاشة</string>
+    <string name="battery_saver_brightness_reduction_summary">خفض سطوع الشاشة مؤقتًا أثناء تفعيل توفير شحن البطارية</string>
+    <string name="battery_saver_disable_5g_title">استخدام 4G بدلًا من 5G</string>
+    <string name="battery_saver_disable_5g_summary">تعطيل 5G مؤقتًا أثناء تفعيل توفير شحن البطارية</string>
+    <string name="battery_saver_force_dark_title">تشغيل المظهر الداكن</string>
+    <string name="battery_saver_force_dark_summary">تشغيل المظهر الداكن أثناء تفعيل توفير شحن البطارية</string>
+    <string name="battery_saver_screen_timeout_title">ضبط مهلة الشاشة على 30 ثانية</string>
+    <string name="battery_saver_screen_timeout_summary">استخدام مهلة شاشة مدتها 30 ثانية مؤقتًا أثناء تفعيل توفير شحن البطارية</string>
+
+    <string name="battery_saver_brightness_system_default">الإعداد الافتراضي للنظام</string>
+    <string name="battery_saver_brightness_10">خفض بنسبة 10%</string>
+    <string name="battery_saver_brightness_20">خفض بنسبة 20%</string>
+    <string name="battery_saver_brightness_30">خفض بنسبة 30%</string>
+    <string name="battery_saver_brightness_40">خفض بنسبة 40%</string>
+    <string name="battery_saver_brightness_50">خفض بنسبة 50%</string>
+</resources>
