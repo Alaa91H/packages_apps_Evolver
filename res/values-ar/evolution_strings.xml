@@ -1067,8 +1067,12 @@
     <string name="edge_light_stroke_width_title">سُمك الخط</string>
     <string name="edge_light_stroke_width_summary">تعيين سُمك أشرطة إضاءة الحواف</string>
     <string name="edge_light_style_title">نمط الرسم</string>
-    <string name="edge_light_style_default">افتراضي (يسار/يمين)</string>
-    <string name="edge_light_style_frame">إطار (جميع الجوانب)</string>
+    <string name="edge_light_style_default">حواف مستقيمة</string>
+    <string name="edge_light_style_frame">إطار مستدير</string>
+    <string name="edge_light_location_title">مكان الإضاءة</string>
+    <string name="edge_light_location_top">الأعلى</string>
+    <string name="edge_light_location_sides">الجوانب</string>
+    <string name="edge_light_location_bottom">الأسفل</string>
     <string name="edge_light_animation_effect_title">تأثير الحركة</string>
     <string name="edge_light_animation_effect_none">قياسي</string>
     <string name="edge_light_animation_effect_breathing">تنفس</string>
@@ -1076,6 +1080,10 @@
     <string name="edge_light_animation_effect_sparkle">بريق</string>
     <string name="edge_light_animation_effect_chase">مطاردة</string>
     <string name="edge_light_animation_effect_comet">مذنب</string>
+    <string name="edge_light_animation_effect_aurora">أورورا</string>
+    <string name="edge_light_aurora_color_mode_title">ألوان أورورا</string>
+    <string name="edge_light_aurora_color_single">لون ثابت</string>
+    <string name="edge_light_aurora_color_multi">ألوان متعددة</string>
     <string name="edge_light_spread_title">انتشار التوهج</string>
     <string name="edge_light_spread_summary">مدى امتداد التوهج نحو الداخل من الحافة</string>
     <string name="edge_light_intensity_title">شدة التوهج</string>
