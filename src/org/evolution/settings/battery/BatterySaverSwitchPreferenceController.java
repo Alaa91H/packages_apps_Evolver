@@ -21,6 +21,7 @@ import android.content.pm.PackageManager;
 import android.os.BatterySaverPolicyConfig;
 import android.os.PowerManager;
 import android.provider.Settings;
+import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 
 import com.android.settings.R;
@@ -41,11 +42,13 @@ public class BatterySaverSwitchPreferenceController extends TogglePreferenceCont
 
     private final PowerManager mPowerManager;
     private final TelephonyManager mTelephonyManager;
+    private final SubscriptionManager mSubscriptionManager;
 
     public BatterySaverSwitchPreferenceController(Context context, String key) {
         super(context, key);
         mPowerManager = context.getSystemService(PowerManager.class);
         mTelephonyManager = context.getSystemService(TelephonyManager.class);
+        mSubscriptionManager = context.getSystemService(SubscriptionManager.class);
     }
 
     @Override
@@ -58,22 +61,52 @@ public class BatterySaverSwitchPreferenceController extends TogglePreferenceCont
                 return UNSUPPORTED_ON_DEVICE;
             }
 
-            if (mTelephonyManager != null) {
-                try {
-                    final long supportedRaf =
-                            mTelephonyManager.getSupportedRadioAccessFamily();
-                    if (supportedRaf != TelephonyManager.NETWORK_TYPE_BITMASK_UNKNOWN
-                            && (supportedRaf & TelephonyManager.NETWORK_TYPE_BITMASK_NR) == 0) {
-                        return UNSUPPORTED_ON_DEVICE;
-                    }
-                } catch (SecurityException | UnsupportedOperationException ignored) {
-                    // If support cannot be queried reliably, keep the option available rather
-                    // than hiding a valid control on a device whose telephony service is not
-                    // ready yet or uses a vendor-specific implementation.
-                }
+            if (is5gSupportKnownMissing()) {
+                return UNSUPPORTED_ON_DEVICE;
             }
         }
         return AVAILABLE;
+    }
+
+    private boolean is5gSupportKnownMissing() {
+        if (mTelephonyManager == null) {
+            return false;
+        }
+
+        if (mSubscriptionManager != null) {
+            try {
+                final int[] subscriptionIds = mSubscriptionManager.getActiveSubscriptionIdList();
+                if (subscriptionIds.length > 0) {
+                    boolean sawKnownCapability = false;
+                    for (int subId : subscriptionIds) {
+                        final TelephonyManager telephony =
+                                mTelephonyManager.createForSubscriptionId(subId);
+                        final long supportedRaf = telephony.getSupportedRadioAccessFamily();
+                        if (supportedRaf == TelephonyManager.NETWORK_TYPE_BITMASK_UNKNOWN) {
+                            return false;
+                        }
+                        sawKnownCapability = true;
+                        if ((supportedRaf & TelephonyManager.NETWORK_TYPE_BITMASK_NR) != 0) {
+                            return false;
+                        }
+                    }
+                    return sawKnownCapability;
+                }
+            } catch (SecurityException | UnsupportedOperationException
+                    | IllegalArgumentException | IllegalStateException ignored) {
+                // Uncertain capability must never hide a valid control.
+                return false;
+            }
+        }
+
+        try {
+            final long supportedRaf = mTelephonyManager.getSupportedRadioAccessFamily();
+            return supportedRaf != TelephonyManager.NETWORK_TYPE_BITMASK_UNKNOWN
+                    && (supportedRaf & TelephonyManager.NETWORK_TYPE_BITMASK_NR) == 0;
+        } catch (SecurityException | UnsupportedOperationException
+                | IllegalArgumentException | IllegalStateException ignored) {
+            return false;
+        }
     }
 
     @Override
