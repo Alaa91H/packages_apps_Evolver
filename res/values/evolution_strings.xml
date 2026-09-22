@@ -1208,6 +1208,7 @@
     <string name="edge_light_animation_effect_sparkle">Sparkle</string>
     <string name="edge_light_animation_effect_chase">Chase</string>
     <string name="edge_light_animation_effect_comet">Comet</string>
+    <string name="edge_light_animation_effect_aurora">Aurora</string>
     <string name="edge_light_position_category">Display position</string>
     <string name="edge_light_location_top">Top edge</string>
     <string name="edge_light_location_sides">Side edges</string>
