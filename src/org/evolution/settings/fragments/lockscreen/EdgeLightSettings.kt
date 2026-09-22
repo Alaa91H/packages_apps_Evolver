@@ -15,11 +15,30 @@ import com.android.internal.logging.nano.MetricsProto
 import com.android.settings.R
 import com.android.settings.SettingsPreferenceFragment
 
+import androidx.preference.ListPreference
+import androidx.preference.Preference
+
 class EdgeLightSettings : SettingsPreferenceFragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         addPreferencesFromResource(R.xml.edge_light_settings)
+
+        val animationPreference =
+            findPreference<ListPreference>(Settings.System.EDGE_LIGHT_ANIMATION_EFFECT)
+        val auroraColorPreference =
+            findPreference<Preference>(Settings.System.EDGE_LIGHT_AURORA_COLOR_MODE)
+
+        fun updateAuroraColorVisibility(effect: String?) {
+            auroraColorPreference?.isVisible = effect == "aurora"
+        }
+
+        updateAuroraColorVisibility(animationPreference?.value)
+        animationPreference?.onPreferenceChangeListener =
+            Preference.OnPreferenceChangeListener { _, newValue ->
+                updateAuroraColorVisibility(newValue?.toString())
+                true
+            }
     }
 
     override fun getMetricsCategory(): Int = MetricsProto.MetricsEvent.EVOLVER
