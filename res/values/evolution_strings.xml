@@ -1212,6 +1212,24 @@
     <string name="edge_light_spread_summary">How far inward the glow extends from the edge</string>
     <string name="edge_light_intensity_title">Glow intensity</string>
     <string name="edge_light_intensity_summary">Peak brightness of the glow effect</string>
+    <string name="edge_light_regions_category">Lighting position</string>
+    <string name="edge_light_region_top">Top edge</string>
+    <string name="edge_light_region_top_summary">Render the effect along the top of the display</string>
+    <string name="edge_light_region_sides">Side edges</string>
+    <string name="edge_light_region_sides_summary">Render the effect along the left and right sides</string>
+    <string name="edge_light_region_bottom">Bottom edge</string>
+    <string name="edge_light_region_bottom_summary">Render the effect along the bottom of the display</string>
+    <string name="edge_light_display_states_category">Display states</string>
+    <string name="edge_light_screen_on">Screen on</string>
+    <string name="edge_light_screen_on_summary">Allow edge light while the display is on</string>
+    <string name="edge_light_screen_off">Screen off</string>
+    <string name="edge_light_screen_off_summary">Allow edge light when the display is off and a notification pulse starts</string>
+    <string name="edge_light_aod">Always-on display (AOD)</string>
+    <string name="edge_light_aod_summary">Allow edge light while the display is in AOD/doze mode</string>
+    <string name="edge_light_animation_effect_aurora">Aurora</string>
+    <string name="edge_light_aurora_color_mode_title">Aurora colors</string>
+    <string name="edge_light_aurora_fixed">Fixed color (uses custom color)</string>
+    <string name="edge_light_aurora_multicolor">Multicolor</string>
 
     <!-- Power menu -->
     <string name="power_menu_interface_category">Interface</string>
