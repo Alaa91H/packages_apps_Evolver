@@ -146,8 +146,8 @@
     <string name="lock_screen_charging_time_summary">عرض الوقت التقديري المتبقي حتى اكتمال الشحن</string>
     <string name="lock_screen_fingerprint_category">بصمة الإصبع</string>
     <string name="lock_screen_face_unlock_category">فتح القفل بالوجه</string>
-    <string name="lock_screen_face_scan_effect_title">تأثير مسح الكاميرا</string>
-    <string name="lock_screen_face_scan_effect_summary">إظهار توهج مسح متحرك عالي الدقة بجانبي الكاميرا الأمامية أثناء قيام فتح القفل بالوجه بالمسح</string>
+    <string name="lock_screen_face_scan_effect_title">حلقة كهربائية حول الكاميرا</string>
+    <string name="lock_screen_face_scan_effect_summary">إظهار حلقة طاقة كهربائية زرقاء متحركة عالية الدقة حول الكاميرا الأمامية أثناء مسح فتح القفل بالوجه</string>
     <string name="lock_screen_fingerprint_ripple_title">حركة التموج</string>
     <string name="lock_screen_fingerprint_ripple_summary">إظهار حركة تموج عند إلغاء القفل ببصمة الإصبع</string>
     <string name="lock_screen_fingerprint_success_vibration_title">اهتزاز نجاح المصادقة</string>
