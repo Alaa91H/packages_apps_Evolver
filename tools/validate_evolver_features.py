@@ -167,6 +167,59 @@ def validate_dynamic_bar() -> None:
         if "LAYOUT_DIRECTION_RTL" not in text:
             fail(f"Dynamic Bar preview is missing explicit RTL behavior: {demo.relative_to(ROOT)}")
 
+def validate_edge_light() -> None:
+    relative = "res/xml/edge_light_settings.xml"
+    keys = validate_preference_file(relative)
+    required_defaults = {
+        "edge_light_top_enabled": "false",
+        "edge_light_sides_enabled": "true",
+        "edge_light_bottom_enabled": "false",
+        "edge_light_screen_on_enabled": "false",
+        "edge_light_screen_off_enabled": "true",
+        "edge_light_aod_enabled": "true",
+        "edge_light_aurora_color_mode": "fixed",
+    }
+    root = parse(ROOT / relative)
+    defaults = {
+        node.attrib[AKEY]: node.attrib.get(ADEFAULT)
+        for node in root.iter()
+        if AKEY in node.attrib
+    }
+    missing = sorted(set(required_defaults) - keys)
+    if missing:
+        fail(f"Edge Light preferences missing: {missing}")
+    for key, expected in required_defaults.items():
+        if defaults.get(key) != expected:
+            fail(f"Edge Light default mismatch for {key}: {defaults.get(key)!r}")
+
+    arrays_root = parse(ROOT / "res/values/evolution_arrays.xml")
+    arrays = {
+        child.attrib.get("name"): [(item.text or "").strip() for item in child if item.tag == "item"]
+        for child in arrays_root
+        if child.tag == "string-array"
+    }
+    if "aurora" not in arrays.get("edge_light_animation_values", []):
+        fail("Edge Light animation values do not include aurora")
+    if arrays.get("edge_light_aurora_color_mode_values") != ["fixed", "multicolor"]:
+        fail("Edge Light Aurora color modes must be fixed and multicolor")
+
+    preview = (
+        ROOT / "src/org/evolution/settings/fragments/lockscreen/EdgeLightPreviewView.kt"
+    ).read_text(encoding="utf-8")
+    for token in (
+        '"edge_light_top_enabled"',
+        '"edge_light_sides_enabled"',
+        '"edge_light_bottom_enabled"',
+        '"edge_light_aurora_color_mode"',
+        'animationEffect == "aurora"',
+        "drawAuroraVertical(",
+        "drawAuroraHorizontal(",
+        "clipToSelectedRegions(canvas)",
+    ):
+        if token not in preview:
+            fail(f"Edge Light preview is missing: {token}")
+
+
 def validate_battery_saver() -> None:
     arrays_path = ROOT / "res/values/battery_saver_arrays.xml"
     root = parse(arrays_path)
@@ -248,6 +301,7 @@ def main() -> int:
         validate_network_traffic()
         validate_mobile_type()
         validate_dynamic_bar()
+        validate_edge_light()
         validate_battery_saver()
     except (ValidationError, OSError) as exc:
         print(f"EVOLVER FEATURE VALIDATION FAILED: {exc}", file=sys.stderr)
@@ -259,6 +313,7 @@ def main() -> int:
     print("- Network Traffic UI/defaults: OK")
     print("- Mobile type preference handling: OK")
     print("- Dynamic Bar UI/settings/RTL previews: OK")
+    print("- Edge Light regions/states/Aurora UI contract: OK")
     print("- Battery Saver controllers/resources contract: OK")
     return 0
 
