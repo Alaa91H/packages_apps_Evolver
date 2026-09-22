@@ -42,6 +42,20 @@ class EdgeLightSettings : SettingsPreferenceFragment() {
                     Settings.System.EDGE_LIGHT_STYLE, "default", UserHandle.USER_CURRENT)
             Settings.System.putStringForUser(resolver,
                     Settings.System.EDGE_LIGHT_ANIMATION_EFFECT, "none", UserHandle.USER_CURRENT)
+            Settings.System.putIntForUser(resolver,
+                    Settings.System.EDGE_LIGHT_TOP_ENABLED, 0, UserHandle.USER_CURRENT)
+            Settings.System.putIntForUser(resolver,
+                    Settings.System.EDGE_LIGHT_SIDES_ENABLED, 1, UserHandle.USER_CURRENT)
+            Settings.System.putIntForUser(resolver,
+                    Settings.System.EDGE_LIGHT_BOTTOM_ENABLED, 0, UserHandle.USER_CURRENT)
+            Settings.System.putIntForUser(resolver,
+                    Settings.System.EDGE_LIGHT_SCREEN_ON_ENABLED, 0, UserHandle.USER_CURRENT)
+            Settings.System.putIntForUser(resolver,
+                    Settings.System.EDGE_LIGHT_SCREEN_OFF_ENABLED, 1, UserHandle.USER_CURRENT)
+            Settings.System.putIntForUser(resolver,
+                    Settings.System.EDGE_LIGHT_AOD_ENABLED, 1, UserHandle.USER_CURRENT)
+            Settings.System.putStringForUser(resolver,
+                    Settings.System.EDGE_LIGHT_AURORA_COLOR_MODE, "fixed", UserHandle.USER_CURRENT)
         }
     }
 }
