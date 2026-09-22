@@ -279,13 +279,17 @@ class EdgeLightPreviewView @JvmOverloads constructor(
         showSides = sidesEnabled
         showBottom = bottomEnabled
         auroraColorMode = auroraMode
-        setPaintColor(
-            if (effect == "aurora") {
-                if (auroraMode == "multicolor") COLOR_RAINBOW else customColor
-            } else {
-                resolvePaintColor(colorMode, customColor)
-            }
-        )
+        val multicolor = if (effect == "aurora") {
+            auroraMode == "multicolor"
+        } else {
+            colorMode == "rainbow"
+        }
+        val baseColor = if (effect == "aurora") {
+            customColor
+        } else {
+            resolvePaintColor(colorMode, customColor)
+        }
+        setPaintColor(baseColor, multicolor)
 
         stopRainbowAnimation()
         stopEffectAnimation()
@@ -298,7 +302,7 @@ class EdgeLightPreviewView @JvmOverloads constructor(
 
     private fun resolvePaintColor(mode: String, customColor: Int): Int = when (mode) {
         "wallpaper" -> getWallpaperPrimaryColorOrElse(Utils.getColorAccentDefaultColor(context))
-        "rainbow" -> -1
+        "rainbow" -> Utils.getColorAccentDefaultColor(context)
         "notification" -> Utils.getColorAccentDefaultColor(context)
         "custom" -> customColor
         "accent" -> Utils.getColorAccentDefaultColor(context)
@@ -313,15 +317,14 @@ class EdgeLightPreviewView @JvmOverloads constructor(
         default
     }
 
-    private fun setPaintColor(color: Int) {
-        if (color != -1) {
-            useRainbowGradient = false
-            edgePaint.shader = null
-            edgePaint.color = color
-            edgePaint.alpha = 255
-        } else {
-            useRainbowGradient = true
+    private fun setPaintColor(color: Int, rainbow: Boolean) {
+        useRainbowGradient = rainbow
+        edgePaint.color = color
+        edgePaint.alpha = 255
+        if (rainbow) {
             updateRainbowGradient()
+        } else {
+            edgePaint.shader = null
         }
         invalidate()
     }
@@ -884,8 +887,6 @@ class EdgeLightPreviewView @JvmOverloads constructor(
     )
 
     companion object {
-        private const val COLOR_RAINBOW = -1
-
         private val WATCHED_KEYS = arrayOf(
             "edge_light_color_mode",
             "edge_light_custom_color",
