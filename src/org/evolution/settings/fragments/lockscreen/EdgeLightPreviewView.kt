@@ -152,7 +152,7 @@ class EdgeLightPreviewView @JvmOverloads constructor(
 
         val save = canvas.save()
         clipToEnabledEdges(canvas)
-        if (isFrameStyle(edgeStyle) && positionTop && positionSides && positionBottom) {
+        if (isFrameStyle(edgeStyle)) {
             drawRoundedEdges(canvas)
         } else {
             drawDefaultEdges(canvas)
