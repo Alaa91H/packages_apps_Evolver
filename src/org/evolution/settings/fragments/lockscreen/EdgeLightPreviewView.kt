@@ -831,9 +831,25 @@ class EdgeLightPreviewView @JvmOverloads constructor(
             "edge_light_stroke_width",
             "edge_light_style",
             "edge_light_animation_effect",
+            "edge_light_location_top",
+            "edge_light_location_sides",
+            "edge_light_location_bottom",
+            "edge_light_aurora_multicolor",
         )
 
-        private val movingEffect = arrayOf("wave", "sparkle", "chase", "comet")
+        private val movingEffect = arrayOf("wave", "sparkle", "chase", "comet", "aurora")
+
+        private val AURORA_COLORS = intArrayOf(
+            0xFF43E8D8.toInt(),
+            0xFF5B8CFF.toInt(),
+            0xFF9A5CFF.toInt(),
+            0xFFFF5FA2.toInt(),
+            0xFF61F0B5.toInt(),
+            0xFF43E8D8.toInt(),
+        )
+
+        private val AURORA_POSITIONS =
+            floatArrayOf(0f, 0.18f, 0.38f, 0.58f, 0.78f, 1f)
 
         private val RAINBOW = intArrayOf(
             0xFFFF0000.toInt(), // red
