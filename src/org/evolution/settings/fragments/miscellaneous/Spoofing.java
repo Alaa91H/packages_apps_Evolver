@@ -17,6 +17,10 @@ import android.util.Log;
 import android.widget.Toast;
 import android.provider.Settings;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import androidx.appcompat.app.AlertDialog;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceCategory;
@@ -54,7 +58,7 @@ public class Spoofing extends SettingsPreferenceFragment implements
     private Preference mTensorTargets;
 
     private Handler mHandler;
-    private Runnable mPendingKill;
+    private final Map<String, Runnable> mPendingKills = new HashMap<>();
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -123,12 +127,19 @@ public class Spoofing extends SettingsPreferenceFragment implements
     }
 
     private void scheduleKill(String pkg) {
-        if (mPendingKill != null) {
-            mHandler.removeCallbacks(mPendingKill);
+        final Runnable previous = mPendingKills.remove(pkg);
+        if (previous != null) {
+            mHandler.removeCallbacks(previous);
         }
+
         Toast.makeText(getContext(), R.string.spoofing_applying_changes, Toast.LENGTH_SHORT).show();
-        mPendingKill = () -> killIfRunning(pkg);
-        mHandler.postDelayed(mPendingKill, 500);
+
+        final Runnable pending = () -> {
+            mPendingKills.remove(pkg);
+            killIfRunning(pkg);
+        };
+        mPendingKills.put(pkg, pending);
+        mHandler.postDelayed(pending, 500);
     }
 
     private void killIfRunning(String pkg) {
@@ -136,7 +147,10 @@ public class Spoofing extends SettingsPreferenceFragment implements
             ActivityManager am = (ActivityManager)
                     getContext().getSystemService(Context.ACTIVITY_SERVICE);
             if (am == null) return;
-            for (ActivityManager.RunningAppProcessInfo proc : am.getRunningAppProcesses()) {
+            final List<ActivityManager.RunningAppProcessInfo> processes =
+                    am.getRunningAppProcesses();
+            if (processes == null) return;
+            for (ActivityManager.RunningAppProcessInfo proc : processes) {
                 if (proc.pkgList == null) continue;
                 for (String p : proc.pkgList) {
                     if (pkg.equals(p)) {
@@ -167,8 +181,11 @@ public class Spoofing extends SettingsPreferenceFragment implements
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (mHandler != null && mPendingKill != null) {
-            mHandler.removeCallbacks(mPendingKill);
+        if (mHandler != null) {
+            for (Runnable pending : mPendingKills.values()) {
+                mHandler.removeCallbacks(pending);
+            }
+            mPendingKills.clear();
         }
     }
 
