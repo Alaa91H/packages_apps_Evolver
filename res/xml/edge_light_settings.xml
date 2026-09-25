@@ -21,6 +21,57 @@
         android:summary="@string/edge_light_summary"
         android:defaultValue="false" />
 
+    <PreferenceCategory
+        android:title="@string/edge_light_position_category"
+        android:dependency="edge_light_enabled">
+
+        <org.evolution.settings.preferences.SystemSettingSwitchPreference
+            android:key="edge_light_location_top"
+            android:title="@string/edge_light_location_top"
+            android:defaultValue="false" />
+
+        <org.evolution.settings.preferences.SystemSettingSwitchPreference
+            android:key="edge_light_location_sides"
+            android:title="@string/edge_light_location_sides"
+            android:defaultValue="true" />
+
+        <org.evolution.settings.preferences.SystemSettingSwitchPreference
+            android:key="edge_light_location_bottom"
+            android:title="@string/edge_light_location_bottom"
+            android:defaultValue="false" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="@string/edge_light_display_state_category"
+        android:dependency="edge_light_enabled">
+
+        <org.evolution.settings.preferences.SystemSettingSwitchPreference
+            android:key="edge_light_screen_on"
+            android:title="@string/edge_light_screen_on"
+            android:summary="@string/edge_light_screen_on_summary"
+            android:defaultValue="false" />
+
+        <org.evolution.settings.preferences.SystemSettingSwitchPreference
+            android:key="edge_light_screen_off"
+            android:title="@string/edge_light_screen_off"
+            android:summary="@string/edge_light_screen_off_summary"
+            android:defaultValue="true" />
+
+        <org.evolution.settings.preferences.SystemSettingSwitchPreference
+            android:key="edge_light_aod"
+            android:title="@string/edge_light_aod"
+            android:summary="@string/edge_light_aod_summary"
+            android:defaultValue="true" />
+
+        <org.evolution.settings.preferences.SystemSettingSwitchPreference
+            android:key="edge_light_all_states"
+            android:title="@string/edge_light_all_states"
+            android:summary="@string/edge_light_all_states_summary"
+            android:defaultValue="false" />
+
+    </PreferenceCategory>
+
     <org.evolution.settings.preferences.SystemSettingSeekBarPreference
         android:key="edge_light_pulse_count"
         android:title="@string/edge_light_pulse_count_title"
@@ -90,6 +141,13 @@
         android:entryValues="@array/edge_light_animation_values"
         android:summary="%s"
         android:defaultValue="none"
+        android:dependency="edge_light_enabled" />
+
+    <org.evolution.settings.preferences.SystemSettingSwitchPreference
+        android:key="edge_light_aurora_multicolor"
+        android:title="@string/edge_light_aurora_multicolor"
+        android:summary="@string/edge_light_aurora_multicolor_summary"
+        android:defaultValue="true"
         android:dependency="edge_light_enabled" />
 
     <org.evolution.settings.preferences.colorpicker.SystemSettingColorPickerPreference

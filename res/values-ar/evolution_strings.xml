@@ -1793,7 +1793,22 @@
     <string name="lockscreen_indication_horizontal_inset_title">الهامش الجانبي للإرشادات</string>
     <string name="lockscreen_indication_horizontal_inset_summary">أضف هوامش جانبية متساوية لمنطقة الإرشادات السفلية</string>
 
-    <!-- Wallpaper zoom -->
-    <string name="wallpaper_zoom_title">تكبير خلفية الشاشة</string>
-    <string name="wallpaper_zoom_summary">عطّل هذا الخيار لعرض خلفية الشاشة من دون تكبير إضافي</string>
+    <!-- Notifications/Edge light -->
+    <string name="edge_light_position_category">موضع العرض</string>
+    <string name="edge_light_location_top">الحافة العلوية</string>
+    <string name="edge_light_location_sides">الحافتان الجانبيتان</string>
+    <string name="edge_light_location_bottom">الحافة السفلية</string>
+    <string name="edge_light_display_state_category">متى يتم العرض</string>
+    <string name="edge_light_screen_on">أثناء تشغيل الشاشة</string>
+    <string name="edge_light_screen_on_summary">عرض إضاءة الحواف أثناء تشغيل الشاشة</string>
+    <string name="edge_light_screen_off">أثناء إيقاف الشاشة</string>
+    <string name="edge_light_screen_off_summary">عرض إضاءة الحواف مع نبضات الإشعارات أثناء إيقاف الشاشة</string>
+    <string name="edge_light_aod">شاشة العرض الدائم</string>
+    <string name="edge_light_aod_summary">عرض إضاءة الحواف أثناء تفعيل شاشة العرض الدائم</string>
+    <string name="edge_light_all_states">جميع حالات الشاشة</string>
+    <string name="edge_light_all_states_summary">السماح بإضاءة الحواف أثناء تشغيل الشاشة وإيقافها وعلى شاشة العرض الدائم</string>
+    <string name="edge_light_aurora_multicolor">أورورا متعددة الألوان</string>
+    <string name="edge_light_aurora_multicolor_summary">استخدام لوحة أورورا متحركة متعددة الألوان؛ عطّلها لاستخدام لون واحد يعتمد على لون إضاءة الحواف المحدد</string>
+    <string name="edge_light_animation_effect_aurora">أورورا</string>
+
 </resources>
