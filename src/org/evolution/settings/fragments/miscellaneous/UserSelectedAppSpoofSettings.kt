@@ -190,10 +190,16 @@ private fun AppSpoofingContent(context: Context) {
             putAll(readConfigured(context, spoofEnabled))
         }
         customProfiles = readCustomProfiles(context)
+        storedConfigIssues = countStoredConfigIssues(context)
+    }
+
+    fun refreshStoredConfigIssues() {
+        storedConfigIssues = countStoredConfigIssues(context)
     }
 
     fun persistConfigured() {
         writeConfigured(context, configuredMap, spoofEnabled)
+        refreshStoredConfigIssues()
     }
 
     fun stopPackage(pkg: String) {
@@ -227,6 +233,7 @@ private fun AppSpoofingContent(context: Context) {
         val updatedProfiles = customProfiles.filter { it.id != profileId }
         writeCustomProfiles(context, updatedProfiles)
         customProfiles = updatedProfiles
+        refreshStoredConfigIssues()
 
         if (affectedPackages.isNotEmpty()) {
             configuredMap = LinkedHashMap(
@@ -252,6 +259,7 @@ private fun AppSpoofingContent(context: Context) {
             writeMapSetting(context, SPOOFED_APPS_SETTING, emptyMap())
         }
         targets.forEach { stopPackage(it) }
+        refreshStoredConfigIssues()
     }
 
     fun clearAllConfigured() {
@@ -260,6 +268,78 @@ private fun AppSpoofingContent(context: Context) {
         writeMapSetting(context, SPOOFED_APPS_CACHE_SETTING, emptyMap())
         writeMapSetting(context, SPOOFED_APPS_SETTING, emptyMap())
         targets.forEach { stopPackage(it) }
+        refreshStoredConfigIssues()
+    }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json"),
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        val snapshot = SpoofingConfigCodec.encodeBackup(
+            enabled = spoofEnabled,
+            assignments = configuredMap,
+            customProfiles = customProfiles,
+        )
+        scope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    context.contentResolver.openOutputStream(uri, "wt")
+                        ?.bufferedWriter()
+                        ?.use { it.write(snapshot) }
+                        ?: error("Unable to open destination")
+                }
+            }
+            result.fold(
+                onSuccess = {
+                    Toast.makeText(
+                        context,
+                        R.string.app_spoofing_backup_success,
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                },
+                onFailure = { error ->
+                    Toast.makeText(
+                        context,
+                        context.getString(
+                            R.string.app_spoofing_backup_failed,
+                            error.message ?: error.javaClass.simpleName,
+                        ),
+                        Toast.LENGTH_LONG,
+                    ).show()
+                },
+            )
+        }
+    }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    context.contentResolver.openInputStream(uri)
+                        ?.bufferedReader()
+                        ?.use { it.readText() }
+                        ?: error("Unable to open backup")
+                }.mapCatching { raw ->
+                    SpoofingConfigCodec.decodeBackup(raw, builtInProfileIds).getOrThrow()
+                }
+            }
+            result.fold(
+                onSuccess = { pendingRestore = it },
+                onFailure = { error ->
+                    Toast.makeText(
+                        context,
+                        context.getString(
+                            R.string.app_spoofing_restore_failed,
+                            error.message ?: error.javaClass.simpleName,
+                        ),
+                        Toast.LENGTH_LONG,
+                    ).show()
+                },
+            )
+        }
     }
 
     val exportLauncher = rememberLauncherForActivityResult(
@@ -371,6 +451,7 @@ private fun AppSpoofingContent(context: Context) {
             onWriteCustomProfiles = { updated ->
                 writeCustomProfiles(context, updated)
                 customProfiles = updated
+                refreshStoredConfigIssues()
             },
             onDeleteCustomProfile = { profileId ->
                 removeCustomProfile(profileId)
@@ -490,6 +571,7 @@ private fun AppSpoofingContent(context: Context) {
                 }
                 writeCustomProfiles(context, updatedProfiles)
                 customProfiles = updatedProfiles
+                refreshStoredConfigIssues()
                 if (wasEditing) restartAppsUsingProfile(newProfile.id)
                 showAddCustomProfileDialog = false
                 customProfileToEdit = null
