@@ -145,6 +145,9 @@
     <string name="lock_screen_charging_time_title">وقت الشحن</string>
     <string name="lock_screen_charging_time_summary">عرض الوقت التقديري المتبقي حتى اكتمال الشحن</string>
     <string name="lock_screen_fingerprint_category">بصمة الإصبع</string>
+    <string name="lock_screen_face_unlock_category">فتح القفل بالوجه</string>
+    <string name="lock_screen_face_scan_effect_title">تأثير مسح الكاميرا</string>
+    <string name="lock_screen_face_scan_effect_summary">إظهار توهج مسح متحرك عالي الدقة بجانبي الكاميرا الأمامية أثناء قيام فتح القفل بالوجه بالمسح</string>
     <string name="lock_screen_fingerprint_ripple_title">حركة التموج</string>
     <string name="lock_screen_fingerprint_ripple_summary">إظهار حركة تموج عند إلغاء القفل ببصمة الإصبع</string>
     <string name="lock_screen_fingerprint_success_vibration_title">اهتزاز نجاح المصادقة</string>
@@ -1125,6 +1128,8 @@
     <string name="miscellaneous_block_wallpaper_dimming_summary">منع جميع التطبيقات من تعتيم الخلفية وإجبار مستوى التعتيم على 0</string>
     <string name="miscellaneous_ignore_window_secure_title">تجاهل علامات النوافذ الآمنة</string>
     <string name="miscellaneous_ignore_window_secure_summary">إزالة قيود لقطات الشاشة وتسجيل الشاشة لجميع التطبيقات. قد يكشف ذلك محتوى خاصًا</string>
+    <string name="miscellaneous_hide_clipboard_overlay_title">إخفاء واجهة الحافظة</string>
+    <string name="miscellaneous_hide_clipboard_overlay_summary">عدم إظهار معاينة الحافظة أو أيقونتها أو رسالة «تم النسخ» بعد نسخ المحتوى</string>
     <string name="miscellaneous_screenshot_flash_title">إظهار وميض لقطة الشاشة</string>
     <string name="miscellaneous_screenshot_flash_summary">إظهار وميض قصير على الشاشة عند التقاط لقطة شاشة</string>
     <string name="miscellaneous_block_screenshot_detection_title">حظر اكتشاف لقطات الشاشة</string>
@@ -1196,7 +1201,23 @@
     <string name="custom_spoof_profile_device">الجهاز</string>
     <string name="custom_spoof_profile_model">الطراز</string>
     <string name="custom_spoof_profile_fingerprint">البصمة (اختياري)</string>
+    <string name="custom_spoof_profile_invalid_fingerprint">استخدم بصمة بناء Android كاملة (العلامة/المنتج/الجهاز:الإصدار/المعرّف/الرقم التزايدي:النوع/الوسوم)</string>
     <string name="custom_spoof_profile_product">المنتج (اختياري)</string>
+    <string name="app_spoofing_backup">نسخ احتياطي</string>
+    <string name="app_spoofing_restore">استعادة</string>
+    <string name="app_spoofing_backup_success">تم حفظ النسخة الاحتياطية لإعدادات الانتحال</string>
+    <string name="app_spoofing_backup_failed">تعذر حفظ النسخة الاحتياطية لإعدادات الانتحال: %1$s</string>
+    <string name="app_spoofing_restore_failed">تعذرت استعادة النسخة الاحتياطية لإعدادات الانتحال: %1$s</string>
+    <string name="app_spoofing_restore_confirm_title">استعادة النسخة الاحتياطية لإعدادات الانتحال؟</string>
+    <string name="app_spoofing_restore_confirm">سيؤدي هذا إلى استبدال تعيينات الانتحال الحالية لكل تطبيق وملفات التعريف المخصصة، ثم إعادة تشغيل التطبيقات المتأثرة.</string>
+    <string name="app_spoofing_restore_success">تمت استعادة إعدادات الانتحال</string>
+    <string name="app_spoofing_health_title">سلامة الإعدادات</string>
+    <string name="app_spoofing_health_ok">جميع التعيينات المُهيأة مرتبطة بملفات انتحال صالحة</string>
+    <string name="app_spoofing_health_issues">توجد %1$d مشكلة في الإعدادات تحتاج إلى المراجعة</string>
+    <string name="app_spoofing_health_unknown_profiles">يشير %1$d من التعيينات إلى ملف انتحال غير معروف</string>
+    <string name="app_spoofing_health_missing_apps">هناك %1$d من التطبيقات المُهيأة غير مثبتة حاليًا</string>
+    <string name="app_spoofing_health_invalid_custom">هناك %1$d من ملفات الانتحال المخصصة غير صالحة</string>
+    <string name="app_spoofing_health_malformed_storage">تعذر ترحيل %1$d من مشكلات الإعدادات المخزنة تلقائيًا</string>
     <string name="pp_target_count">انتحال %1$d من التطبيقات كجهاز Pixel</string>
     <string name="pp_spoof_as">الانتحال كـ</string>
     <string name="pp_empty_description">ستبلغ التطبيقات المحددة عن هوية جهاز Pixel المختارة لفتح ميزات Pixel الحصرية</string>
@@ -1701,6 +1722,8 @@
     <string name="global_actions_advanced_reboot_summary">يفتح مربع حوار جديد يتيح خيارات إعادة تشغيل متقدمة</string>
     <string name="screenshot_clipboard_only_title">النسخ إلى الحافظة فقط</string>
     <string name="screenshot_clipboard_only_summary">نسخ لقطة الشاشة إلى الحافظة بدل حفظها في مساحة التخزين</string>
+    <string name="screenshot_full_page_capture_title">لقطة شاشة ممتدة لكامل الصفحة</string>
+    <string name="screenshot_full_page_capture_summary">عند استخدام التقاط المزيد، يستمر الالتقاط تلقائيًا إلى الأسفل حتى نهاية المحتوى بالدقة الأصلية، ضمن حد أمان يبلغ 12000 بكسل للارتفاع</string>
     <string name="hide_status_bar_in_screenshot_title">إخفاء شريط الحالة في لقطات الشاشة</string>
     <string name="hide_status_bar_in_screenshot_summary">اقتصاص منطقة شريط الحالة من لقطات الشاشة الكاملة</string>
     <!-- شريط الحالة/عرض حركة الشبكة -->
@@ -1716,4 +1739,61 @@
     <string name="network_traffic_alignment_start">البداية</string>
     <string name="network_traffic_alignment_center">الوسط</string>
     <string name="network_traffic_alignment_end">النهاية</string>
+
+    <!-- استوديو تخصيص شاشة القفل الموحد -->
+    <string name="lockscreen_customization_title">استوديو شاشة القفل</string>
+    <string name="lockscreen_customization_summary">خصّص الساعة والأدوات والخلفيات والمعلومات والوسائط والمؤثرات وخيارات الأمان من مكان واحد</string>
+    <string name="lockscreen_customization_design_category">التصميم والتخطيط</string>
+    <string name="lockscreen_customization_information_category">المعلومات ولمحة سريعة</string>
+    <string name="lockscreen_customization_media_category">الوسائط والمؤثرات</string>
+    <string name="lockscreen_customization_interaction_category">التفاعل والأمان</string>
+    <string name="lockscreen_customization_glymps_summary">بدّل خلفيات شاشة القفل من مصادر مختارة أو روابط مخصصة أو مجلدات</string>
+    <string name="lockscreen_customization_footer">يستخدم هذا الاستوديو إعدادات النظام نفسها الموجودة في صفحات Evolver الحالية، لذلك لا توجد عناصر تحكم مكررة أو وهمية. قد تتطلب تغييرات Smartspace والطقس إعادة تشغيل واجهة النظام عند الحاجة.</string>
+
+    <!-- ضبط مواضع عناصر شاشة القفل -->
+    <string name="lockscreen_layout_title">ضبط المواضع</string>
+    <string name="lockscreen_layout_summary">اضبط موضع الطقس والأدوات بدقة وبشكل مستقل</string>
+    <string name="lockscreen_layout_horizontal_offset_title">الإزاحة الأفقية</string>
+    <string name="lockscreen_layout_vertical_offset_title">الإزاحة العمودية</string>
+
+    <!-- اختصارات شاشة القفل السفلية -->
+    <string name="lockscreen_shortcuts_title">الاختصارات السفلية</string>
+    <string name="lockscreen_shortcuts_summary">خصّص حجم الاختصارات وموضعها وتباعدها وخلفيتها</string>
+    <string name="lockscreen_shortcuts_scale_title">حجم الاختصار</string>
+    <string name="lockscreen_shortcuts_vertical_offset_title">الإزاحة العمودية</string>
+    <string name="lockscreen_shortcuts_vertical_offset_summary">القيم الموجبة تحرّك الاختصارين إلى الأعلى</string>
+    <string name="lockscreen_shortcuts_horizontal_inset_title">الإزاحة نحو الوسط</string>
+    <string name="lockscreen_shortcuts_horizontal_inset_summary">القيم الموجبة تقرّب الاختصارين من منتصف الشاشة</string>
+    <string name="lockscreen_shortcuts_background_opacity_title">شفافية الخلفية</string>
+
+    <!-- تخصيص ساعة شاشة القفل على AOD -->
+    <string name="lockscreen_custom_clock_aod_scale_title">حجم الساعة على AOD</string>
+    <string name="lockscreen_custom_clock_aod_scale_summary">اضبط حجم الساعة المخصصة المستخدم أثناء انتقال شاشة AOD</string>
+    <string name="lockscreen_custom_clock_aod_opacity_title">شفافية الساعة على AOD</string>
+    <string name="lockscreen_custom_clock_aod_opacity_summary">حدّد الحد الأقصى لشفافية الساعة المخصصة أثناء وضع السكون</string>
+
+    <!-- تفاصيل الشحن على شاشة القفل -->
+    <string name="lockscreen_battery_details_title">تفاصيل الشحن</string>
+    <string name="lockscreen_battery_details_summary">اختر قياسات الشحن التي تظهر على شاشة القفل</string>
+    <string name="lockscreen_battery_current_title">تيار الشحن</string>
+    <string name="lockscreen_battery_power_title">قدرة الشحن</string>
+    <string name="lockscreen_battery_voltage_title">جهد الشحن</string>
+    <string name="lockscreen_battery_temperature_title">درجة حرارة البطارية</string>
+
+    <!-- تخطيط إشعارات شاشة القفل -->
+    <string name="lockscreen_notifications_top_spacing_title">المسافة العلوية للإشعارات</string>
+    <string name="lockscreen_notifications_top_spacing_summary">اضبط المسافة بين محتوى شاشة القفل ومنطقة الإشعارات</string>
+    <string name="lockscreen_notifications_horizontal_inset_title">الهامش الجانبي للإشعارات</string>
+    <string name="lockscreen_notifications_horizontal_inset_summary">أضف هوامش جانبية متساوية لمنطقة إشعارات شاشة القفل</string>
+
+    <!-- تخطيط نصوص إرشادات شاشة القفل -->
+    <string name="lockscreen_indication_layout_category_title">نصوص الإرشادات</string>
+    <string name="lockscreen_indication_vertical_offset_title">الإزاحة العمودية للإرشادات</string>
+    <string name="lockscreen_indication_vertical_offset_summary">اضبط موضع رسائل الشحن والبصمة وفتح القفل في أسفل الشاشة</string>
+    <string name="lockscreen_indication_horizontal_inset_title">الهامش الجانبي للإرشادات</string>
+    <string name="lockscreen_indication_horizontal_inset_summary">أضف هوامش جانبية متساوية لمنطقة الإرشادات السفلية</string>
+
+    <!-- Wallpaper zoom -->
+    <string name="wallpaper_zoom_title">تكبير خلفية الشاشة</string>
+    <string name="wallpaper_zoom_summary">عطّل هذا الخيار لعرض خلفية الشاشة من دون تكبير إضافي</string>
 </resources>
