@@ -312,7 +312,15 @@ class FontsPickerPreference @JvmOverloads constructor(
                             onConfirm = {
                                 applyOverlayInBackground(
                                     if (old == CUSTOM_PKG_KEY) getApplied(themeUtils) else old,
-                                    pkg
+                                    pkg,
+                                    onFailed = {
+                                        selectedPkg = old
+                                        notifyDataSetChanged()
+                                        Toast.makeText(
+                                            ctx, R.string.toast_failed_apply_font,
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
                                 ) {
                                     if (old == CUSTOM_PKG_KEY) clearCustomFontState()
                                     updateSummary()
@@ -359,6 +367,7 @@ class FontsPickerPreference @JvmOverloads constructor(
         private fun applyOverlayInBackground(
             oldPkg: String,
             newPkg: String,
+            onFailed: () -> Unit,
             onDone: () -> Unit
         ) {
             Thread({

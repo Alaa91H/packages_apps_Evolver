@@ -59,6 +59,8 @@ public class StatusBar extends SettingsPreferenceFragment implements
     private static final String KEY_CLOCK_CHIP = "statusbar_clock_chip";
 //    private static final String KEY_COLORED_ICONS = "statusbar_colored_icons";
     private static final String KEY_ICONS_CATEGORY = "status_bar_icons_category";
+    private static final String KEY_MOBILE_TYPE_HIDDEN = "status_bar_mobile_type_hidden";
+    private static final String KEY_MOBILE_TYPE_COMPACT = "status_bar_mobile_type_compact";
     private static final String QUICK_PULLDOWN = "qs_quick_pulldown";
     private static final String STATUS_BAR_CLOCK_STYLE = "status_bar_clock";
     private static final String STATUS_BAR_CARRIER_KEY = "status_bar_carrier_key";
@@ -98,6 +100,8 @@ public class StatusBar extends SettingsPreferenceFragment implements
     private LineageSystemSettingListPreference mStatusBarClock;
     private PreferenceCategory mIconsCategory;
     private SystemSettingSwitchPreference mBluetoothBatteryStatus;
+    private SystemSettingSwitchPreference mMobileTypeHidden;
+    private SystemSettingSwitchPreference mMobileTypeCompact;
 //    private SystemSettingSwitchPreference mColoredIcons;
     private SystemSettingSwitchPreference mLogo;
     private Preference mLogoPosition;
@@ -154,6 +158,11 @@ public class StatusBar extends SettingsPreferenceFragment implements
 
         mIconsCategory = findPreference(KEY_ICONS_CATEGORY);
         mBluetoothBatteryStatus = findPreference(KEY_BLUETOOTH_BATTERY_STATUS);
+        mMobileTypeHidden = findPreference(KEY_MOBILE_TYPE_HIDDEN);
+        mMobileTypeCompact = findPreference(KEY_MOBILE_TYPE_COMPACT);
+        mMobileTypeHidden.setOnPreferenceChangeListener(this);
+        mMobileTypeCompact.setOnPreferenceChangeListener(this);
+        normalizeMobileTypePreferences(resolver);
 //        mColoredIcons = findPreference(KEY_COLORED_ICONS);
 //        mColoredIcons.setOnPreferenceChangeListener(this);
 
@@ -413,6 +422,20 @@ public class StatusBar extends SettingsPreferenceFragment implements
                     UserHandle.USER_CURRENT);
             updateCustomImagePrefSummary(path);
         }
+    }
+
+    private void normalizeMobileTypePreferences(ContentResolver resolver) {
+        boolean hidden = Settings.System.getIntForUser(
+                resolver, KEY_MOBILE_TYPE_HIDDEN, 0, UserHandle.USER_CURRENT) != 0;
+        boolean compact = Settings.System.getIntForUser(
+                resolver, KEY_MOBILE_TYPE_COMPACT, 0, UserHandle.USER_CURRENT) != 0;
+
+        if (hidden && compact) {
+            Settings.System.putIntForUser(
+                    resolver, KEY_MOBILE_TYPE_COMPACT, 0, UserHandle.USER_CURRENT);
+            mMobileTypeCompact.setChecked(false);
+        }
+        mMobileTypeCompact.setEnabled(!hidden);
     }
 
     private int getCustomLogoStyleIndex() {
