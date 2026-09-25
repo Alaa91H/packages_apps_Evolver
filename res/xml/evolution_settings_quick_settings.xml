@@ -8,6 +8,9 @@
     xmlns:settings="http://schemas.android.com/apk/res/com.android.settings"
     android:title="@string/quick_settings_title">
 
+    <org.evolution.settings.preferences.QuickSettingsPreviewPreference
+        android:key="quick_settings_live_preview" />
+
     <PreferenceCategory
         android:key="quick_settings_interface_category"
         android:title="@string/quick_settings_interface_category">
@@ -74,6 +77,18 @@
             android:title="@string/qs_compact_media_player_mode_title"
             android:summary="@string/qs_compact_media_player_mode_summary"
             android:defaultValue="false" />
+
+        <org.evolution.settings.preferences.SystemSettingSwitchPreference
+            android:key="qs_tile_alternate_color"
+            android:title="@string/qs_tile_alternate_color_title"
+            android:summary="@string/qs_tile_alternate_color_summary"
+            android:defaultValue="false" />
+
+        <org.evolution.settings.preferences.SystemSettingSwitchPreference
+            android:key="qs_tile_haptic"
+            android:title="@string/quick_settings_brightness_slider_haptic_title"
+            android:summary="@string/quick_settings_tile_haptic_summary"
+            android:defaultValue="true" />
     </PreferenceCategory>
 
     <PreferenceCategory
@@ -102,6 +117,13 @@
             android:entries="@array/qs_brightness_slider_shape_entries"
             android:entryValues="@array/qs_brightness_slider_shape_values"
             android:defaultValue="0" />-->
+
+        <org.evolution.settings.preferences.SystemSettingListPreference
+            android:key="qs_brightness_slider_shape"
+            android:title="@string/qs_brightness_slider_shape_title"
+            android:entries="@array/qs_brightness_slider_shape_entries"
+            android:entryValues="@array/qs_brightness_slider_shape_values"
+            android:defaultValue="0" />
 
         <!-- Brightness slider position -->
         <lineageos.preference.LineageSecureSettingListPreference
