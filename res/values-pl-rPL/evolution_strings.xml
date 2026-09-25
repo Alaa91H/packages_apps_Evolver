@@ -959,7 +959,7 @@
     <string name="quick_settings_secure_lock_screen_title">Rozwijanie szybkich ustawień na zabezpieczonym ekranie blokady</string>
     <string name="quick_settings_secure_lock_screen_summary">Pozwól przesuwać palcem w dół na ekranie blokady aby otworzyć szybkie ustawienia</string>
     <string name="quick_settings_require_unlock_title">Zabezpieczone kafelki wymagają odblokowania</string>
-    <string name="quick_settings_require_unlock_summary">W przypadku następujących kafelków konieczne jest odblokowanie urządzenia przed interakcją z nimi: Tryb samolotowy, Oszczędzanie baterii, Bluetooth, Dane mobilne, Oszczędzanie danych, Punkt dostępu, Internet, NFC, Blokada obracania i Wi-Fi</string>
+    <string name="quick_settings_require_unlock_summary">W przypadku następujących kafelków konieczne jest odblokowanie urządzenia przed interakcją: Tryb samolotowy, Oszczędzanie baterii, Bluetooth, Oszczędzanie danych, Punkt dostępu, Internet, NFC i Blokada autoobracania</string>
     <string name="quick_settings_footer_category">Dolny pasek</string>
     <string name="quick_settings_footer_edit_icon_title">Edytuj ikonę kafelków</string>
     <string name="quick_settings_footer_show_power_menu_title">Skrót menu zasilania</string>
@@ -1135,12 +1135,6 @@
     <string name="spoofing_snap_title">Snapchat</string>
     <string name="spoofing_snap_summary">Sfałszuj Snapchat udając Pixel XL, aby naprawić możliwe problemy z czatem</string>
     <string name="spoofing_applying_changes">Stosowanie zmian fałszowania\u2026</string>
-    <string name="spoofing_reset_defaults_title">Zresetuj do domyślnych</string>
-    <string name="spoofing_reset_defaults_summary">Wyczyść integralność Google Play, zestaw kluczy, listę docelową, poziom poprawki i konfigurację profili gier</string>
-    <string name="spoofing_reset_defaults_dialog_title">Zresetować ustawienia fałszowania?</string>
-    <string name="spoofing_reset_defaults_dialog_message">Spowoduje to wyczyszczenie konfiguracji integralności Google Play, zestawu kluczy, listy docelowej TrickyStore, obejścia poprawki zabezpieczeń i konfiguracji profili gier. Zostaną one ponownie wypełnione przy następnym uruchomieniu automatycznego odświeżania. Przełączniki włączania nie zostaną zmienione.</string>
-    <string name="spoofing_reset_defaults_confirm">Resetuj</string>
-    <string name="spoofing_reset_defaults_done">Zresetuj ustawienia fałszowania</string>
     <string name="tensor_spoof_title">Cele funkcji Tensor</string>
     <string name="tensor_spoof_summary">Udziel wybranym aplikacjom dostępu do funkcji AI dostępnych tylko dla Pixel Tensor</string>
     <string name="tensor_spoof_enable">Fałszowanie Tensor</string>
@@ -1283,7 +1277,6 @@
     <string name="pif_config_details">Szczegóły konfiguracji</string>
     <string name="pif_failed">Niepowodzenie: %s</string>
     <string name="pif_select_device">Wybierz urządzenie</string>
-    <string name="pif_recommended_suffix">Zalecane</string>
     <string name="pif_generating">Generowanie konfiguracji\u2026</string>
     <string name="pif_footer_title">Przejście podstawowej integralności</string>
     <string name="pif_footer_body">Odcisk palca Canary jest pobierany i odświeżany automatycznie co 21 dni. Konfiguracje Canary wygasają po około 6 tygodniach od daty wydania — data wygaśnięcia jest wyświetlana w podsumowaniu aktywnej konfiguracji.\n\nKonfiguracja ręczna:\n1. Kliknij „Pobierz odcisk palca Pixel Canary” i wybierz urządzenie.\n2. Jeśli nie znaleziono żadnych urządzeń, zaimportuj działającą konfigurację poprawki integralności Google Play z zaufanego źródła. Pliki konfiguracyjne nie są dostępne.\n3. Sprawdź ponownie stan integralności Google Play.\n\nZawsze usuwaj aktywną konfigurację przed zaimportowaniem nowej. Wczytanie wygasłej konfiguracji poprawki integralności Google Play spowoduje awarię silnej integralności TrickyStore, nawet z prawidłowym zestawem kluczy.\n\nZaawansowane fałszowanie:\n• Fałszowanie odcisku palca Sklepu Google Play — pozostaw wyłączone, chyba że zalecono inaczej. Fałszowanie odcisku palca Sklepu Google Play jest rzadko potrzebne i może powodować problemy.\n•Fałszowanie SDK DroidGuard — wymusza starszą ścieżkę atestacji sprzed Androida 13. Należy włączyć tę opcję tylko wtedy, gdy podstawowa integralność nie działa, a konfiguracja dotyczy starszego zestawu SDK.</string>
@@ -1712,4 +1705,14 @@
     <string name="screenshot_clipboard_only_summary">Kopiuj zrzut ekranu do schowka, zamiast zapisywać go w pamięci</string>
     <string name="hide_status_bar_in_screenshot_title">Ukryj pasek stanu na zrzutach ekranu</string>
     <string name="hide_status_bar_in_screenshot_summary">Wytnij obszar paska stanu z pełnych zrzutów ekranu</string>
+
+
+    <!-- Synced from upstream -->
+    <string name="spoofing_reset_defaults_title">Zresetuj do domyślnych</string>
+    <string name="spoofing_reset_defaults_summary">Przywróć integralność Google Play, listę docelową, poziom poprawki i profil gry do ustawień domyślnych. Twój zestaw kluczy zostanie zachowany</string>
+    <string name="spoofing_reset_defaults_dialog_title">Zresetować ustawienia fałszowania?</string>
+    <string name="spoofing_reset_defaults_dialog_message">Spowoduje to wyczyszczenie konfiguracji integralności Google Play, obejścia poprawki zabezpieczeń i konfiguracji profilu gry oraz przywrócenie domyślnej listy docelowej TrickyStore. Twój zestaw kluczy zostanie zachowany. Integralność Google Play i poziom poprawki zostaną ponownie pobrane wkrótce potem. Przełączniki włączania nie ulegną zmianie.</string>
+    <string name="spoofing_reset_defaults_confirm">Resetuj</string>
+    <string name="spoofing_reset_defaults_done">Zresetuj ustawienia fałszowania</string>
+    <string name="pif_recommended_suffix">Zalecane</string>
 </resources>
