@@ -173,8 +173,8 @@
     <string name="lock_screen_charging_time_summary">Display estimated time remaining to full charge</string>
     <string name="lock_screen_fingerprint_category">Fingerprint</string>
     <string name="lock_screen_face_unlock_category">Face unlock</string>
-    <string name="lock_screen_face_scan_effect_title">Camera scan visualization</string>
-    <string name="lock_screen_face_scan_effect_summary">Show a high-definition animated scan glow beside the front camera while face unlock is actively scanning</string>
+    <string name="lock_screen_face_scan_effect_title">Electric camera ring</string>
+    <string name="lock_screen_face_scan_effect_summary">Show a high-definition animated electric energy ring around the front camera while face unlock is actively scanning</string>
     <string name="lock_screen_fingerprint_ripple_title">Ripple animation</string>
     <string name="lock_screen_fingerprint_ripple_summary">Show ripple animation when unlocked with fingerprint</string>
     <string name="lock_screen_fingerprint_success_vibration_title">Authentication success vibration</string>
