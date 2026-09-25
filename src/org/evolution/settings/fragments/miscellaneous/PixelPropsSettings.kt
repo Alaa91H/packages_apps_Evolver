@@ -72,6 +72,7 @@ import kotlinx.coroutines.withContext
 private const val PP_TARGETS_KEY = "pi_pp_targets"
 private const val PP_MODEL_KEY   = "pi_pp_model"
 private const val PP_ENABLED_KEY = "pi_pp_spoof"
+private const val PP_EMPTY_TARGETS_SENTINEL = "__none__"
 
 // DEFAULT_PP_TARGETS now lives in PixelDeviceRepository.DEFAULT_PP_TARGETS (Java Set<String>),
 // shared with PixelPropsUtils rather than kept as a separate Kotlin copy.
@@ -185,15 +186,33 @@ private fun PixelPropsContent(context: android.content.Context) {
 
     fun readTargetsSet(): Set<String> {
         val raw = Settings.Secure.getString(context.contentResolver, PP_TARGETS_KEY)
-        if (raw.isNullOrBlank()) return PixelDeviceRepository.DEFAULT_PP_TARGETS
-        return raw.split(",").filter { it.isNotBlank() }.toSet()
+            ?: return PixelDeviceRepository.DEFAULT_PP_TARGETS
+
+        // A missing setting means "use defaults", while an explicitly empty selection
+        // must remain empty. PixelPropsUtils treats an empty string as defaults, so keep
+        // a harmless non-package sentinel to represent an intentional empty target set.
+        if (raw.isBlank() || raw == PP_EMPTY_TARGETS_SENTINEL) {
+            if (raw != PP_EMPTY_TARGETS_SENTINEL) {
+                Settings.Secure.putString(
+                    context.contentResolver,
+                    PP_TARGETS_KEY,
+                    PP_EMPTY_TARGETS_SENTINEL,
+                )
+            }
+            return emptySet()
+        }
+
+        return raw.split(",")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() && it != PP_EMPTY_TARGETS_SENTINEL }
+            .toSet()
     }
 
     fun writeTargetsSet(targets: Set<String>) {
         Settings.Secure.putString(
             context.contentResolver,
             PP_TARGETS_KEY,
-            targets.joinToString(","),
+            if (targets.isEmpty()) PP_EMPTY_TARGETS_SENTINEL else targets.joinToString(","),
         )
     }
 
