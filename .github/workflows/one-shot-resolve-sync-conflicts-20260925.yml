@@ -76,39 +76,39 @@ jobs:
             fi
             echo "::endgroup::"
           done <<'BRANCHES'
-cnb-full-page-screenshot
-contrib/arabic-localization
-contrib/import-hardening
-contrib/preference-hardening
-contrib/statusbar-preference-hardening
-edge-light-location-aurora
-feature/edge-light-regions-aurora
-feature/edge-light-zones-aurora
-fix/property-spoofing-hardening
-pr-base/evolutionx-cnb-80f0f20
-pr-base/evolutionx-cnb-full-page
-submission/evolver-clean-split
-submission/evolver-development-cnb
-submit/dynamic-bar-cutout-upstream
-submit/home-dt2s-ui-v2
-submit/lockscreen-studio-upstream
-submit/mobile-network-type-upstream
-submit/network-traffic-upstream
-submit/property-spoofing-v2-upstream
-submit/qs-alternate-tile-color-evolver
-submit/qs-brightness-slider-shape-evolver
-submit/qs-hide-tile-labels-evolver
-submit/qs-icon-shapes-evolver
-submit/qs-live-preview
-submit/qs-panel-style-evolver
-submit/qs-panel-style-evolver-upstream
-submit/qs-tile-haptics-evolver
-submit/qs-tile-shapes-evolver
-submit/statusbar-live-preview
-submit-home-dt2s-ui-upstream
-sync/upstream-cnb-latest-20260921
-upstream/cnb-20260921
-BRANCHES
+          cnb-full-page-screenshot
+          contrib/arabic-localization
+          contrib/import-hardening
+          contrib/preference-hardening
+          contrib/statusbar-preference-hardening
+          edge-light-location-aurora
+          feature/edge-light-regions-aurora
+          feature/edge-light-zones-aurora
+          fix/property-spoofing-hardening
+          pr-base/evolutionx-cnb-80f0f20
+          pr-base/evolutionx-cnb-full-page
+          submission/evolver-clean-split
+          submission/evolver-development-cnb
+          submit/dynamic-bar-cutout-upstream
+          submit/home-dt2s-ui-v2
+          submit/lockscreen-studio-upstream
+          submit/mobile-network-type-upstream
+          submit/network-traffic-upstream
+          submit/property-spoofing-v2-upstream
+          submit/qs-alternate-tile-color-evolver
+          submit/qs-brightness-slider-shape-evolver
+          submit/qs-hide-tile-labels-evolver
+          submit/qs-icon-shapes-evolver
+          submit/qs-live-preview
+          submit/qs-panel-style-evolver
+          submit/qs-panel-style-evolver-upstream
+          submit/qs-tile-haptics-evolver
+          submit/qs-tile-shapes-evolver
+          submit/statusbar-live-preview
+          submit-home-dt2s-ui-upstream
+          sync/upstream-cnb-latest-20260921
+          upstream/cnb-20260921
+          BRANCHES
 
           echo "RESOLVE_TOTAL=$total"
           echo "RESOLVE_SUCCESS=$synced"
