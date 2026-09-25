@@ -39,9 +39,11 @@ public class LockScreen extends SettingsPreferenceFragment implements
     private static final String KEY_FP_ERROR = "fp_error_vibrate";
     private static final String KEY_FP_SUCCESS = "fp_success_vibrate";
     private static final String KEY_RIPPLE_EFFECT = "enable_ripple_effect";
+    private static final String KEY_FACE_UNLOCK_SCAN_EFFECT = "face_unlock_scan_effect";
     private static final String KEY_SMARTSPACE = "lockscreen_smartspace_enabled";
     private static final String KEY_WEATHER = "lockscreen_weather_enabled";
     private static final String LOCKSCREEN_GESTURES_CATEGORY = "lockscreen_gestures_category";
+    private static final String LOCKSCREEN_FACE_UNLOCK_CATEGORY = "lock_screen_face_unlock_category";
 
     private Preference mRippleEffect;
     private SwitchPreferenceCompat mFpErrorVib;
@@ -57,6 +59,8 @@ public class LockScreen extends SettingsPreferenceFragment implements
         final Context context = getContext();
 
         final PreferenceCategory gestCategory = findPreference(LOCKSCREEN_GESTURES_CATEGORY);
+        final PreferenceCategory faceUnlockCategory =
+                findPreference(LOCKSCREEN_FACE_UNLOCK_CATEGORY);
 
         mFpSuccessVib = findPreference(KEY_FP_SUCCESS);
         mFpErrorVib = findPreference(KEY_FP_ERROR);
@@ -70,6 +74,10 @@ public class LockScreen extends SettingsPreferenceFragment implements
         if (!hasFingerprint || !DeviceUtils.hasVibrator(context)) {
             gestCategory.removePreference(mFpSuccessVib);
             gestCategory.removePreference(mFpErrorVib);
+        }
+
+        if (!DeviceUtils.hasFace(context) && faceUnlockCategory != null) {
+            getPreferenceScreen().removePreference(faceUnlockCategory);
         }
 
         mSmartspace = findPreference(KEY_SMARTSPACE);
@@ -129,6 +137,11 @@ public class LockScreen extends SettingsPreferenceFragment implements
                     if (!hasFingerprint || !DeviceUtils.hasVibrator(context)) {
                         keys.add(KEY_FP_SUCCESS);
                         keys.add(KEY_FP_ERROR);
+                    }
+
+                    if (!DeviceUtils.hasFace(context)) {
+                        keys.add(LOCKSCREEN_FACE_UNLOCK_CATEGORY);
+                        keys.add(KEY_FACE_UNLOCK_SCAN_EFFECT);
                     }
 
                     return keys;
