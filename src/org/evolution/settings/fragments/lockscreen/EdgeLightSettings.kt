@@ -11,6 +11,8 @@ import android.os.Bundle
 import android.os.UserHandle
 import android.provider.Settings
 
+import androidx.preference.Preference
+
 import com.android.internal.logging.nano.MetricsProto
 import com.android.settings.R
 import com.android.settings.SettingsPreferenceFragment
@@ -20,6 +22,27 @@ class EdgeLightSettings : SettingsPreferenceFragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         addPreferencesFromResource(R.xml.edge_light_settings)
+
+        val auroraColorMode = findPreference<Preference>("edge_light_aurora_color_mode")
+        val animationEffect = findPreference<Preference>("edge_light_animation_effect")
+
+        fun updateAuroraVisibility(effect: String?) {
+            auroraColorMode?.isVisible = effect == "aurora"
+        }
+
+        updateAuroraVisibility(
+            Settings.System.getStringForUser(
+                requireContext().contentResolver,
+                Settings.System.EDGE_LIGHT_ANIMATION_EFFECT,
+                UserHandle.USER_CURRENT
+            ) ?: "none"
+        )
+
+        animationEffect?.onPreferenceChangeListener =
+            Preference.OnPreferenceChangeListener { _, newValue ->
+                updateAuroraVisibility(newValue?.toString())
+                true
+            }
     }
 
     override fun getMetricsCategory(): Int = MetricsProto.MetricsEvent.EVOLVER
@@ -42,6 +65,20 @@ class EdgeLightSettings : SettingsPreferenceFragment() {
                     Settings.System.EDGE_LIGHT_STYLE, "default", UserHandle.USER_CURRENT)
             Settings.System.putStringForUser(resolver,
                     Settings.System.EDGE_LIGHT_ANIMATION_EFFECT, "none", UserHandle.USER_CURRENT)
+            Settings.System.putIntForUser(resolver,
+                    Settings.System.EDGE_LIGHT_TOP_ENABLED, 0, UserHandle.USER_CURRENT)
+            Settings.System.putIntForUser(resolver,
+                    Settings.System.EDGE_LIGHT_SIDES_ENABLED, 1, UserHandle.USER_CURRENT)
+            Settings.System.putIntForUser(resolver,
+                    Settings.System.EDGE_LIGHT_BOTTOM_ENABLED, 0, UserHandle.USER_CURRENT)
+            Settings.System.putIntForUser(resolver,
+                    Settings.System.EDGE_LIGHT_SCREEN_ON_ENABLED, 0, UserHandle.USER_CURRENT)
+            Settings.System.putIntForUser(resolver,
+                    Settings.System.EDGE_LIGHT_SCREEN_OFF_ENABLED, 1, UserHandle.USER_CURRENT)
+            Settings.System.putIntForUser(resolver,
+                    Settings.System.EDGE_LIGHT_AOD_ENABLED, 1, UserHandle.USER_CURRENT)
+            Settings.System.putStringForUser(resolver,
+                    Settings.System.EDGE_LIGHT_AURORA_COLOR_MODE, "fixed", UserHandle.USER_CURRENT)
         }
     }
 }
