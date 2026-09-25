@@ -311,6 +311,10 @@ public class DeviceUtils {
         return true;
     }
 
+    public static boolean hasFace(Context context) {
+        return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_FACE);
+    }
+
     public static boolean isMobileDataEnabled(Context context) {
         TelephonyManager telephonyManager = context.getSystemService(TelephonyManager.class);
         int subId = SubscriptionManager.getDefaultDataSubscriptionId();
