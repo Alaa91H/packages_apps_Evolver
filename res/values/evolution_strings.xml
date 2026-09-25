@@ -172,6 +172,9 @@
     <string name="lock_screen_charging_time_title">Charging time</string>
     <string name="lock_screen_charging_time_summary">Display estimated time remaining to full charge</string>
     <string name="lock_screen_fingerprint_category">Fingerprint</string>
+    <string name="lock_screen_face_unlock_category">Face unlock</string>
+    <string name="lock_screen_face_scan_effect_title">Camera scan visualization</string>
+    <string name="lock_screen_face_scan_effect_summary">Show a high-definition animated scan glow beside the front camera while face unlock is actively scanning</string>
     <string name="lock_screen_fingerprint_ripple_title">Ripple animation</string>
     <string name="lock_screen_fingerprint_ripple_summary">Show ripple animation when unlocked with fingerprint</string>
     <string name="lock_screen_fingerprint_success_vibration_title">Authentication success vibration</string>
@@ -1258,6 +1261,8 @@
     <string name="miscellaneous_block_wallpaper_dimming_summary">Block all apps from dimming the wallpaper, forcing dim level to 0</string>
     <string name="miscellaneous_ignore_window_secure_title">Ignore secure window flags</string>
     <string name="miscellaneous_ignore_window_secure_summary">Remove screenshot and screen recording restrictions for all apps. May expose private content</string>
+    <string name="miscellaneous_hide_clipboard_overlay_title">Hide clipboard overlay</string>
+    <string name="miscellaneous_hide_clipboard_overlay_summary">Do not show the clipboard preview, icon, or copied message after copying content</string>
     <string name="miscellaneous_screenshot_flash_title">Show screenshot flash</string>
     <string name="miscellaneous_screenshot_flash_summary">Briefly flash the screen when a screenshot is taken</string>
     <string name="miscellaneous_block_screenshot_detection_title">Block screenshot detection</string>
@@ -1951,4 +1956,49 @@
     <string name="lockscreen_customization_interaction_category">Interaction &amp; security</string>
     <string name="lockscreen_customization_glymps_summary">Rotate lock screen wallpapers from curated, custom URL, or folder sources</string>
     <string name="lockscreen_customization_footer">This studio reuses the same system settings as the existing Evolver pages, so there are no duplicate or fake controls. Smartspace and weather changes may restart SystemUI when required.</string>
+
+    <!-- Lock screen layout positioning -->
+    <string name="lockscreen_layout_title">Layout positioning</string>
+    <string name="lockscreen_layout_summary">Fine-tune weather and widget positions independently</string>
+    <string name="lockscreen_layout_horizontal_offset_title">Horizontal offset</string>
+    <string name="lockscreen_layout_vertical_offset_title">Vertical offset</string>
+
+    <!-- Lock screen bottom shortcuts -->
+    <string name="lockscreen_shortcuts_title">Bottom shortcuts</string>
+    <string name="lockscreen_shortcuts_summary">Customize shortcut size, position, spacing, and background</string>
+    <string name="lockscreen_shortcuts_scale_title">Shortcut size</string>
+    <string name="lockscreen_shortcuts_vertical_offset_title">Vertical offset</string>
+    <string name="lockscreen_shortcuts_vertical_offset_summary">Positive values move both shortcuts upward</string>
+    <string name="lockscreen_shortcuts_horizontal_inset_title">Horizontal inset</string>
+    <string name="lockscreen_shortcuts_horizontal_inset_summary">Positive values move both shortcuts toward the center</string>
+    <string name="lockscreen_shortcuts_background_opacity_title">Background opacity</string>
+
+    <!-- Custom lock screen clock AOD tuning -->
+    <string name="lockscreen_custom_clock_aod_scale_title">AOD clock scale</string>
+    <string name="lockscreen_custom_clock_aod_scale_summary">Set the custom clock scale used by the AOD transition</string>
+    <string name="lockscreen_custom_clock_aod_opacity_title">AOD clock opacity</string>
+    <string name="lockscreen_custom_clock_aod_opacity_summary">Limit custom clock opacity while the device is dozing</string>
+
+    <!-- Lock screen charging details -->
+    <string name="lockscreen_battery_details_title">Charging details</string>
+    <string name="lockscreen_battery_details_summary">Choose which charging measurements appear on the lock screen</string>
+    <string name="lockscreen_battery_current_title">Charging current</string>
+    <string name="lockscreen_battery_power_title">Charging power</string>
+    <string name="lockscreen_battery_voltage_title">Charging voltage</string>
+    <string name="lockscreen_battery_temperature_title">Battery temperature</string>
+
+    <!-- Lock screen notification layout -->
+    <string name="lockscreen_notifications_top_spacing_title">Notification top spacing</string>
+    <string name="lockscreen_notifications_top_spacing_summary">Adjust the distance between lock screen content and notifications</string>
+    <string name="lockscreen_notifications_horizontal_inset_title">Notification side inset</string>
+    <string name="lockscreen_notifications_horizontal_inset_summary">Add equal side margins to the lock screen notification area</string>
+
+    <!-- Lock screen indication layout -->
+    <string name="lockscreen_indication_layout_category_title">Indication text</string>
+    <string name="lockscreen_indication_vertical_offset_title">Indication vertical offset</string>
+    <string name="lockscreen_indication_vertical_offset_summary">Adjust the bottom position of charging, biometric, and unlock messages</string>
+    <string name="lockscreen_indication_horizontal_inset_title">Indication side inset</string>
+    <string name="lockscreen_indication_horizontal_inset_summary">Add equal side margins to the bottom indication area</string>
+    <string name="wallpaper_zoom_title">Wallpaper zoom</string>
+    <string name="wallpaper_zoom_summary">Turn off to show the wallpaper without extra zoom</string>
 </resources>
