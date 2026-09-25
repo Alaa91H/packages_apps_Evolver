@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Evolution X
+     SPDX-License-Identifier: Apache-2.0
+-->
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:settings="http://schemas.android.com/apk/res/com.android.settings"
+    android:title="@string/lockscreen_shortcuts_title">
+
+    <PreferenceCategory
+        android:title="@string/lockscreen_shortcuts_title">
+
+        <org.evolution.settings.preferences.SecureSettingSeekBarPreference
+            android:key="lockscreen_shortcut_scale"
+            android:title="@string/lockscreen_shortcuts_scale_title"
+            android:defaultValue="100"
+            android:max="150"
+            settings:min="70"
+            settings:interval="1"
+            settings:units="%" />
+
+        <org.evolution.settings.preferences.SecureSettingSeekBarPreference
+            android:key="lockscreen_shortcut_vertical_offset"
+            android:title="@string/lockscreen_shortcuts_vertical_offset_title"
+            android:summary="@string/lockscreen_shortcuts_vertical_offset_summary"
+            android:defaultValue="0"
+            android:max="200"
+            settings:min="-100"
+            settings:interval="1"
+            settings:units="dp" />
+
+        <org.evolution.settings.preferences.SecureSettingSeekBarPreference
+            android:key="lockscreen_shortcut_horizontal_inset"
+            android:title="@string/lockscreen_shortcuts_horizontal_inset_title"
+            android:summary="@string/lockscreen_shortcuts_horizontal_inset_summary"
+            android:defaultValue="0"
+            android:max="160"
+            settings:min="-80"
+            settings:interval="1"
+            settings:units="dp" />
+
+        <org.evolution.settings.preferences.SecureSettingSeekBarPreference
+            android:key="lockscreen_shortcut_background_opacity"
+            android:title="@string/lockscreen_shortcuts_background_opacity_title"
+            android:defaultValue="100"
+            android:max="100"
+            settings:min="0"
+            settings:interval="1"
+            settings:units="%" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

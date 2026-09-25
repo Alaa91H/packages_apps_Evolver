@@ -172,6 +172,9 @@
     <string name="lock_screen_charging_time_title">Charging time</string>
     <string name="lock_screen_charging_time_summary">Display estimated time remaining to full charge</string>
     <string name="lock_screen_fingerprint_category">Fingerprint</string>
+    <string name="lock_screen_face_unlock_category">Face unlock</string>
+    <string name="lock_screen_face_scan_effect_title">Camera scan visualization</string>
+    <string name="lock_screen_face_scan_effect_summary">Show a high-definition animated scan glow beside the front camera while face unlock is actively scanning</string>
     <string name="lock_screen_fingerprint_ripple_title">Ripple animation</string>
     <string name="lock_screen_fingerprint_ripple_summary">Show ripple animation when unlocked with fingerprint</string>
     <string name="lock_screen_fingerprint_success_vibration_title">Authentication success vibration</string>
@@ -698,10 +701,24 @@
     <string name="network_traffic_units_megabytes">Megabytes per second (MB/s)</string>
     <string name="network_traffic_hidearrow">Hide arrows</string>
     <string name="network_traffic_hidearrow_summary">Hide the network traffic indicator arrows</string>
+    <string name="network_traffic_layout_title">Presentation</string>
+    <string name="network_traffic_layout_adaptive">Adaptive (dominant speed)</string>
+    <string name="network_traffic_layout_stacked">Stacked (upload above download)</string>
+    <string name="network_traffic_hide_units">Hide units</string>
+    <string name="network_traffic_hide_units_summary">Hide b/s, kB/s, MB/s and similar unit labels</string>
+    <string name="network_traffic_speed_text_size_title">Speed text size</string>
+    <string name="network_traffic_unit_text_size_title">Unit text size</string>
+    <string name="network_traffic_line_spacing_title">Line spacing</string>
+    <string name="network_traffic_text_alignment_title">Text alignment</string>
+    <string name="network_traffic_alignment_start">Start</string>
+    <string name="network_traffic_alignment_center">Center</string>
+    <string name="network_traffic_alignment_end">End</string>
+    <string name="unit_sp" translatable="false">sp</string>
+    <string name="unit_percent" translatable="false">%</string>
 
     <!-- Status bar/Dynamic Bar -->
     <string name="dynamic_bar">Dynamic Bar</string>
-    <string name="dynamic_bar_summary">Smart status bar chip for active events like recording, media, timers, and more</string>
+    <string name="dynamic_bar_summary">Cutout-aware Dynamic Island for live events, positioned around the physical camera with adaptive LTR and RTL layout</string>
     <string name="dynamic_bar_enable_summary">Show a dynamic chip in the status bar for live events</string>
     <string name="dynamic_bar_keyguard_enable">Dynamic Bar on lock screen</string>
     <string name="dynamic_bar_keyguard_enable_summary">Replace the keyguard indication with a Dynamic Bar chip on the lock screen</string>
@@ -711,6 +728,24 @@
     <string name="dynamic_bar_keyguard_battery_chip_always">Always show</string>
     <string name="dynamic_bar_keyguard_compact_chip">Compact lock screen chip</string>
     <string name="dynamic_bar_keyguard_compact_chip_summary">Always use compact chip style on the lock screen. When disabled, compact mode is only used when space is limited.</string>
+    <string name="dynamic_bar_layout">Island layout</string>
+    <string name="dynamic_bar_cutout_alignment">Camera alignment</string>
+    <string name="dynamic_bar_cutout_alignment_summary">Automatically follow the physical camera cutout, or force a centered island</string>
+    <string name="dynamic_bar_cutout_alignment_auto">Automatic (camera cutout)</string>
+    <string name="dynamic_bar_cutout_alignment_center">Centered</string>
+    <string name="dynamic_bar_island_size">Island size</string>
+    <string name="dynamic_bar_island_size_summary">Choose how much status bar space the compact island may use</string>
+    <string name="dynamic_bar_island_size_auto">Automatic</string>
+    <string name="dynamic_bar_island_size_compact">Compact</string>
+    <string name="dynamic_bar_island_size_large">Large</string>
+    <string name="dynamic_bar_landscape_mode">Landscape behavior</string>
+    <string name="dynamic_bar_landscape_mode_summary">Control how the island behaves when the display rotates</string>
+    <string name="dynamic_bar_landscape_auto">Automatic</string>
+    <string name="dynamic_bar_landscape_always">Always follow camera</string>
+    <string name="dynamic_bar_landscape_compact">Centered compact island</string>
+    <string name="dynamic_bar_landscape_disabled">Disabled in landscape</string>
+    <string name="dynamic_bar_debug_bounds">Debug cutout bounds</string>
+    <string name="dynamic_bar_debug_bounds_summary">Draw camera, island, and anchor geometry for device bring-up and calibration</string>
     <string name="dynamic_bar_events">Events</string>
     <string name="dynamic_bar_event_audio_recording">Audio recording</string>
     <string name="dynamic_bar_event_audio_recording_summary">Voice recorder and audio capture</string>
@@ -749,18 +784,18 @@
     <string name="dynamic_bar_event_biometric">Biometric unlock</string>
     <string name="dynamic_bar_event_biometric_summary">Show chip on fingerprint or face unlock</string>
     <string name="dynamic_bar_guide_title">How to use Dynamic Bar</string>
-    <string name="dynamic_bar_guide_chip">Events appear in the status bar for active events like recording, media playback, and timers</string>
+    <string name="dynamic_bar_guide_chip">Live events are split across both sides of the camera cutout, keeping the physical camera centered inside the island</string>
     <string name="dynamic_bar_guide_swipe">When multiple events are active, swipe left or right on the chip to cycle through them</string>
     <string name="dynamic_bar_guide_expand">Tap a chip to expand it into a detailed card with controls and additional info</string>
     <string name="dynamic_bar_guide_dismiss">Swipe the expanded card away to dismiss it. The event continues in the background</string>
-    <string name="dynamic_bar_guide_keyguard">The Dynamic Bar chip also appears at the bottom of the lock screen with playback controls and quick actions</string>
+    <string name="dynamic_bar_guide_keyguard">The compact island also follows the camera on the lock screen; tap it to open the full controls</string>
     <string name="dynamic_bar_guide_chip_title">Chip appearance</string>
     <string name="dynamic_bar_guide_swipe_title">Swipe between chips</string>
     <string name="dynamic_bar_guide_expand_title">Tap to expand</string>
     <string name="dynamic_bar_guide_dismiss_title">Swipe to dismiss</string>
     <string name="dynamic_bar_guide_keyguard_title">Lock screen chip</string>
     <string name="dynamic_bar_footer_title">About Dynamic Bar</string>
-    <string name="dynamic_bar_footer_body">Dynamic Bar transforms your status bar into an interactive hub. Chips appear and animate based on system events, giving you at-a-glance info without interrupting your workflow.\n\nEach event type has its own accent color and expanded card with quick actions.</string>
+    <string name="dynamic_bar_footer_body">Dynamic Bar turns the camera cutout into an adaptive interactive island. Physical camera geometry stays fixed while content mirrors semantically for LTR and RTL languages.\n\nEach event keeps its own accent, gestures, progress, and expanded controls.</string>
 
     <!-- Status bar/Cutout progress ring -->
     <string name="cutout_progress_title">Cutout progress ring</string>
@@ -775,6 +810,8 @@
     <string name="cutout_progress_cat_glow">Glow effect</string>
     <string name="cutout_progress_cat_battery">Battery ring</string>
     <string name="cutout_progress_cat_music">Music ring</string>
+    <string name="cutout_progress_cat_timer">Timer ring</string>
+    <string name="cutout_progress_cat_aurora">Aurora effect</string>
     <string name="cutout_progress_ring_color_title">Ring color</string>
     <string name="cutout_progress_error_color_title">Error color</string>
     <string name="cutout_progress_finish_flash_color_title">Finish flash color</string>
@@ -798,6 +835,8 @@
     <string name="cutout_progress_finish_flash_summary">Briefly flash the ring with the finish color when complete</string>
     <string name="cutout_progress_pulse_title">Completion pulse</string>
     <string name="cutout_progress_pulse_summary">Brief brightness pulse before the finish animation</string>
+    <string name="cutout_progress_auto_geometry_title">Automatic camera fit</string>
+    <string name="cutout_progress_auto_geometry_summary">Automatically detect the physical camera cutout, keep its size and position stable across rotation and resolution changes, and fall back safely when device geometry is incomplete</string>
     <string name="cutout_progress_path_mode_title">Pill mode</string>
     <string name="cutout_progress_path_mode_summary">Use a pill-shaped path for elongated cutouts</string>
     <string name="cutout_progress_scale_x_title">Horizontal scale</string>
@@ -809,11 +848,15 @@
     <string name="cutout_progress_percent_size_title">Percentage text size</string>
     <string name="cutout_progress_percent_bold_title">Bold percentage</string>
     <string name="cutout_progress_percent_position_title">Percentage position</string>
+    <string name="cutout_progress_percent_offset_x_title">Percentage horizontal offset</string>
+    <string name="cutout_progress_percent_offset_y_title">Percentage vertical offset</string>
     <string name="cutout_progress_filename_enabled_title">Show filename</string>
     <string name="cutout_progress_filename_enabled_summary">Display the name of the file being downloaded</string>
     <string name="cutout_progress_filename_size_title">Filename text size</string>
     <string name="cutout_progress_filename_bold_title">Bold filename</string>
     <string name="cutout_progress_filename_position_title">Filename position</string>
+    <string name="cutout_progress_filename_offset_x_title">Filename horizontal offset</string>
+    <string name="cutout_progress_filename_offset_y_title">Filename vertical offset</string>
     <string name="cutout_progress_filename_max_chars_title">Max filename length</string>
     <string name="cutout_progress_filename_truncate_title">Filename truncation</string>
     <string name="cutout_progress_badge_title">Show download count badge</string>
@@ -838,9 +881,9 @@
     <string name="cutout_progress_music_title">Music ring</string>
     <string name="cutout_progress_music_summary">Show a visualizer ring tracking media playback progress</string>
     <string name="cutout_progress_music_color_mode_title">Color mode</string>
-    <string name="cutout_progress_music_color_mode_album_icon">Album icon color</string>
+    <string name="cutout_progress_music_color_mode_album_icon">Artwork dominant color</string>
     <string name="cutout_progress_music_color_mode_accent">System accent</string>
-    <string name="cutout_progress_music_color_mode_album_art">Album art</string>
+    <string name="cutout_progress_music_color_mode_album_art">Album art palette</string>
     <string name="cutout_progress_music_color_mode_custom">Custom color</string>
     <string name="cutout_progress_music_custom_color_title">Custom color</string>
     <string name="cutout_progress_music_opacity_title">Ring opacity</string>
@@ -848,6 +891,61 @@
     <string name="cutout_progress_music_clockwise_title">Clockwise direction</string>
     <string name="cutout_progress_music_aod_title">Show on AOD</string>
     <string name="cutout_progress_music_aod_summary">Keep the music ring visible on ambient display</string>
+
+    <string name="cutout_progress_cat_layers">Multi-ring behavior</string>
+    <string name="cutout_progress_download_presentation_title">Download ring placement</string>
+    <string name="cutout_progress_download_presentation_summary">Choose whether downloads use the primary camera ring, a dedicated outer ring, or no ring</string>
+    <string name="cutout_progress_music_presentation_title">Music ring placement</string>
+    <string name="cutout_progress_music_presentation_summary">Choose whether music uses the primary camera ring, a dedicated outer ring, or no ring</string>
+    <string name="cutout_progress_presentation_primary">Primary ring</string>
+    <string name="cutout_progress_presentation_independent">Independent outer ring</string>
+    <string name="cutout_progress_presentation_disabled">Disabled</string>
+    <string name="cutout_progress_primary_priority_title">Source priority</string>
+    <string name="cutout_progress_primary_priority_summary">Choose which source wins the primary ring and which independent ring stays closer to the camera</string>
+    <string name="cutout_progress_primary_priority_download">Downloads first</string>
+    <string name="cutout_progress_primary_priority_music">Music first</string>
+    <string name="cutout_progress_primary_priority_timer">Timer first</string>
+    <string name="cutout_progress_multi_ring_spacing_title">Independent ring spacing</string>
+    <string name="cutout_progress_multi_ring_spacing_summary">Distance between automatically stacked rings</string>
+
+    <string name="cutout_progress_music_wave_title">Outer waveform</string>
+    <string name="cutout_progress_music_wave_summary">Draw an animated waveform outside the active music ring; it follows the resolved music color including album-art colors</string>
+    <string name="cutout_progress_music_wave_amplitude_title">Waveform amplitude</string>
+    <string name="cutout_progress_music_wave_density_title">Waveform density</string>
+    <string name="cutout_progress_music_wave_speed_title">Waveform speed</string>
+
+    <string name="cutout_progress_timer_title">Countdown timer ring</string>
+    <string name="cutout_progress_timer_summary">Show active Clock countdown timers around the camera cutout using the primary ring or an independent outer ring</string>
+    <string name="cutout_progress_timer_presentation_title">Timer ring placement</string>
+    <string name="cutout_progress_timer_color_mode_title">Timer color mode</string>
+    <string name="cutout_progress_timer_custom_color_title">Custom timer color</string>
+    <string name="cutout_progress_timer_opacity_title">Timer opacity</string>
+    <string name="cutout_progress_timer_stroke_title">Timer stroke width</string>
+    <string name="cutout_progress_timer_clockwise_title">Timer clockwise direction</string>
+    <string name="cutout_progress_timer_flame_title">Burning fuse effect</string>
+    <string name="cutout_progress_timer_flame_summary">Animate a small flame at the shrinking edge of the countdown ring; disable for a clean shrinking ring</string>
+    <string name="cutout_progress_timer_flame_color_title">Flame color</string>
+    <string name="cutout_progress_timer_flame_size_title">Flame size</string>
+
+    <string name="cutout_progress_aurora_title">Aurora around rings</string>
+    <string name="cutout_progress_aurora_summary">Draw a smooth layered aurora around the camera rings for selected live events</string>
+    <string name="cutout_progress_aurora_calls_title">Calls</string>
+    <string name="cutout_progress_aurora_music_title">Music playback</string>
+    <string name="cutout_progress_aurora_music_summary">Use Aurora while music is playing; the outer music waveform is automatically paused while this effect is active</string>
+    <string name="cutout_progress_aurora_recording_title">Audio recording</string>
+    <string name="cutout_progress_aurora_notifications_title">New notifications</string>
+    <string name="cutout_progress_aurora_color_mode_title">Aurora color mode</string>
+    <string name="cutout_progress_aurora_color_mode_spectrum">Full spectrum</string>
+    <string name="cutout_progress_aurora_color_mode_source">Event/source color</string>
+    <string name="cutout_progress_aurora_color_mode_custom">Fixed custom color</string>
+    <string name="cutout_progress_aurora_custom_color_title">Fixed Aurora color</string>
+    <string name="cutout_progress_aurora_notification_color_mode_title">Notification color</string>
+    <string name="cutout_progress_aurora_notification_color_notification">Use notification color</string>
+    <string name="cutout_progress_aurora_notification_color_effect">Use Aurora color mode</string>
+    <string name="cutout_progress_aurora_spread_title">Aurora size / spread</string>
+    <string name="cutout_progress_aurora_opacity_title">Aurora opacity</string>
+    <string name="cutout_progress_aurora_speed_title">Aurora animation speed</string>
+    <string name="cutout_progress_aurora_notification_duration_title">Notification effect duration</string>
 
     <!-- Status bar/Bluetooth -->
     <string name="status_bar_bluetooth_battery_title">Bluetooth battery status</string>
@@ -1163,6 +1261,8 @@
     <string name="miscellaneous_block_wallpaper_dimming_summary">Block all apps from dimming the wallpaper, forcing dim level to 0</string>
     <string name="miscellaneous_ignore_window_secure_title">Ignore secure window flags</string>
     <string name="miscellaneous_ignore_window_secure_summary">Remove screenshot and screen recording restrictions for all apps. May expose private content</string>
+    <string name="miscellaneous_hide_clipboard_overlay_title">Hide clipboard overlay</string>
+    <string name="miscellaneous_hide_clipboard_overlay_summary">Do not show the clipboard preview, icon, or copied message after copying content</string>
     <string name="miscellaneous_screenshot_flash_title">Show screenshot flash</string>
     <string name="miscellaneous_screenshot_flash_summary">Briefly flash the screen when a screenshot is taken</string>
     <string name="miscellaneous_block_screenshot_detection_title">Block screenshot detection</string>
@@ -1238,7 +1338,23 @@
     <string name="custom_spoof_profile_device">Device</string>
     <string name="custom_spoof_profile_model">Model</string>
     <string name="custom_spoof_profile_fingerprint">Fingerprint (optional)</string>
+    <string name="custom_spoof_profile_invalid_fingerprint">Use a complete Android build fingerprint (brand/product/device:release/id/incremental:type/tags)</string>
     <string name="custom_spoof_profile_product">Product (optional)</string>
+    <string name="app_spoofing_backup">Back up</string>
+    <string name="app_spoofing_restore">Restore</string>
+    <string name="app_spoofing_backup_success">Spoofing backup saved</string>
+    <string name="app_spoofing_backup_failed">Couldn’t save spoofing backup: %1$s</string>
+    <string name="app_spoofing_restore_failed">Couldn’t restore spoofing backup: %1$s</string>
+    <string name="app_spoofing_restore_confirm_title">Restore spoofing backup?</string>
+    <string name="app_spoofing_restore_confirm">This replaces the current per-app assignments and custom profiles, then restarts affected apps.</string>
+    <string name="app_spoofing_restore_success">Spoofing configuration restored</string>
+    <string name="app_spoofing_health_title">Configuration health</string>
+    <string name="app_spoofing_health_ok">All configured assignments resolve to valid profiles</string>
+    <string name="app_spoofing_health_issues">%1$d configuration issue(s) need attention</string>
+    <string name="app_spoofing_health_unknown_profiles">%1$d assignment(s) reference an unknown profile</string>
+    <string name="app_spoofing_health_missing_apps">%1$d configured app(s) are not currently installed</string>
+    <string name="app_spoofing_health_invalid_custom">%1$d custom profile(s) are invalid</string>
+    <string name="app_spoofing_health_malformed_storage">%1$d stored configuration issue(s) could not be migrated automatically</string>
     <string name="pp_target_count">Spoofing %1$d app(s) as Pixel</string>
     <string name="pp_spoof_as">Spoof as</string>
     <string name="pp_empty_description">Selected apps will report the chosen Pixel device identity to unlock Pixel-exclusive features</string>
@@ -1749,6 +1865,8 @@
 
     <!-- Gestures -->
     <string name="three_fingers_swipe_title">Three-finger swipe</string>
+    <string name="double_tap_to_sleep_title">Double tap to sleep</string>
+    <string name="double_tap_to_sleep_summary">Double tap an empty area of the Home screen to turn off the screen</string>
     <string name="shake_gestures_enabled_title">Shake gestures</string>
     <string name="shake_gestures_enabled_summary">Shake your device to perform actions</string>
     <string name="shake_gestures_action_title">Shake gesture action</string>
@@ -1824,6 +1942,63 @@
     <!-- Screenshots -->
     <string name="screenshot_clipboard_only_title">Copy to clipboard only</string>
     <string name="screenshot_clipboard_only_summary">Copy screenshot to clipboard instead of saving in storage</string>
+    <string name="screenshot_full_page_capture_title">Full-page scrolling screenshot</string>
+    <string name="screenshot_full_page_capture_summary">When Capture more is used, automatically continue capturing downward to the end of the content at native resolution, up to a safe 12,000 px height</string>
     <string name="hide_status_bar_in_screenshot_title">Hide status bar in screenshots</string>
     <string name="hide_status_bar_in_screenshot_summary">Crop the status bar area out of full screenshots</string>
+
+    <!-- Unified lock screen customization studio -->
+    <string name="lockscreen_customization_title">Lock screen studio</string>
+    <string name="lockscreen_customization_summary">Customize clock, widgets, wallpapers, information, media, effects, and secure interactions from one place</string>
+    <string name="lockscreen_customization_design_category">Design &amp; layout</string>
+    <string name="lockscreen_customization_information_category">Information &amp; at a glance</string>
+    <string name="lockscreen_customization_media_category">Media &amp; effects</string>
+    <string name="lockscreen_customization_interaction_category">Interaction &amp; security</string>
+    <string name="lockscreen_customization_glymps_summary">Rotate lock screen wallpapers from curated, custom URL, or folder sources</string>
+    <string name="lockscreen_customization_footer">This studio reuses the same system settings as the existing Evolver pages, so there are no duplicate or fake controls. Smartspace and weather changes may restart SystemUI when required.</string>
+
+    <!-- Lock screen layout positioning -->
+    <string name="lockscreen_layout_title">Layout positioning</string>
+    <string name="lockscreen_layout_summary">Fine-tune weather and widget positions independently</string>
+    <string name="lockscreen_layout_horizontal_offset_title">Horizontal offset</string>
+    <string name="lockscreen_layout_vertical_offset_title">Vertical offset</string>
+
+    <!-- Lock screen bottom shortcuts -->
+    <string name="lockscreen_shortcuts_title">Bottom shortcuts</string>
+    <string name="lockscreen_shortcuts_summary">Customize shortcut size, position, spacing, and background</string>
+    <string name="lockscreen_shortcuts_scale_title">Shortcut size</string>
+    <string name="lockscreen_shortcuts_vertical_offset_title">Vertical offset</string>
+    <string name="lockscreen_shortcuts_vertical_offset_summary">Positive values move both shortcuts upward</string>
+    <string name="lockscreen_shortcuts_horizontal_inset_title">Horizontal inset</string>
+    <string name="lockscreen_shortcuts_horizontal_inset_summary">Positive values move both shortcuts toward the center</string>
+    <string name="lockscreen_shortcuts_background_opacity_title">Background opacity</string>
+
+    <!-- Custom lock screen clock AOD tuning -->
+    <string name="lockscreen_custom_clock_aod_scale_title">AOD clock scale</string>
+    <string name="lockscreen_custom_clock_aod_scale_summary">Set the custom clock scale used by the AOD transition</string>
+    <string name="lockscreen_custom_clock_aod_opacity_title">AOD clock opacity</string>
+    <string name="lockscreen_custom_clock_aod_opacity_summary">Limit custom clock opacity while the device is dozing</string>
+
+    <!-- Lock screen charging details -->
+    <string name="lockscreen_battery_details_title">Charging details</string>
+    <string name="lockscreen_battery_details_summary">Choose which charging measurements appear on the lock screen</string>
+    <string name="lockscreen_battery_current_title">Charging current</string>
+    <string name="lockscreen_battery_power_title">Charging power</string>
+    <string name="lockscreen_battery_voltage_title">Charging voltage</string>
+    <string name="lockscreen_battery_temperature_title">Battery temperature</string>
+
+    <!-- Lock screen notification layout -->
+    <string name="lockscreen_notifications_top_spacing_title">Notification top spacing</string>
+    <string name="lockscreen_notifications_top_spacing_summary">Adjust the distance between lock screen content and notifications</string>
+    <string name="lockscreen_notifications_horizontal_inset_title">Notification side inset</string>
+    <string name="lockscreen_notifications_horizontal_inset_summary">Add equal side margins to the lock screen notification area</string>
+
+    <!-- Lock screen indication layout -->
+    <string name="lockscreen_indication_layout_category_title">Indication text</string>
+    <string name="lockscreen_indication_vertical_offset_title">Indication vertical offset</string>
+    <string name="lockscreen_indication_vertical_offset_summary">Adjust the bottom position of charging, biometric, and unlock messages</string>
+    <string name="lockscreen_indication_horizontal_inset_title">Indication side inset</string>
+    <string name="lockscreen_indication_horizontal_inset_summary">Add equal side margins to the bottom indication area</string>
+    <string name="wallpaper_zoom_title">Wallpaper zoom</string>
+    <string name="wallpaper_zoom_summary">Turn off to show the wallpaper without extra zoom</string>
 </resources>
