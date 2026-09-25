@@ -130,8 +130,8 @@
             android:title="@string/lockscreen_custom_clock_frame_margin_top_title"
             android:summary="@string/lockscreen_custom_clock_frame_margin_top_summary"
             android:defaultValue="15"
-            android:max="100"
-            settings:min="0" 
+            android:max="200"
+            settings:min="-200"
             settings:units="@string/unit_pixels" />
 
         <org.evolution.settings.preferences.SecureSettingSeekBarPreference
@@ -160,6 +160,25 @@
             android:title="@string/lockscreen_custom_clock_aod_anim_title"
             android:summary="@string/lockscreen_custom_clock_aod_anim_summary"
             android:defaultValue="true" />
+
+        <org.evolution.settings.preferences.SecureSettingSeekBarPreference
+            android:key="lock_screen_custom_clock_aod_scale"
+            android:title="@string/lockscreen_custom_clock_aod_scale_title"
+            android:summary="@string/lockscreen_custom_clock_aod_scale_summary"
+            android:defaultValue="85"
+            android:max="100"
+            settings:min="70"
+            settings:units="%"
+            android:dependency="lock_screen_custom_clock_aod_anim" />
+
+        <org.evolution.settings.preferences.SecureSettingSeekBarPreference
+            android:key="lock_screen_custom_clock_aod_opacity"
+            android:title="@string/lockscreen_custom_clock_aod_opacity_title"
+            android:summary="@string/lockscreen_custom_clock_aod_opacity_summary"
+            android:defaultValue="70"
+            android:max="100"
+            settings:min="10"
+            settings:units="%" />
 
     </PreferenceCategory>
 
