@@ -8,6 +8,9 @@
     xmlns:settings="http://schemas.android.com/apk/res/com.android.settings"
     android:title="@string/quick_settings_title">
 
+    <org.evolution.settings.preferences.QuickSettingsPreviewPreference
+        android:key="quick_settings_live_preview" />
+
     <PreferenceCategory
         android:key="quick_settings_interface_category"
         android:title="@string/quick_settings_interface_category">
@@ -109,6 +112,13 @@
             android:entryValues="@array/qs_brightness_slider_shape_values"
             android:defaultValue="0" />-->
 
+        <org.evolution.settings.preferences.SystemSettingListPreference
+            android:key="qs_brightness_slider_shape"
+            android:title="@string/qs_brightness_slider_shape_title"
+            android:entries="@array/qs_brightness_slider_shape_entries"
+            android:entryValues="@array/qs_brightness_slider_shape_values"
+            android:defaultValue="0" />
+
         <!-- Brightness slider position -->
         <lineageos.preference.LineageSecureSettingListPreference
             android:key="qs_brightness_slider_position"
@@ -203,6 +213,35 @@
             android:summary="@string/quick_settings_tile_haptic_summary"
             android:defaultValue="true" />
     </PreferenceCategory>-->
+
+    <PreferenceCategory
+        android:key="qs_layout_category"
+        android:title="@string/quick_settings_layout_category_title">
+
+        <org.evolution.settings.preferences.SystemSettingListPreference
+            android:key="qs_panel_style"
+            android:title="@string/qs_panel_style_title"
+            android:entries="@array/qs_panel_style_entries"
+            android:entryValues="@array/qs_panel_style_values"
+            android:defaultValue="0" />
+
+        <org.evolution.settings.preferences.SystemSettingListPreference
+            android:key="qs_tile_shape"
+            android:title="@string/quick_settings_tile_shape_title"
+            android:entries="@array/quick_settings_tile_shape_entries"
+            android:entryValues="@array/quick_settings_tile_shape_values"
+            android:defaultValue="0" />
+
+        <org.evolution.settings.preferences.QSTileIconShapePreference
+            android:key="qs_tile_icon_shape"
+            android:title="@string/themes_icon_shape_title" />
+
+        <org.evolution.settings.preferences.SystemSettingSwitchPreference
+            android:key="qs_tile_label_hide"
+            android:title="@string/quick_settings_tile_label_hide_title"
+            android:summary="@string/quick_settings_tile_label_hide_summary"
+            android:defaultValue="false" />
+    </PreferenceCategory>
 
     <PreferenceCategory
         android:key="quick_settings_footer_category"
