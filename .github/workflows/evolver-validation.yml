@@ -1,0 +1,42 @@
+name: Evolver validation
+
+on:
+  push:
+    branches:
+      - cnb
+      - "dynamic-bar-*"
+  pull_request:
+    branches:
+      - cnb
+      - "fix/battery-saver-*"
+      - "perf/battery-saver-*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Evolver integration checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Validate Evolver feature boundaries
+        run: python3 tools/validate_evolver_features.py
+
+      - name: Validate Arabic localization and RTL
+        run: python3 tools/validate_arabic_localization.py
+
+      - name: Validate Home double tap to sleep preference
+        run: python3 tools/validate_native_dt2s.py
