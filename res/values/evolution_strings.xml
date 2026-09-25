@@ -172,6 +172,9 @@
     <string name="lock_screen_charging_time_title">Charging time</string>
     <string name="lock_screen_charging_time_summary">Display estimated time remaining to full charge</string>
     <string name="lock_screen_fingerprint_category">Fingerprint</string>
+    <string name="lock_screen_face_unlock_category">Face unlock</string>
+    <string name="lock_screen_face_scan_effect_title">Camera scan visualization</string>
+    <string name="lock_screen_face_scan_effect_summary">Show a high-definition animated scan glow beside the front camera while face unlock is actively scanning</string>
     <string name="lock_screen_fingerprint_ripple_title">Ripple animation</string>
     <string name="lock_screen_fingerprint_ripple_summary">Show ripple animation when unlocked with fingerprint</string>
     <string name="lock_screen_fingerprint_success_vibration_title">Authentication success vibration</string>
@@ -2011,4 +2014,6 @@
     <string name="lockscreen_indication_vertical_offset_summary">Adjust the bottom position of charging, biometric, and unlock messages</string>
     <string name="lockscreen_indication_horizontal_inset_title">Indication side inset</string>
     <string name="lockscreen_indication_horizontal_inset_summary">Add equal side margins to the bottom indication area</string>
+    <string name="wallpaper_zoom_title">Wallpaper zoom</string>
+    <string name="wallpaper_zoom_summary">Turn off to show the wallpaper without extra zoom</string>
 </resources>

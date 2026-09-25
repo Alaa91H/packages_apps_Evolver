@@ -191,6 +191,12 @@
             android:defaultValue="true" />
 
         <org.evolution.settings.preferences.SystemSettingSwitchPreference
+            android:key="face_unlock_scan_effect"
+            android:title="@string/lock_screen_face_scan_effect_title"
+            android:summary="@string/lock_screen_face_scan_effect_summary"
+            android:defaultValue="false" />
+
+        <org.evolution.settings.preferences.SystemSettingSwitchPreference
             android:key="enable_ripple_effect"
             android:title="@string/lock_screen_fingerprint_ripple_title"
             android:summary="@string/lock_screen_fingerprint_ripple_summary"
