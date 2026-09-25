@@ -17,6 +17,18 @@
             android:summary="@string/ls_clock_summary"
             android:fragment="org.evolution.settings.fragments.lockscreen.ClockStyles" />
 
+        <Preference
+            android:key="lockscreen_layout_settings"
+            android:title="@string/lockscreen_layout_title"
+            android:summary="@string/lockscreen_layout_summary"
+            android:fragment="org.evolution.settings.fragments.lockscreen.LockscreenLayout" />
+
+        <Preference
+            android:key="lockscreen_shortcuts_settings"
+            android:title="@string/lockscreen_shortcuts_title"
+            android:summary="@string/lockscreen_shortcuts_summary"
+            android:fragment="org.evolution.settings.fragments.lockscreen.LockscreenShortcuts" />
+
         <org.evolution.settings.preferences.SystemSettingPrimarySwitchPreference
             android:key="lockscreen_widgets_enabled"
             android:title="@string/lockscreen_widgets_title"
@@ -98,10 +110,11 @@
             android:defaultValue="false"
             android:dependency="lockscreen_weather_enabled" />
 
-        <org.evolution.settings.preferences.SystemSettingSwitchPreference
+        <org.evolution.settings.preferences.SystemSettingPrimarySwitchPreference
             android:key="lockscreen_battery_info"
             android:title="@string/lock_screen_charging_stats_title"
-            android:summary="@string/lock_screen_charging_stats_summary"
+            android:summary="@string/lockscreen_battery_details_summary"
+            android:fragment="org.evolution.settings.fragments.lockscreen.LockscreenBatteryDetails"
             android:defaultValue="true" />
 
         <org.evolution.settings.preferences.SystemSettingListPreference
@@ -176,6 +189,12 @@
             android:title="@string/power_menu_lock_screen_secure_title"
             android:summary="@string/power_menu_lock_screen_secure_summary"
             android:defaultValue="true" />
+
+        <org.evolution.settings.preferences.SystemSettingSwitchPreference
+            android:key="face_unlock_scan_effect"
+            android:title="@string/lock_screen_face_scan_effect_title"
+            android:summary="@string/lock_screen_face_scan_effect_summary"
+            android:defaultValue="false" />
 
         <org.evolution.settings.preferences.SystemSettingSwitchPreference
             android:key="enable_ripple_effect"

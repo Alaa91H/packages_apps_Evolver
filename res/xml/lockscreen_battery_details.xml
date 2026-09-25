@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: Evolution X
+     SPDX-License-Identifier: Apache-2.0
+-->
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:title="@string/lockscreen_battery_details_title">
+
+    <lineageos.preference.SystemSettingMainSwitchPreference
+        android:key="lockscreen_battery_info"
+        android:title="@string/lock_screen_charging_stats_title"
+        android:summary="@string/lock_screen_charging_stats_summary"
+        android:defaultValue="true" />
+
+    <PreferenceCategory
+        android:key="lockscreen_battery_details_category"
+        android:title="@string/lockscreen_battery_details_title"
+        android:dependency="lockscreen_battery_info">
+
+        <org.evolution.settings.preferences.SystemSettingSwitchPreference
+            android:key="lockscreen_battery_show_current"
+            android:title="@string/lockscreen_battery_current_title"
+            android:defaultValue="true" />
+
+        <org.evolution.settings.preferences.SystemSettingSwitchPreference
+            android:key="lockscreen_battery_show_power"
+            android:title="@string/lockscreen_battery_power_title"
+            android:defaultValue="true" />
+
+        <org.evolution.settings.preferences.SystemSettingSwitchPreference
+            android:key="lockscreen_battery_show_voltage"
+            android:title="@string/lockscreen_battery_voltage_title"
+            android:defaultValue="true" />
+
+        <org.evolution.settings.preferences.SystemSettingSwitchPreference
+            android:key="lockscreen_battery_show_temperature"
+            android:title="@string/lockscreen_battery_temperature_title"
+            android:defaultValue="true" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>
