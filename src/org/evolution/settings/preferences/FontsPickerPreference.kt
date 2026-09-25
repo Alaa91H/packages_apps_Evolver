@@ -40,7 +40,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.evolution.settings.fragments.themes.fonts.ExternalFontInstaller
 import org.evolution.settings.utils.SystemUtils
-import java.util.concurrent.Executors
 import kotlin.math.min
 
 class FontsPickerPreference @JvmOverloads constructor(
@@ -257,7 +256,6 @@ class FontsPickerPreference @JvmOverloads constructor(
         private val CUSTOM_PKG_KEY = "__custom_font__"
 
         private var selectedPkg: String = if (hasCustomFont) CUSTOM_PKG_KEY else getApplied(themeUtils)
-        private val overlayExecutor = Executors.newSingleThreadExecutor()
         private val mainHandler = Handler(Looper.getMainLooper())
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FontViewHolder {
@@ -314,7 +312,15 @@ class FontsPickerPreference @JvmOverloads constructor(
                             onConfirm = {
                                 applyOverlayInBackground(
                                     if (old == CUSTOM_PKG_KEY) getApplied(themeUtils) else old,
-                                    pkg
+                                    pkg,
+                                    onFailed = {
+                                        selectedPkg = old
+                                        notifyDataSetChanged()
+                                        Toast.makeText(
+                                            ctx, R.string.toast_failed_apply_font,
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
                                 ) {
                                     if (old == CUSTOM_PKG_KEY) clearCustomFontState()
                                     updateSummary()
@@ -361,16 +367,19 @@ class FontsPickerPreference @JvmOverloads constructor(
         private fun applyOverlayInBackground(
             oldPkg: String,
             newPkg: String,
+            onFailed: () -> Unit,
             onDone: () -> Unit
         ) {
-            overlayExecutor.execute {
+            Thread({
                 try {
                     themeUtils.setOverlayEnabled(CATEGORY, oldPkg, oldPkg)
                     themeUtils.setOverlayEnabled(CATEGORY, newPkg, "android")
-                } finally {
                     mainHandler.post { onDone() }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to apply font overlay", e)
+                    mainHandler.post { onFailed() }
                 }
-            }
+            }, "FontOverlay").start()
         }
 
         private fun showSystemUiRestartDialogWithAction(

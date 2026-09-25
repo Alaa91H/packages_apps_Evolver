@@ -33,6 +33,15 @@
         android:dependency="network_traffic_enabled"
         android:defaultValue="0" />
 
+    <org.evolution.settings.preferences.SystemSettingListPreference
+        android:key="network_traffic_layout_mode"
+        android:title="@string/network_traffic_layout_title"
+        android:entries="@array/network_traffic_layout_entries"
+        android:entryValues="@array/network_traffic_layout_values"
+        android:summary="%s"
+        android:dependency="network_traffic_enabled"
+        android:defaultValue="1" />
+
     <org.evolution.settings.preferences.SystemSettingSwitchPreference
         android:key="network_traffic_autohide"
         android:title="@string/network_traffic_autohide"
@@ -68,6 +77,52 @@
         android:summary="%s"
         android:dependency="network_traffic_enabled"
         android:defaultValue="1" />
+
+    <org.evolution.settings.preferences.SystemSettingSwitchPreference
+        android:key="network_traffic_hide_units"
+        android:title="@string/network_traffic_hide_units"
+        android:summary="@string/network_traffic_hide_units_summary"
+        android:dependency="network_traffic_enabled"
+        android:defaultValue="false" />
+
+    <org.evolution.settings.preferences.SystemSettingSeekBarPreference
+        android:key="network_traffic_speed_text_size"
+        android:title="@string/network_traffic_speed_text_size_title"
+        android:dependency="network_traffic_enabled"
+        android:defaultValue="7"
+        android:max="10"
+        settings:min="5"
+        settings:interval="1"
+        settings:units="@string/unit_sp" />
+
+    <org.evolution.settings.preferences.SystemSettingSeekBarPreference
+        android:key="network_traffic_unit_text_size"
+        android:title="@string/network_traffic_unit_text_size_title"
+        android:dependency="network_traffic_enabled"
+        android:defaultValue="6"
+        android:max="9"
+        settings:min="4"
+        settings:interval="1"
+        settings:units="@string/unit_sp" />
+
+    <org.evolution.settings.preferences.SystemSettingSeekBarPreference
+        android:key="network_traffic_line_spacing"
+        android:title="@string/network_traffic_line_spacing_title"
+        android:dependency="network_traffic_enabled"
+        android:defaultValue="95"
+        android:max="120"
+        settings:min="70"
+        settings:interval="5"
+        settings:units="@string/unit_percent" />
+
+    <org.evolution.settings.preferences.SystemSettingListPreference
+        android:key="network_traffic_text_alignment"
+        android:title="@string/network_traffic_text_alignment_title"
+        android:entries="@array/network_traffic_alignment_entries"
+        android:entryValues="@array/network_traffic_alignment_values"
+        android:summary="%s"
+        android:dependency="network_traffic_enabled"
+        android:defaultValue="2" />
 
     <org.evolution.settings.preferences.SystemSettingSwitchPreference
         android:key="network_traffic_hidearrow"
