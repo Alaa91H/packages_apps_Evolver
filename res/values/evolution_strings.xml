@@ -1192,7 +1192,7 @@
 
     <!-- Notifications/Edge light -->
     <string name="edge_light_title">Edge light</string>
-    <string name="edge_light_summary">Light up the edges of the screen on notification pulse</string>
+    <string name="edge_light_summary">Light up selected screen edges for notifications with per-display-state control</string>
     <string name="edge_light_color_mode_title">Color mode</string>
     <string name="edge_light_pulse_count_title">Pulse count</string>
     <string name="edge_light_pulse_count_summary">Number of pulses for edge light</string>
@@ -1212,6 +1212,24 @@
     <string name="edge_light_spread_summary">How far inward the glow extends from the edge</string>
     <string name="edge_light_intensity_title">Glow intensity</string>
     <string name="edge_light_intensity_summary">Peak brightness of the glow effect</string>
+    <string name="edge_light_position_category">Lighting position</string>
+    <string name="edge_light_position_top_title">Top edge</string>
+    <string name="edge_light_position_top_summary">Render the edge-light effect across the top of the display</string>
+    <string name="edge_light_position_sides_title">Side edges</string>
+    <string name="edge_light_position_sides_summary">Render the effect on the left and right sides</string>
+    <string name="edge_light_position_bottom_title">Bottom edge</string>
+    <string name="edge_light_position_bottom_summary">Render the edge-light effect across the bottom of the display</string>
+    <string name="edge_light_display_state_category">Run edge light when</string>
+    <string name="edge_light_screen_on_title">Screen is on</string>
+    <string name="edge_light_screen_on_summary">Run edge lighting for notifications while the display is fully on</string>
+    <string name="edge_light_screen_off_title">Screen is off</string>
+    <string name="edge_light_screen_off_summary">Run edge lighting for notifications received while the display is off, during the system doze pulse</string>
+    <string name="edge_light_aod_title">Always-on display (AOD)</string>
+    <string name="edge_light_aod_summary">Run edge lighting while the always-on display is active</string>
+    <string name="edge_light_animation_effect_aurora">Aurora</string>
+    <string name="edge_light_aurora_color_mode_title">Aurora colors</string>
+    <string name="edge_light_aurora_color_single">Single color</string>
+    <string name="edge_light_aurora_color_multi">Multicolor</string>
 
     <!-- Power menu -->
     <string name="power_menu_interface_category">Interface</string>

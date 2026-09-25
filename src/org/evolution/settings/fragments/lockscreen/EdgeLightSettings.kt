@@ -15,11 +15,30 @@ import com.android.internal.logging.nano.MetricsProto
 import com.android.settings.R
 import com.android.settings.SettingsPreferenceFragment
 
+import androidx.preference.ListPreference
+import androidx.preference.Preference
+
 class EdgeLightSettings : SettingsPreferenceFragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         addPreferencesFromResource(R.xml.edge_light_settings)
+
+        val animationPreference =
+            findPreference<ListPreference>(Settings.System.EDGE_LIGHT_ANIMATION_EFFECT)
+        val auroraColorPreference =
+            findPreference<Preference>(Settings.System.EDGE_LIGHT_AURORA_COLOR_MODE)
+
+        fun updateAuroraColorVisibility(effect: String?) {
+            auroraColorPreference?.isVisible = effect == "aurora"
+        }
+
+        updateAuroraColorVisibility(animationPreference?.value)
+        animationPreference?.onPreferenceChangeListener =
+            Preference.OnPreferenceChangeListener { _, newValue ->
+                updateAuroraColorVisibility(newValue?.toString())
+                true
+            }
     }
 
     override fun getMetricsCategory(): Int = MetricsProto.MetricsEvent.EVOLVER
@@ -35,13 +54,31 @@ class EdgeLightSettings : SettingsPreferenceFragment() {
             Settings.System.putIntForUser(resolver,
                     Settings.System.EDGE_LIGHT_CUSTOM_COLOR, Color.WHITE, UserHandle.USER_CURRENT)
             Settings.System.putIntForUser(resolver,
-                    Settings.System.EDGE_LIGHT_PULSE_COUNT, 1, UserHandle.USER_CURRENT)
+                    Settings.System.EDGE_LIGHT_PULSE_COUNT, 3, UserHandle.USER_CURRENT)
             Settings.System.putIntForUser(resolver,
                     Settings.System.EDGE_LIGHT_STROKE_WIDTH, 8, UserHandle.USER_CURRENT)
+            Settings.System.putIntForUser(resolver,
+                    Settings.System.EDGE_LIGHT_SPREAD, 0, UserHandle.USER_CURRENT)
+            Settings.System.putIntForUser(resolver,
+                    Settings.System.EDGE_LIGHT_INTENSITY, 0, UserHandle.USER_CURRENT)
             Settings.System.putStringForUser(resolver,
                     Settings.System.EDGE_LIGHT_STYLE, "default", UserHandle.USER_CURRENT)
             Settings.System.putStringForUser(resolver,
                     Settings.System.EDGE_LIGHT_ANIMATION_EFFECT, "none", UserHandle.USER_CURRENT)
+            Settings.System.putIntForUser(resolver,
+                    Settings.System.EDGE_LIGHT_POSITION_TOP, 0, UserHandle.USER_CURRENT)
+            Settings.System.putIntForUser(resolver,
+                    Settings.System.EDGE_LIGHT_POSITION_SIDES, 1, UserHandle.USER_CURRENT)
+            Settings.System.putIntForUser(resolver,
+                    Settings.System.EDGE_LIGHT_POSITION_BOTTOM, 0, UserHandle.USER_CURRENT)
+            Settings.System.putIntForUser(resolver,
+                    Settings.System.EDGE_LIGHT_SCREEN_ON, 0, UserHandle.USER_CURRENT)
+            Settings.System.putIntForUser(resolver,
+                    Settings.System.EDGE_LIGHT_SCREEN_OFF, 1, UserHandle.USER_CURRENT)
+            Settings.System.putIntForUser(resolver,
+                    Settings.System.EDGE_LIGHT_AOD, 1, UserHandle.USER_CURRENT)
+            Settings.System.putStringForUser(resolver,
+                    Settings.System.EDGE_LIGHT_AURORA_COLOR_MODE, "single", UserHandle.USER_CURRENT)
         }
     }
 }

@@ -167,6 +167,69 @@ def validate_dynamic_bar() -> None:
         if "LAYOUT_DIRECTION_RTL" not in text:
             fail(f"Dynamic Bar preview is missing explicit RTL behavior: {demo.relative_to(ROOT)}")
 
+def validate_edge_light() -> None:
+    keys = validate_preference_file("res/xml/edge_light_settings.xml")
+    required = {
+        "edge_light_enabled",
+        "edge_light_position_top",
+        "edge_light_position_sides",
+        "edge_light_position_bottom",
+        "edge_light_screen_on",
+        "edge_light_screen_off",
+        "edge_light_aod",
+        "edge_light_animation_effect",
+        "edge_light_aurora_color_mode",
+    }
+    missing = sorted(required - keys)
+    if missing:
+        fail(f"Edge Light preferences missing: {missing}")
+
+    arrays_root = parse(ROOT / "res/values/evolution_arrays.xml")
+
+    def array_values(name: str) -> list[str]:
+        for child in arrays_root:
+            if child.attrib.get("name") == name:
+                return [(item.text or "").strip() for item in child if item.tag == "item"]
+        fail(f"Missing Edge Light array: {name}")
+
+    animation_values = array_values("edge_light_animation_values")
+    if "aurora" not in animation_values:
+        fail("Edge Light animation values are missing aurora")
+
+    aurora_modes = array_values("edge_light_aurora_color_mode_values")
+    if aurora_modes != ["single", "multicolor"]:
+        fail(f"Edge Light Aurora color modes mismatch: {aurora_modes}")
+
+    preview = (
+        ROOT / "src/org/evolution/settings/fragments/lockscreen/EdgeLightPreviewView.kt"
+    ).read_text(encoding="utf-8")
+    for token in (
+        '"edge_light_position_top"',
+        '"edge_light_position_sides"',
+        '"edge_light_position_bottom"',
+        '"edge_light_aurora_color_mode"',
+        '"aurora"',
+        "drawAurora(",
+    ):
+        if token not in preview:
+            fail(f"Edge Light preview missing: {token}")
+
+    reset = (
+        ROOT / "src/org/evolution/settings/fragments/lockscreen/EdgeLightSettings.kt"
+    ).read_text(encoding="utf-8")
+    for token in (
+        "Settings.System.EDGE_LIGHT_POSITION_TOP",
+        "Settings.System.EDGE_LIGHT_POSITION_SIDES",
+        "Settings.System.EDGE_LIGHT_POSITION_BOTTOM",
+        "Settings.System.EDGE_LIGHT_SCREEN_ON",
+        "Settings.System.EDGE_LIGHT_SCREEN_OFF",
+        "Settings.System.EDGE_LIGHT_AOD",
+        "Settings.System.EDGE_LIGHT_AURORA_COLOR_MODE",
+    ):
+        if token not in reset:
+            fail(f"Edge Light reset contract missing: {token}")
+
+
 def validate_battery_saver() -> None:
     arrays_path = ROOT / "res/values/battery_saver_arrays.xml"
     root = parse(arrays_path)
@@ -270,6 +333,7 @@ def main() -> int:
         validate_network_traffic()
         validate_mobile_type()
         validate_dynamic_bar()
+        validate_edge_light()
         validate_battery_saver()
     except (ValidationError, OSError) as exc:
         print(f"EVOLVER FEATURE VALIDATION FAILED: {exc}", file=sys.stderr)
@@ -281,6 +345,7 @@ def main() -> int:
     print("- Network Traffic UI/defaults: OK")
     print("- Mobile type preference handling: OK")
     print("- Dynamic Bar UI/settings/RTL previews: OK")
+    print("- Edge Light UI/Aurora/state contract: OK")
     print("- Battery Saver controllers/resources contract: OK")
     return 0
 
