@@ -36,6 +36,9 @@ public class BatterySaverLevelPreferenceController extends BasePreferenceControl
     public static final String KEY_SCREEN_TIMEOUT = "low_power_screen_timeout";
 
     private static final String CPUFREQ_DIR = "/sys/devices/system/cpu/cpufreq";
+    private static final String CPU_POLICY_PREFIX = "policy";
+    private static final String CPU_SCALING_MAX_FREQ = "scaling_max_freq";
+    private static final String CPUINFO_MAX_FREQ = "cpuinfo_max_freq";
 
     public BatterySaverLevelPreferenceController(Context context, String key) {
         super(context, key);
@@ -44,7 +47,7 @@ public class BatterySaverLevelPreferenceController extends BasePreferenceControl
     @Override
     public int getAvailabilityStatus() {
         if (KEY_CPU_LIMIT_PERCENT.equals(getPreferenceKey())
-                && !new File(CPUFREQ_DIR).isDirectory()) {
+                && !hasUsableCpuFreqPolicy()) {
             return UNSUPPORTED_ON_DEVICE;
         }
         return AVAILABLE;
@@ -70,6 +73,10 @@ public class BatterySaverLevelPreferenceController extends BasePreferenceControl
             return false;
         }
 
+        if (!isSupportedValue(value)) {
+            return false;
+        }
+
         final boolean success = Settings.Global.putInt(
                 mContext.getContentResolver(), getPreferenceKey(), value);
         if (success && preference instanceof ListPreference) {
@@ -92,12 +99,50 @@ public class BatterySaverLevelPreferenceController extends BasePreferenceControl
                 if (KEY_SCREEN_TIMEOUT.equals(getPreferenceKey()) && value == 1) {
                     return 30000;
                 }
-                return value;
+                return isSupportedValue(value) ? value : -1;
             } catch (NumberFormatException ignored) {
                 // Treat malformed values as no change/platform default.
             }
         }
         return -1;
+    }
+
+    private boolean hasUsableCpuFreqPolicy() {
+        final File root = new File(CPUFREQ_DIR);
+        final File[] policies = root.listFiles(
+                file -> file.isDirectory() && file.getName().startsWith(CPU_POLICY_PREFIX));
+        if (policies == null || policies.length == 0) {
+            return false;
+        }
+
+        for (File policy : policies) {
+            final File scalingMax = new File(policy, CPU_SCALING_MAX_FREQ);
+            final File hardwareMax = new File(policy, CPUINFO_MAX_FREQ);
+            if (scalingMax.isFile() && hardwareMax.isFile()
+                    && scalingMax.canRead() && hardwareMax.canRead()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isSupportedValue(int value) {
+        if (value == -1) {
+            return true;
+        }
+
+        if (KEY_CPU_LIMIT_PERCENT.equals(getPreferenceKey())) {
+            return value == 60 || value == 50 || value == 40
+                    || value == 30 || value == 20 || value == 10;
+        }
+        if (KEY_BRIGHTNESS_REDUCTION.equals(getPreferenceKey())) {
+            return value == 10 || value == 20 || value == 30
+                    || value == 40 || value == 50;
+        }
+        if (KEY_SCREEN_TIMEOUT.equals(getPreferenceKey())) {
+            return value == 15000 || value == 30000;
+        }
+        return false;
     }
 
     @Override
