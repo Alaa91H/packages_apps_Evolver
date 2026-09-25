@@ -1192,15 +1192,26 @@
 
     <!-- Notifications/Edge light -->
     <string name="edge_light_title">Edge light</string>
-    <string name="edge_light_summary">Light up the edges of the screen on notification pulse</string>
+    <string name="edge_light_summary">Light up selected screen edges for notifications in the display states you choose</string>
+    <string name="edge_light_display_state_category">Display conditions</string>
+    <string name="edge_light_show_screen_on_title">Screen on</string>
+    <string name="edge_light_show_screen_on_summary">Show edge lighting while the display is on and interactive</string>
+    <string name="edge_light_show_screen_off_title">Screen off</string>
+    <string name="edge_light_show_screen_off_summary">Show edge lighting for notification pulses while the screen is off</string>
+    <string name="edge_light_show_aod_title">Always-On Display</string>
+    <string name="edge_light_show_aod_summary">Show edge lighting on the Always-On Display</string>
+    <string name="edge_light_position_category">Light position</string>
+    <string name="edge_light_position_top_title">Top</string>
+    <string name="edge_light_position_sides_title">Sides</string>
+    <string name="edge_light_position_bottom_title">Bottom</string>
     <string name="edge_light_color_mode_title">Color mode</string>
     <string name="edge_light_pulse_count_title">Pulse count</string>
     <string name="edge_light_pulse_count_summary">Number of pulses for edge light</string>
     <string name="edge_light_stroke_width_title">Stroke width</string>
     <string name="edge_light_stroke_width_summary">Set thickness of edge light bars</string>
     <string name="edge_light_style_title">Render style</string>
-    <string name="edge_light_style_default">Default (left/right)</string>
-    <string name="edge_light_style_frame">Frame (all sides)</string>
+    <string name="edge_light_style_default">Square edges</string>
+    <string name="edge_light_style_frame">Rounded edges</string>
     <string name="edge_light_animation_effect_title">Animation effect</string>
     <string name="edge_light_animation_effect_none">Standard</string>
     <string name="edge_light_animation_effect_breathing">Breathing</string>
@@ -1208,6 +1219,10 @@
     <string name="edge_light_animation_effect_sparkle">Sparkle</string>
     <string name="edge_light_animation_effect_chase">Chase</string>
     <string name="edge_light_animation_effect_comet">Comet</string>
+    <string name="edge_light_animation_effect_aurora">Aurora</string>
+    <string name="edge_light_aurora_color_mode_title">Aurora colors</string>
+    <string name="edge_light_aurora_color_fixed">Fixed color</string>
+    <string name="edge_light_aurora_color_multicolor">Multicolor</string>
     <string name="edge_light_spread_title">Glow spread</string>
     <string name="edge_light_spread_summary">How far inward the glow extends from the edge</string>
     <string name="edge_light_intensity_title">Glow intensity</string>
