@@ -145,6 +145,9 @@
     <string name="lock_screen_charging_time_title">وقت الشحن</string>
     <string name="lock_screen_charging_time_summary">عرض الوقت التقديري المتبقي حتى اكتمال الشحن</string>
     <string name="lock_screen_fingerprint_category">بصمة الإصبع</string>
+    <string name="lock_screen_face_unlock_category">فتح القفل بالوجه</string>
+    <string name="lock_screen_face_scan_effect_title">تأثير مسح الكاميرا</string>
+    <string name="lock_screen_face_scan_effect_summary">إظهار توهج مسح متحرك عالي الدقة بجانبي الكاميرا الأمامية أثناء قيام فتح القفل بالوجه بالمسح</string>
     <string name="lock_screen_fingerprint_ripple_title">حركة التموج</string>
     <string name="lock_screen_fingerprint_ripple_summary">إظهار حركة تموج عند إلغاء القفل ببصمة الإصبع</string>
     <string name="lock_screen_fingerprint_success_vibration_title">اهتزاز نجاح المصادقة</string>
@@ -1125,6 +1128,8 @@
     <string name="miscellaneous_block_wallpaper_dimming_summary">منع جميع التطبيقات من تعتيم الخلفية وإجبار مستوى التعتيم على 0</string>
     <string name="miscellaneous_ignore_window_secure_title">تجاهل علامات النوافذ الآمنة</string>
     <string name="miscellaneous_ignore_window_secure_summary">إزالة قيود لقطات الشاشة وتسجيل الشاشة لجميع التطبيقات. قد يكشف ذلك محتوى خاصًا</string>
+    <string name="miscellaneous_hide_clipboard_overlay_title">إخفاء واجهة الحافظة</string>
+    <string name="miscellaneous_hide_clipboard_overlay_summary">عدم إظهار معاينة الحافظة أو أيقونتها أو رسالة «تم النسخ» بعد نسخ المحتوى</string>
     <string name="miscellaneous_screenshot_flash_title">إظهار وميض لقطة الشاشة</string>
     <string name="miscellaneous_screenshot_flash_summary">إظهار وميض قصير على الشاشة عند التقاط لقطة شاشة</string>
     <string name="miscellaneous_block_screenshot_detection_title">حظر اكتشاف لقطات الشاشة</string>
@@ -1787,4 +1792,8 @@
     <string name="lockscreen_indication_vertical_offset_summary">اضبط موضع رسائل الشحن والبصمة وفتح القفل في أسفل الشاشة</string>
     <string name="lockscreen_indication_horizontal_inset_title">الهامش الجانبي للإرشادات</string>
     <string name="lockscreen_indication_horizontal_inset_summary">أضف هوامش جانبية متساوية لمنطقة الإرشادات السفلية</string>
+
+    <!-- Wallpaper zoom -->
+    <string name="wallpaper_zoom_title">تكبير خلفية الشاشة</string>
+    <string name="wallpaper_zoom_summary">عطّل هذا الخيار لعرض خلفية الشاشة من دون تكبير إضافي</string>
 </resources>

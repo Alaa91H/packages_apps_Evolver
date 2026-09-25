@@ -8,6 +8,8 @@ on:
   pull_request:
     branches:
       - cnb
+      - "fix/battery-saver-*"
+      - "perf/battery-saver-*"
   workflow_dispatch:
 
 permissions:
