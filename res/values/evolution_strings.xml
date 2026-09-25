@@ -2017,4 +2017,6 @@
     <string name="lockscreen_indication_vertical_offset_summary">Adjust the bottom position of charging, biometric, and unlock messages</string>
     <string name="lockscreen_indication_horizontal_inset_title">Indication side inset</string>
     <string name="lockscreen_indication_horizontal_inset_summary">Add equal side margins to the bottom indication area</string>
+    <string name="wallpaper_zoom_title">Wallpaper zoom</string>
+    <string name="wallpaper_zoom_summary">Turn off to show the wallpaper without extra zoom</string>
 </resources>

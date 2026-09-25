@@ -260,11 +260,26 @@ def validate_battery_saver() -> None:
         'KEY_BRIGHTNESS_REDUCTION = "low_power_brightness_reduction"',
         'KEY_SCREEN_TIMEOUT = "low_power_screen_timeout"',
         'CPUFREQ_DIR = "/sys/devices/system/cpu/cpufreq"',
+        'CPU_POLICY_PREFIX = "policy"',
+        'CPU_SCALING_MAX_FREQ = "scaling_max_freq"',
+        'CPUINFO_MAX_FREQ = "cpuinfo_max_freq"',
+        "hasUsableCpuFreqPolicy()",
+        "isSupportedValue(value)",
         "Settings.Global.putInt(",
         "return 30000;",
     ):
         if token not in level:
             fail(f"BatterySaverLevelPreferenceController missing: {token}")
+
+    for token in (
+        "value == 60 || value == 50 || value == 40",
+        "value == 30 || value == 20 || value == 10",
+        "value == 10 || value == 20 || value == 30",
+        "value == 40 || value == 50",
+        "value == 15000 || value == 30000",
+    ):
+        if token not in level:
+            fail(f"Battery Saver value validation missing: {token}")
 
     switches = (
         ROOT / "src/org/evolution/settings/battery/BatterySaverSwitchPreferenceController.java"
@@ -274,6 +289,13 @@ def validate_battery_saver() -> None:
         'KEY_DISABLE_5G = "low_power_disable_5g"',
         'KEY_FORCE_DARK = "low_power_force_dark"',
         "PackageManager.FEATURE_TELEPHONY",
+        "PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS",
+        "getSupportedRadioAccessFamily()",
+        "getActiveSubscriptionIdList()",
+        "createForSubscriptionId(subId)",
+        "TelephonyManager.NETWORK_TYPE_BITMASK_UNKNOWN",
+        "TelephonyManager.NETWORK_TYPE_BITMASK_NR",
+        "is5gSupportKnownMissing()",
         "policy.getDisableAod()",
         "policy.getEnableNightMode()",
         "Settings.Global.putInt(",

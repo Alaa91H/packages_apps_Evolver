@@ -1810,4 +1810,8 @@
     <string name="lockscreen_indication_vertical_offset_summary">اضبط موضع رسائل الشحن والبصمة وفتح القفل في أسفل الشاشة</string>
     <string name="lockscreen_indication_horizontal_inset_title">الهامش الجانبي للإرشادات</string>
     <string name="lockscreen_indication_horizontal_inset_summary">أضف هوامش جانبية متساوية لمنطقة الإرشادات السفلية</string>
+
+    <!-- Wallpaper zoom -->
+    <string name="wallpaper_zoom_title">تكبير خلفية الشاشة</string>
+    <string name="wallpaper_zoom_summary">عطّل هذا الخيار لعرض خلفية الشاشة من دون تكبير إضافي</string>
 </resources>
