@@ -37,6 +37,7 @@ public class LockscreenCustomization extends SettingsPreferenceFragment
     private static final String KEY_SMARTSPACE = "lockscreen_smartspace_enabled";
     private static final String KEY_WEATHER = "lockscreen_weather_enabled";
     private static final String KEY_RIPPLE_EFFECT = "enable_ripple_effect";
+    private static final String KEY_FACE_UNLOCK_SCAN_EFFECT = "face_unlock_scan_effect";
     private static final String KEY_FP_SUCCESS = "fp_success_vibrate";
     private static final String KEY_FP_ERROR = "fp_error_vibrate";
     private static final String KEY_INTERACTION_CATEGORY = "lockscreen_studio_interaction_category";
@@ -89,12 +90,17 @@ public class LockscreenCustomization extends SettingsPreferenceFragment
         }
 
         final Preference rippleEffect = findPreference(KEY_RIPPLE_EFFECT);
+        final Preference faceUnlockScanEffect = findPreference(KEY_FACE_UNLOCK_SCAN_EFFECT);
         final Preference fpSuccess = findPreference(KEY_FP_SUCCESS);
         final Preference fpError = findPreference(KEY_FP_ERROR);
         final boolean hasFingerprint = DeviceUtils.hasFingerprint(context);
 
         if (!hasFingerprint && rippleEffect != null) {
             interactionCategory.removePreference(rippleEffect);
+        }
+
+        if (!DeviceUtils.hasFace(context) && faceUnlockScanEffect != null) {
+            interactionCategory.removePreference(faceUnlockScanEffect);
         }
 
         if ((!hasFingerprint || !DeviceUtils.hasVibrator(context))) {
@@ -152,6 +158,10 @@ public class LockscreenCustomization extends SettingsPreferenceFragment
 
                     if (!hasFingerprint) {
                         keys.add(KEY_RIPPLE_EFFECT);
+                    }
+
+                    if (!DeviceUtils.hasFace(context)) {
+                        keys.add(KEY_FACE_UNLOCK_SCAN_EFFECT);
                     }
 
                     if (!hasFingerprint || !DeviceUtils.hasVibrator(context)) {
