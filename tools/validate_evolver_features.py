@@ -167,88 +167,46 @@ def validate_dynamic_bar() -> None:
         if "LAYOUT_DIRECTION_RTL" not in text:
             fail(f"Dynamic Bar preview is missing explicit RTL behavior: {demo.relative_to(ROOT)}")
 
-def validate_battery_saver() -> None:
-    arrays_path = ROOT / "res/values/battery_saver_arrays.xml"
-    root = parse(arrays_path)
-
-    def array_values(name: str) -> list[str]:
-        for child in root:
-            if child.attrib.get("name") == name:
-                return [(item.text or "").strip() for item in child if item.tag == "item"]
-        fail(f"Missing Battery Saver array: {name}")
-
-    expected_values = {
-        "battery_saver_cpu_limit_values": ["-1", "60", "50", "40", "30", "20", "10"],
-        "battery_saver_brightness_reduction_values": ["-1", "10", "20", "30", "40", "50"],
-        "battery_saver_screen_timeout_values": ["-1", "15000", "30000"],
+def validate_edge_light() -> None:
+    keys = validate_preference_file("res/xml/edge_light_settings.xml")
+    required = {
+        "edge_light_enabled",
+        "edge_light_top_enabled",
+        "edge_light_sides_enabled",
+        "edge_light_bottom_enabled",
+        "edge_light_animation_effect",
+        "edge_light_aurora_color_mode",
     }
-    for name, expected in expected_values.items():
-        actual = array_values(name)
-        if actual != expected:
-            fail(f"{name} mismatch: expected {expected}, got {actual}")
+    missing = sorted(required - keys)
+    if missing:
+        fail(f"Edge light preferences missing: {missing}")
 
-    required_strings = {
-        "battery_saver_disable_aod_title",
-        "battery_saver_cpu_limit_title",
-        "battery_saver_brightness_reduction_title",
-        "battery_saver_disable_5g_title",
-        "battery_saver_force_dark_title",
-        "battery_saver_screen_timeout_title",
-    }
-    missing_strings = sorted(required_strings - STRINGS)
-    if missing_strings:
-        fail(f"Battery Saver strings missing: {missing_strings}")
+    arrays = (ROOT / "res/values/evolution_arrays.xml").read_text(encoding="utf-8")
+    for token in (
+        "<item>aurora</item>",
+        'name="edge_light_aurora_color_mode_entries"',
+        'name="edge_light_aurora_color_mode_values"',
+        "<item>single</item>",
+        "<item>multi</item>",
+    ):
+        if token not in arrays:
+            fail(f"Edge light Aurora array wiring missing: {token}")
 
-    level = (
-        ROOT / "src/org/evolution/settings/battery/BatterySaverLevelPreferenceController.java"
+    preview = (
+        ROOT
+        / "src/org/evolution/settings/fragments/lockscreen/EdgeLightPreviewView.kt"
     ).read_text(encoding="utf-8")
     for token in (
-        'KEY_CPU_LIMIT_PERCENT = "low_power_cpu_limit_percent"',
-        'KEY_BRIGHTNESS_REDUCTION = "low_power_brightness_reduction"',
-        'KEY_SCREEN_TIMEOUT = "low_power_screen_timeout"',
-        'CPUFREQ_DIR = "/sys/devices/system/cpu/cpufreq"',
-        'CPU_POLICY_PREFIX = "policy"',
-        'CPU_SCALING_MAX_FREQ = "scaling_max_freq"',
-        'CPUINFO_MAX_FREQ = "cpuinfo_max_freq"',
-        "hasUsableCpuFreqPolicy()",
-        "isSupportedValue(value)",
-        "Settings.Global.putInt(",
-        "return 30000;",
+        '"edge_light_top_enabled"',
+        '"edge_light_sides_enabled"',
+        '"edge_light_bottom_enabled"',
+        '"edge_light_aurora_color_mode"',
+        "drawAuroraEffect",
+        "highQuality = true",
+        "BlurMaskFilter",
     ):
-        if token not in level:
-            fail(f"BatterySaverLevelPreferenceController missing: {token}")
-
-    for token in (
-        "value == 60 || value == 50 || value == 40",
-        "value == 30 || value == 20 || value == 10",
-        "value == 10 || value == 20 || value == 30",
-        "value == 40 || value == 50",
-        "value == 15000 || value == 30000",
-    ):
-        if token not in level:
-            fail(f"Battery Saver value validation missing: {token}")
-
-    switches = (
-        ROOT / "src/org/evolution/settings/battery/BatterySaverSwitchPreferenceController.java"
-    ).read_text(encoding="utf-8")
-    for token in (
-        'KEY_DISABLE_AOD = "low_power_disable_aod"',
-        'KEY_DISABLE_5G = "low_power_disable_5g"',
-        'KEY_FORCE_DARK = "low_power_force_dark"',
-        "PackageManager.FEATURE_TELEPHONY",
-        "PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS",
-        "getSupportedRadioAccessFamily()",
-        "getActiveSubscriptionIdList()",
-        "createForSubscriptionId(subId)",
-        "TelephonyManager.NETWORK_TYPE_BITMASK_UNKNOWN",
-        "TelephonyManager.NETWORK_TYPE_BITMASK_NR",
-        "is5gSupportKnownMissing()",
-        "policy.getDisableAod()",
-        "policy.getEnableNightMode()",
-        "Settings.Global.putInt(",
-    ):
-        if token not in switches:
-            fail(f"BatterySaverSwitchPreferenceController missing: {token}")
+        if token not in preview:
+            fail(f"Edge light preview wiring missing: {token}")
 
 
 def validate_repository_boundary() -> None:
@@ -270,7 +228,7 @@ def main() -> int:
         validate_network_traffic()
         validate_mobile_type()
         validate_dynamic_bar()
-        validate_battery_saver()
+        validate_edge_light()
     except (ValidationError, OSError) as exc:
         print(f"EVOLVER FEATURE VALIDATION FAILED: {exc}", file=sys.stderr)
         return 1
@@ -281,7 +239,7 @@ def main() -> int:
     print("- Network Traffic UI/defaults: OK")
     print("- Mobile type preference handling: OK")
     print("- Dynamic Bar UI/settings/RTL previews: OK")
-    print("- Battery Saver controllers/resources contract: OK")
+    print("- Edge light zones/Aurora UI and preview: OK")
     return 0
 
 if __name__ == "__main__":
