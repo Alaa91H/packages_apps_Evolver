@@ -116,23 +116,28 @@ class TrickyStore : SettingsPreferenceFragment() {
         private val EXPIRY_WARN_MS = TimeUnit.DAYS.toMillis(14)
 
         /**
-         * Clears PIF config, keybox, TrickyStore target list, patch level and
-         * GameProps config back to fresh-install state, then lets the normal
-         * auto-refresh paths (AxSpoofManager's hourly job, or the next manual
-         * Action) repopulate them. Mirrors AlwaysStrong's reset_defaults.sh —
-         * deliberately deletion-only, nothing is re-fetched inline here so a
-         * dead network at reset time doesn't leave the device stuck.
+         * Puts the spoofing settings back to a fresh-install state: the PIF
+         * config, patch level and GameProps config are cleared and the
+         * TrickyStore target list is reseeded with the defaults. The keybox is
+         * kept, since it may be the user's own and the official one is kept
+         * current by AxSpoofManager anyway. Mirrors AlwaysStrong's
+         * reset_defaults.sh, which also keeps the keybox.
+         *
+         * Nothing is fetched here. AxSpoofManager watches the PIF config and,
+         * a few seconds after it goes empty, refreshes the fingerprint and patch
+         * level itself (from the built-in profiles when offline). Order matters
+         * for that: the fetch cooldown is zeroed first and the PIF config is
+         * cleared last, so the refresh sees a fully reset state.
          */
         @JvmStatic
         fun resetAllSpoofDefaults(context: Context) {
             val resolver = context.contentResolver
-            Settings.Secure.putString(resolver, PlayIntegrityFix.PIF_CONFIG_KEY, "")
-            Settings.Secure.putString(resolver, KEYBOX_KEY, "")
-            Settings.Secure.putString(resolver, KEYBOX_SOURCE_KEY, "")
-            Settings.Secure.putString(resolver, TARGET_KEY, "")
+            Settings.Secure.putLong(resolver, LAST_AUTO_FETCH_KEY_COMPAT, 0L)
+            Settings.Secure.putString(
+                resolver, TARGET_KEY, TrickyStoreAppSettings.buildDefaultTargetSeed())
             Settings.Secure.putString(resolver, PATCH_KEY, "")
             Settings.Secure.putString(resolver, Settings.Secure.SPOOF_GAMEPROPS_CONFIG, "")
-            Settings.Secure.putLong(resolver, LAST_AUTO_FETCH_KEY_COMPAT, 0L)
+            Settings.Secure.putString(resolver, PlayIntegrityFix.PIF_CONFIG_KEY, "")
         }
 
         // PlayIntegrityFix owns the real LAST_AUTO_FETCH_KEY constant; this local
@@ -639,12 +644,21 @@ class TrickyStore : SettingsPreferenceFragment() {
 
     // ---- Network helpers ----------------------------------------------------
 
-    private fun fetchRevocationJson(): JSONObject? = try {
-        val conn = openFreshConnection(REVOCATION_URL)
-        if (conn.responseCode == HttpURLConnection.HTTP_OK)
-            JSONObject(BufferedReader(InputStreamReader(conn.inputStream)).use { it.readText() })
-        else null
-    } catch (_: Exception) { null }
+    private fun fetchRevocationJson(): JSONObject? {
+        var conn: HttpURLConnection? = null
+        return try {
+            conn = openFreshConnection(REVOCATION_URL)
+            if (conn.responseCode == HttpURLConnection.HTTP_OK) {
+                JSONObject(BufferedReader(InputStreamReader(conn.inputStream)).use { it.readText() })
+            } else {
+                null
+            }
+        } catch (_: Exception) {
+            null
+        } finally {
+            conn?.disconnect()
+        }
+    }
 
     /**
      * Opens a connection with cache-busting so a stale CDN-cached 200 isn't
@@ -670,13 +684,25 @@ class TrickyStore : SettingsPreferenceFragment() {
      * FALLBACK_ROOT_*_SHA256 fingerprints.
      */
     private fun getTrustAnchors(): Set<X509Certificate> {
+        val resolver = requireContext().contentResolver
+        val cached = Settings.Secure.getString(resolver, ROOTS_CACHE_KEY)
+        val cachedAt = Settings.Secure.getLong(resolver, ROOTS_CACHED_AT_KEY, 0L)
+        val now = System.currentTimeMillis()
+        val cacheIsFresh = !cached.isNullOrEmpty() &&
+            cachedAt > 0L &&
+            cachedAt <= now &&
+            now - cachedAt <= ROOTS_CACHE_TTL_MS
+
+        if (cacheIsFresh) {
+            parseRootsJson(cached!!)?.let { return it }
+        }
+
         val live = fetchTrustAnchorsLive()
         if (live != null) {
             cacheTrustAnchors(live.second)
             return live.first
         }
-        val cached = Settings.Secure.getString(
-            requireContext().contentResolver, ROOTS_CACHE_KEY)
+
         if (!cached.isNullOrEmpty()) {
             parseRootsJson(cached)?.let { return it }
         }
@@ -684,13 +710,22 @@ class TrickyStore : SettingsPreferenceFragment() {
     }
 
     /** Returns (parsed certs, raw json) on success, null on any failure. */
-    private fun fetchTrustAnchorsLive(): Pair<Set<X509Certificate>, String>? = try {
-        val conn = openFreshConnection(ROOTS_URL)
-        if (conn.responseCode == HttpURLConnection.HTTP_OK) {
-            val raw = BufferedReader(InputStreamReader(conn.inputStream)).use { it.readText() }
-            parseRootsJson(raw)?.let { Pair(it, raw) }
-        } else null
-    } catch (_: Exception) { null }
+    private fun fetchTrustAnchorsLive(): Pair<Set<X509Certificate>, String>? {
+        var conn: HttpURLConnection? = null
+        return try {
+            conn = openFreshConnection(ROOTS_URL)
+            if (conn.responseCode == HttpURLConnection.HTTP_OK) {
+                val raw = BufferedReader(InputStreamReader(conn.inputStream)).use { it.readText() }
+                parseRootsJson(raw)?.let { Pair(it, raw) }
+            } else {
+                null
+            }
+        } catch (_: Exception) {
+            null
+        } finally {
+            conn?.disconnect()
+        }
+    }
 
     private fun parseRootsJson(raw: String): Set<X509Certificate>? = try {
         val array = org.json.JSONArray(raw)
@@ -788,12 +823,16 @@ class TrickyStore : SettingsPreferenceFragment() {
             val result = withContext(Dispatchers.IO) {
                 runCatching {
                     val conn = URL(OFFICIAL_KEYBOX_URL).openConnection() as HttpURLConnection
-                    conn.connectTimeout = 10_000
-                    conn.readTimeout = 10_000
-                    check(conn.responseCode == HttpURLConnection.HTTP_OK) {
-                        "HTTP ${conn.responseCode}"
+                    try {
+                        conn.connectTimeout = 10_000
+                        conn.readTimeout = 10_000
+                        check(conn.responseCode == HttpURLConnection.HTTP_OK) {
+                            "HTTP ${conn.responseCode}"
+                        }
+                        conn.inputStream.use { it.readBytes().toString(Charsets.UTF_8) }
+                    } finally {
+                        conn.disconnect()
                     }
-                    conn.inputStream.use { it.readBytes().toString(Charsets.UTF_8) }
                 }
             }
 

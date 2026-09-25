@@ -49,11 +49,11 @@ public class QuickSettings extends SettingsPreferenceFragment implements
     private static final String KEY_COMPACT_MEDIA_PLAYER_ENABLED = "qs_compact_media_player_mode";
     private static final String KEY_MEDIA_WAVEFORM_SEEKBAR = "media_waveform_seekbar";
     private static final String KEY_QS_HEADER_CLOCK_STYLE = "qs_header_clock_style";
-//    private static final String KEY_QS_PANEL_STYLE = "qs_panel_style";
+    private static final String KEY_QS_PANEL_STYLE = "qs_panel_style";
 //    private static final String KEY_QS_SHOW_MEDIA_PLAYER = "qs_show_media_player";
 //    private static final String KEY_QS_TILE_ALTERNATE_COLOR = "qs_tile_alternate_color";
 //    private static final String KEY_QS_TILE_HAPTIC = "qs_tile_haptic";
-//    private static final String KEY_QS_TILE_ICON_SHAPE = "qs_tile_icon_shape";
+    private static final String KEY_QS_TILE_ICON_SHAPE = "qs_tile_icon_shape";
 //    private static final String KEY_QS_TILE_LABEL_HIDE = "qs_tile_label_hide";
 //    private static final String KEY_QS_TILE_SHAPE = "qs_tile_shape";
 //    private static final String KEY_QS_WIDGET_IOS_MUSIC = "qs_widget_ios_music";
@@ -66,10 +66,10 @@ public class QuickSettings extends SettingsPreferenceFragment implements
 //    private static final String KEY_SINGLE_QS_TONE_ENABLED = "single_qs_tone_enabled";
 
     private ListPreference mBrightnessSliderPosition;
-//    private ListPreference mQsPanelStyle;
+    private ListPreference mQsPanelStyle;
     private ListPreference mShowBrightnessSlider;
 //    private ListPreference mVolumeSliderMode;
-//    private Preference mQsTileIconShape;
+    private Preference mQsTileIconShape;
 //    private Preference mQsTileShape;
 //    private SecureSettingListPreference mQsShowMediaPlayer;
     private SwitchPreferenceCompat mBrightnessSliderHaptic;
@@ -157,13 +157,13 @@ public class QuickSettings extends SettingsPreferenceFragment implements
 //        mQsTileAlternateColor = findPreference(KEY_QS_TILE_ALTERNATE_COLOR);
 //        mQsTileAlternateColor.setOnPreferenceChangeListener(this);
 
-//        mQsPanelStyle = findPreference(KEY_QS_PANEL_STYLE);
-//        mQsPanelStyle.setOnPreferenceChangeListener(this);
-//        mQsTileShape = findPreference(KEY_QS_TILE_SHAPE);
-//        mQsTileIconShape = findPreference(KEY_QS_TILE_ICON_SHAPE);
-//        mQsTileLabelHide = findPreference(KEY_QS_TILE_LABEL_HIDE);
-//        updatePanelStylePrefs(Settings.System.getIntForUser(resolver,
-//                Settings.System.QS_PANEL_STYLE, 0, UserHandle.USER_CURRENT));
+        mQsPanelStyle = findPreference(KEY_QS_PANEL_STYLE);
+        mQsTileIconShape = findPreference(KEY_QS_TILE_ICON_SHAPE);
+        if (mQsPanelStyle != null) {
+            mQsPanelStyle.setOnPreferenceChangeListener(this);
+            updatePanelStylePrefs(Settings.System.getIntForUser(
+                    resolver, KEY_QS_PANEL_STYLE, 0, UserHandle.USER_CURRENT));
+        }
     }
 
 //    private void updateWidgetPanelDependencies() {
@@ -175,12 +175,11 @@ public class QuickSettings extends SettingsPreferenceFragment implements
 //        mQsShowMediaPlayer.setVisible(!enabled);
 //    }
 
-//    private void updatePanelStylePrefs(int panelStyle) {
-//        boolean isClassic = panelStyle == 1;
-//        mQsTileShape.setVisible(!isClassic);
-//        mQsTileIconShape.setVisible(isClassic);
-//        mQsTileLabelHide.setVisible(isClassic);
-//    }
+    private void updatePanelStylePrefs(int panelStyle) {
+        if (mQsTileIconShape != null) {
+            mQsTileIconShape.setVisible(panelStyle == 1);
+        }
+    }
 
     @Override
     public boolean onPreferenceChange(Preference preference, Object newValue) {
@@ -196,6 +195,9 @@ public class QuickSettings extends SettingsPreferenceFragment implements
                 || preference == mBrightnessSliderHaptic
                 || preference == mMediaWaveformSeekBar) {
             SystemUtils.showSystemUiRestartDialog(getActivity());
+            return true;
+        } else if (preference == mQsPanelStyle) {
+            updatePanelStylePrefs(Integer.parseInt(newValue.toString()));
             return true;
         } else if (preference == mQsHeaderClockStyle) {
             String newVal = newValue.toString();
