@@ -193,6 +193,21 @@
         <item>3</item>
     </string-array>
 
+    <!-- Status bar - Mobile indicator spacing -->
+    <string-array name="status_bar_mobile_indicator_spacing_entries">
+        <item>@string/status_bar_mobile_indicator_spacing_auto</item>
+        <item>@string/status_bar_mobile_indicator_spacing_compact</item>
+        <item>@string/status_bar_mobile_indicator_spacing_standard</item>
+        <item>@string/status_bar_mobile_indicator_spacing_spacious</item>
+    </string-array>
+
+    <string-array name="status_bar_mobile_indicator_spacing_values" translatable="false">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+    </string-array>
+
     <!-- Status bar/Clock & date-->
     <string-array name="status_bar_clock_position_entries" translatable="false">
         <item>@string/status_bar_clock_position_right</item>

@@ -21,4 +21,12 @@ public class TelephonyUtils {
         TelephonyManager telephony = context.getSystemService(TelephonyManager.class);
         return telephony != null && telephony.isVoiceCapable();
     }
+
+    /**
+     * Returns whether the device exposes a cellular voice or data radio.
+     */
+    public static boolean isMobileNetworkSupported(@NonNull Context context) {
+        TelephonyManager telephony = context.getSystemService(TelephonyManager.class);
+        return telephony != null && (telephony.isVoiceCapable() || telephony.isDataCapable());
+    }
 }
