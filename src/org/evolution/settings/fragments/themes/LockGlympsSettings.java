@@ -27,10 +27,13 @@ import android.os.Handler;
 import android.os.Looper;
 import android.net.Uri;
 import android.provider.Settings;
-import android.text.InputType;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
@@ -46,6 +49,7 @@ import com.android.settingslib.search.SearchIndexable;
 import lineageos.preference.SystemSettingMainSwitchPreference;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Set;
@@ -73,7 +77,6 @@ public class LockGlympsSettings extends SettingsPreferenceFragment
     private static final long SERVICE_REFRESH_DELAY_MS = 150L;
     private static final int MAX_CUSTOM_URLS = 100;
     private static final int MAX_CUSTOM_URL_LENGTH = 4096;
-    private static final int MAX_API_KEY_LENGTH = 512;
 
     private static final String KEY_PREVIEW = "lock_glymps_preview";
     private static final String KEY_ENABLE = "lock_glymps_enabled";
@@ -84,7 +87,6 @@ public class LockGlympsSettings extends SettingsPreferenceFragment
     private static final String KEY_PROVIDERS = "lock_glymps_providers";
     private static final String KEY_CATEGORIES = "lock_glymps_categories";
     private static final String KEY_PROVIDER_STRATEGY = "lock_glymps_provider_strategy";
-    private static final String KEY_API_KEYS = "lock_glymps_api_keys";
 
     private static final String KEY_WALLPAPER_TARGET = "lock_glymps_wallpaper_target";
     private static final String KEY_CHANGE_ON = "lock_glymps_change_on";
@@ -95,18 +97,12 @@ public class LockGlympsSettings extends SettingsPreferenceFragment
     private static final String KEY_CLEAR_CACHE = "lock_glymps_clear_cache";
     private static final String KEY_FOLDER_INFO = "lock_glymps_folder_info";
 
-    private static final String KEY_PEXELS_API_KEY = "lock_glymps_pexels_api_key";
-    private static final String KEY_UNSPLASH_API_KEY = "lock_glymps_unsplash_api_key";
-    private static final String KEY_PIXABAY_API_KEY = "lock_glymps_pixabay_api_key";
-
-    private static final String DEFAULT_PROVIDERS = "wallhaven";
+    private static final String DEFAULT_PROVIDERS = "wallhaven,openverse";
     private static final String DEFAULT_CATEGORIES = "nature,amoled,space";
 
     private static final String PROVIDER_WALLHAVEN = "wallhaven";
+    private static final String PROVIDER_OPENVERSE = "openverse";
     private static final String PROVIDER_PICSUM = "picsum";
-    private static final String PROVIDER_PEXELS = "pexels";
-    private static final String PROVIDER_UNSPLASH = "unsplash";
-    private static final String PROVIDER_PIXABAY = "pixabay";
     private static final String PROVIDER_CUSTOM_URLS = "custom_urls";
     private static final String PROVIDER_LOCAL_FOLDER = "local_folder";
 
@@ -116,7 +112,6 @@ public class LockGlympsSettings extends SettingsPreferenceFragment
     private SystemSettingMainSwitchPreference mEnablePreference;
     private Preference mProvidersPreference;
     private Preference mCategoriesPreference;
-    private Preference mApiKeysPreference;
     private SystemSettingListPreference mProviderStrategyPreference;
     private SystemSettingListPreference mWallpaperTargetPreference;
     private SystemSettingListPreference mChangeOnPreference;
@@ -168,14 +163,18 @@ public class LockGlympsSettings extends SettingsPreferenceFragment
         mCategoriesPreference = findPreference(KEY_CATEGORIES);
         if (mCategoriesPreference != null) {
             mCategoriesPreference.setOnPreferenceClickListener(pref -> {
-                showMultiSelectDialog(
-                        KEY_CATEGORIES,
-                        R.array.lock_glymps_category_entries,
-                        R.array.lock_glymps_category_values,
-                        R.string.lock_glymps_select_categories_title,
-                        DEFAULT_CATEGORIES,
-                        pref,
-                        false);
+                showSearchableCategoriesDialog(pref);
+                return true;
+            });
+        }
+
+        Preference categorySamples = findPreference(
+                "lock_glymps_category_preview_samples");
+        if (categorySamples != null) {
+            categorySamples.setOnPreferenceClickListener(preference -> {
+                if (getActivity() != null) {
+                    LockGlympsCategoryPreviewDialog.show(getActivity());
+                }
                 return true;
             });
         }
@@ -183,14 +182,6 @@ public class LockGlympsSettings extends SettingsPreferenceFragment
         mProviderStrategyPreference = findPreference(KEY_PROVIDER_STRATEGY);
         if (mProviderStrategyPreference != null) {
             mProviderStrategyPreference.setOnPreferenceChangeListener(this);
-        }
-
-        mApiKeysPreference = findPreference(KEY_API_KEYS);
-        if (mApiKeysPreference != null) {
-            mApiKeysPreference.setOnPreferenceClickListener(pref -> {
-                showApiKeysDialog();
-                return true;
-            });
         }
 
         mWallpaperTargetPreference = findPreference(KEY_WALLPAPER_TARGET);
@@ -223,12 +214,17 @@ public class LockGlympsSettings extends SettingsPreferenceFragment
         }
 
         String[] refreshKeys = new String[] {
+                "lock_glymps_category_strategy",
                 "lock_glymps_min_resolution",
                 "lock_glymps_orientation",
                 "lock_glymps_tone",
                 "lock_glymps_order",
                 "lock_glymps_sfw_only",
-                "lock_glymps_no_repeat"
+                "lock_glymps_no_repeat",
+                "lock_glymps_charging_only",
+                "lock_glymps_pause_battery_saver",
+                "lock_glymps_cache_limit_mb",
+                "lock_glymps_daily_limit_mb"
         };
         for (String refreshKey : refreshKeys) {
             Preference refreshPreference = findPreference(refreshKey);
@@ -338,6 +334,158 @@ public class LockGlympsSettings extends SettingsPreferenceFragment
         // the previous setting.
         scheduleServiceRefresh(context);
         return true;
+    }
+
+
+    /**
+     * Selecting from hundreds of wallpaper subjects must not require scrolling through
+     * the whole catalogue. The selected set is independent from the filtered rows so
+     * changing the search query never loses previously checked categories.
+     */
+    private void showSearchableCategoriesDialog(Preference preference) {
+        Context context = getActivity();
+        if (context == null) return;
+
+        CharSequence[] titles = getResources().getTextArray(
+                R.array.lock_glymps_category_entries);
+        String[] values = getResources().getStringArray(
+                R.array.lock_glymps_category_values);
+        LinkedHashSet<String> selected = new LinkedHashSet<>(
+                readCsvSetting(KEY_CATEGORIES, DEFAULT_CATEGORIES));
+        LinkedHashSet<String> knownValues = new LinkedHashSet<>();
+        for (String value : values) knownValues.add(value);
+
+        ArrayList<String> custom = new ArrayList<>();
+        for (String value : selected) {
+            if (!knownValues.contains(value)) {
+                custom.add(value.replace('_', ' '));
+            }
+        }
+
+        float density = getResources().getDisplayMetrics().density;
+        int padding = Math.round(16f * density);
+        LinearLayout content = new LinearLayout(context);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(padding, 0, padding, 0);
+
+        EditText search = new EditText(context);
+        search.setSingleLine(true);
+        search.setHint(R.string.lock_glymps_search_hint);
+        content.addView(search, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        ListView list = new ListView(context);
+        list.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+        list.setFastScrollEnabled(true);
+        ArrayList<Integer> visibleIndexes = new ArrayList<>();
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                context, android.R.layout.simple_list_item_multiple_choice,
+                new ArrayList<>());
+        list.setAdapter(adapter);
+        content.addView(list, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, Math.round(320f * density)));
+
+        EditText customInput = new EditText(context);
+        customInput.setHint(R.string.lock_glymps_custom_categories_hint);
+        customInput.setSingleLine(false);
+        customInput.setMaxLines(3);
+        customInput.setText(android.text.TextUtils.join(", ", custom));
+        content.addView(customInput, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        Runnable render = () -> {
+            String filter = search.getText().toString().trim().toLowerCase(Locale.ROOT);
+            visibleIndexes.clear();
+            ArrayList<String> visible = new ArrayList<>();
+            for (int i = 0; i < titles.length && i < values.length; i++) {
+                String label = titles[i].toString();
+                if (label.toLowerCase(Locale.ROOT).contains(filter)
+                        || values[i].toLowerCase(Locale.ROOT).contains(filter)) {
+                    visibleIndexes.add(i);
+                    visible.add(label);
+                }
+            }
+            adapter.clear();
+            adapter.addAll(visible);
+            adapter.notifyDataSetChanged();
+            list.clearChoices();
+            for (int pos = 0; pos < visibleIndexes.size(); pos++) {
+                list.setItemChecked(pos,
+                        selected.contains(values[visibleIndexes.get(pos)]));
+            }
+        };
+        list.setOnItemClickListener((parent, row, position, id) -> {
+            if (position < 0 || position >= visibleIndexes.size()) return;
+            String value = values[visibleIndexes.get(position)];
+            if (list.isItemChecked(position)) {
+                selected.add(value);
+            } else {
+                selected.remove(value);
+            }
+        });
+        search.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(
+                    CharSequence text, int start, int count, int after) {}
+            @Override public void onTextChanged(
+                    CharSequence text, int start, int before, int count) {
+                render.run();
+            }
+            @Override public void afterTextChanged(Editable text) {}
+        });
+        render.run();
+
+        AlertDialog dialog = new AlertDialog.Builder(context)
+                .setTitle(R.string.lock_glymps_select_categories_title)
+                .setView(content)
+                .setPositiveButton(android.R.string.ok, null)
+                .setNegativeButton(android.R.string.cancel, null)
+                .create();
+        dialog.setOnShowListener(ignored ->
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                        .setOnClickListener(view -> {
+                            // Remove older free-text subjects before applying edits.
+                            selected.removeIf(value -> !knownValues.contains(value));
+                            String rawCustom = customInput.getText().toString();
+                            int extraCount = 0;
+                            for (String token : rawCustom.split(",")) {
+                                String value = token.trim().toLowerCase(Locale.ROOT)
+                                        .replace(' ', '_');
+                                if (value.isEmpty()) continue;
+                                if (extraCount >= 16 || value.length() > 64
+                                        || !value.matches("[\\p{L}\\p{N}_-]+")) {
+                                    Toast.makeText(context,
+                                            R.string.lock_glymps_invalid_category,
+                                            Toast.LENGTH_SHORT).show();
+                                    return;
+                                }
+                                if (selected.add(value)) extraCount++;
+                            }
+
+                            if (selected.isEmpty()) {
+                                Toast.makeText(context,
+                                        R.string.lock_glymps_selection_required,
+                                        Toast.LENGTH_SHORT).show();
+                                return;
+                            }
+                            if (!Settings.System.putString(context.getContentResolver(),
+                                    KEY_CATEGORIES, joinCsv(selected))) {
+                                Toast.makeText(context,
+                                        R.string.lock_glymps_service_error,
+                                        Toast.LENGTH_SHORT).show();
+                                return;
+                            }
+
+                            updateMultiSelectSummary(preference, KEY_CATEGORIES,
+                                    DEFAULT_CATEGORIES,
+                                    R.array.lock_glymps_category_entries,
+                                    R.array.lock_glymps_category_values);
+                            scheduleServiceRefresh(context);
+                            schedulePreviewRefresh();
+                            dialog.dismiss();
+                        }));
+        dialog.show();
     }
 
     private void showMultiSelectDialog(
@@ -484,14 +632,9 @@ public class LockGlympsSettings extends SettingsPreferenceFragment
 
         boolean hasCustomUrls = providers.contains(PROVIDER_CUSTOM_URLS);
         boolean hasLocalFolder = providers.contains(PROVIDER_LOCAL_FOLDER);
-        boolean needsApiKey = providers.contains(PROVIDER_PEXELS)
-                || providers.contains(PROVIDER_UNSPLASH)
-                || providers.contains(PROVIDER_PIXABAY);
         boolean hasOnlineProvider = providers.contains(PROVIDER_WALLHAVEN)
+                || providers.contains(PROVIDER_OPENVERSE)
                 || providers.contains(PROVIDER_PICSUM)
-                || providers.contains(PROVIDER_PEXELS)
-                || providers.contains(PROVIDER_UNSPLASH)
-                || providers.contains(PROVIDER_PIXABAY)
                 || hasCustomUrls;
 
         if (mCustomUrlsPreference != null) {
@@ -503,12 +646,18 @@ public class LockGlympsSettings extends SettingsPreferenceFragment
             if (hasLocalFolder) updateFolderInfo();
         }
 
-        if (mApiKeysPreference != null) {
-            mApiKeysPreference.setVisible(needsApiKey);
-        }
-
         if (mWifiOnlyPreference != null) {
             mWifiOnlyPreference.setVisible(hasOnlineProvider);
+        }
+
+        Preference batterySaver = findPreference("lock_glymps_pause_battery_saver");
+        if (batterySaver != null) {
+            batterySaver.setVisible(hasOnlineProvider);
+        }
+
+        Preference chargingOnly = findPreference("lock_glymps_charging_only");
+        if (chargingOnly != null) {
+            chargingOnly.setVisible(hasOnlineProvider);
         }
 
         if (mCacheSizePreference != null) {
@@ -518,89 +667,6 @@ public class LockGlympsSettings extends SettingsPreferenceFragment
         if (mClearCachePreference != null) {
             mClearCachePreference.setVisible(hasOnlineProvider);
         }
-    }
-
-    private void showApiKeysDialog() {
-        Context context = getActivity();
-        if (context == null) return;
-
-        LinearLayout container = new LinearLayout(context);
-        container.setOrientation(LinearLayout.VERTICAL);
-        int padding = (int) (20 * context.getResources().getDisplayMetrics().density);
-        container.setPadding(padding, padding / 2, padding, 0);
-
-        EditText pexels = createApiKeyField(
-                context,
-                R.string.lock_glymps_pexels_key_hint,
-                Settings.Secure.getString(context.getContentResolver(), KEY_PEXELS_API_KEY));
-        EditText unsplash = createApiKeyField(
-                context,
-                R.string.lock_glymps_unsplash_key_hint,
-                Settings.Secure.getString(context.getContentResolver(), KEY_UNSPLASH_API_KEY));
-        EditText pixabay = createApiKeyField(
-                context,
-                R.string.lock_glymps_pixabay_key_hint,
-                Settings.Secure.getString(context.getContentResolver(), KEY_PIXABAY_API_KEY));
-
-        container.addView(pexels);
-        container.addView(unsplash);
-        container.addView(pixabay);
-
-        new AlertDialog.Builder(context)
-                .setTitle(R.string.lock_glymps_api_keys_dialog_title)
-                .setView(container)
-                .setPositiveButton(android.R.string.ok, (dialog, which) -> {
-                    String oldPexels = Settings.Secure.getString(
-                            context.getContentResolver(), KEY_PEXELS_API_KEY);
-                    String oldUnsplash = Settings.Secure.getString(
-                            context.getContentResolver(), KEY_UNSPLASH_API_KEY);
-                    String oldPixabay = Settings.Secure.getString(
-                            context.getContentResolver(), KEY_PIXABAY_API_KEY);
-
-                    String newPexels = sanitizeApiKey(pexels.getText().toString());
-                    String newUnsplash = sanitizeApiKey(unsplash.getText().toString());
-                    String newPixabay = sanitizeApiKey(pixabay.getText().toString());
-
-                    boolean pexelsStored = Settings.Secure.putString(
-                            context.getContentResolver(), KEY_PEXELS_API_KEY, newPexels);
-                    boolean unsplashStored = Settings.Secure.putString(
-                            context.getContentResolver(), KEY_UNSPLASH_API_KEY, newUnsplash);
-                    boolean pixabayStored = Settings.Secure.putString(
-                            context.getContentResolver(), KEY_PIXABAY_API_KEY, newPixabay);
-
-                    if (!pexelsStored || !unsplashStored || !pixabayStored) {
-                        Log.e(TAG, "Unable to persist all Glymps API keys; rolling back");
-                        Settings.Secure.putString(
-                                context.getContentResolver(), KEY_PEXELS_API_KEY, oldPexels);
-                        Settings.Secure.putString(
-                                context.getContentResolver(), KEY_UNSPLASH_API_KEY, oldUnsplash);
-                        Settings.Secure.putString(
-                                context.getContentResolver(), KEY_PIXABAY_API_KEY, oldPixabay);
-                        Toast.makeText(
-                                context,
-                                R.string.lock_glymps_service_error,
-                                Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-
-                    scheduleServiceRefresh(context);
-                })
-                .setNegativeButton(android.R.string.cancel, null)
-                .show();
-    }
-
-    private EditText createApiKeyField(Context context, int hintRes, String value) {
-        EditText field = new EditText(context);
-        field.setHint(hintRes);
-        field.setSingleLine(true);
-        field.setInputType(
-                InputType.TYPE_CLASS_TEXT
-                        | InputType.TYPE_TEXT_VARIATION_PASSWORD
-                        | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-        field.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS);
-        field.setAutofillHints((String[]) null);
-        if (value != null) field.setText(value);
-        return field;
     }
 
     private void schedulePreviewRefresh() {
@@ -862,15 +928,9 @@ public class LockGlympsSettings extends SettingsPreferenceFragment
 
         return host != null
                 && !host.isEmpty()
-                && ("https".equalsIgnoreCase(scheme) || "http".equalsIgnoreCase(scheme));
-    }
-
-    private String sanitizeApiKey(String value) {
-        if (value == null) return "";
-        String trimmed = value.trim();
-        return trimmed.length() <= MAX_API_KEY_LENGTH
-                ? trimmed
-                : trimmed.substring(0, MAX_API_KEY_LENGTH);
+                && "https".equalsIgnoreCase(scheme)
+                && (uri.getPort() == -1 || uri.getPort() == 443)
+                && uri.getUserInfo() == null;
     }
 
     private void clearCache() {
@@ -878,9 +938,9 @@ public class LockGlympsSettings extends SettingsPreferenceFragment
         if (context == null) return;
 
         new AlertDialog.Builder(context)
-                .setTitle("Clear Cache")
-                .setMessage("This will delete all cached wallpapers and they will be re-downloaded. Continue?")
-                .setPositiveButton("Clear", (dialog, which) -> {
+                .setTitle(R.string.lock_glymps_clear_cache_title)
+                .setMessage(R.string.lock_glymps_clear_cache_confirm)
+                .setPositiveButton(R.string.lock_glymps_clear_cache_action, (dialog, which) -> {
                     if (!sendGlympsCommand(context, ACTION_CLEAR_CACHE)) {
                         Toast.makeText(
                                 context,
@@ -889,8 +949,10 @@ public class LockGlympsSettings extends SettingsPreferenceFragment
                         return;
                     }
 
+                    // sendBroadcast is asynchronous: this confirms that the clear
+                    // request was sent, not that deletion has already completed.
                     Toast.makeText(context,
-                            "Cache cleared. New wallpapers will be downloaded.",
+                            R.string.lock_glymps_clear_cache_requested,
                             Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton(android.R.string.cancel, null)
